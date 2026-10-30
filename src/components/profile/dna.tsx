@@ -4,12 +4,14 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { Target } from "lucide-react";
 import { useMemo, useState } from "react";
-import { computeAchievements, computeDna } from "@/lib/dna";
+import { computeDna } from "@/lib/dna";
+import { saveSeasonGoal, seasonProgress, useAchievements } from "./achievements";
+import { toast } from "sonner";
 import { statusMeta, LIBRARY_STATUSES, type LibraryEntry } from "@/lib/library/types";
 import { useKazeMotion } from "@/lib/motion";
 import { useSettings } from "@/stores/settings";
 import { EmptyState } from "@/components/ui/primitives";
-import { seasonOf, titleCase } from "@/lib/utils";
+import { titleCase } from "@/lib/utils";
 import { Badge, type ProfileData } from "./profile";
 
 const C = (i: number) => `var(--k-chart-${(i % 5) + 1})`;
@@ -81,6 +83,7 @@ function Card({ title, children, className }: { title: string; children: React.R
 export function AnimeDna({ d }: { d: ProfileData }) {
   const dna = useMemo(() => computeDna(d.entries), [d.entries]);
   const gamification = useSettings((s) => s.gamification);
+  const ach = useAchievements(d.entries, d.guest ? null : (d.profile?.id ?? null), d.isMe);
   if (d.listsHidden) return <EmptyState jp="秘" title="This DNA is private" />;
   if (dna.total < 1)
     return <EmptyState jp="遺" title="No DNA to sequence yet" body="Anime DNA is computed only from real library data. Add and complete a few titles to see your taste take shape." action={d.isMe ? <Link href="/discover" className="k-btn k-btn-primary k-btn-sm">Discover anime</Link> : undefined} />;
@@ -140,11 +143,11 @@ export function AnimeDna({ d }: { d: ProfileData }) {
           </Card>
         </div>
       </div>
-      {d.isMe && gamification && <SeasonGoal entries={d.entries} />}
+      {d.isMe && gamification && <SeasonGoal entries={d.entries} userId={d.guest ? null : (d.profile?.id ?? null)} remoteGoal={ach.goal} onSaved={() => ach.refetch()} />}
       {(gamification || !d.isMe) && (
         <Card title="All achievements">
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {computeAchievements(d.entries).map((a) => (
+            {ach.achievements.map((a) => (
               <Badge key={a.id} a={a} />
             ))}
           </ul>
@@ -154,25 +157,27 @@ export function AnimeDna({ d }: { d: ProfileData }) {
   );
 }
 
-/** Optional seasonal goal (device-local); progress counts titles completed this season. */
-function SeasonGoal({ entries }: { entries: LibraryEntry[] }) {
-  const { season, year } = seasonOf(new Date());
+/** Optional seasonal goal: saved to the account when signed in, otherwise on this device. */
+function SeasonGoal({ entries, userId, remoteGoal, onSaved }: { entries: LibraryEntry[]; userId: string | null; remoteGoal: number | null; onSaved: () => void }) {
+  const { season, year, done } = seasonProgress(entries);
   const key = `kaze:goal:${season}-${year}`;
-  const [target, setTarget] = useState<number>(() => {
+  const [local, setLocal] = useState<number>(() => {
     try {
       return Number(localStorage.getItem(key)) || 0;
     } catch {
       return 0;
     }
   });
-  const startMonth = { WINTER: -1, SPRING: 2, SUMMER: 5, FALL: 8 }[season];
-  const from = new Date(Date.UTC(year, startMonth, 1)).toISOString().slice(0, 10);
-  const done = entries.filter((e) => e.status === "COMPLETED" && e.completedAt && e.completedAt >= from).length;
-  const save = (n: number) => {
-    setTarget(n);
+  const target = userId ? (remoteGoal ?? local) : local;
+  const save = async (n: number) => {
+    setLocal(n);
     try {
       localStorage.setItem(key, String(n));
     } catch {}
+    if (!userId) return;
+    const { error } = await saveSeasonGoal(userId, n);
+    if (error) toast.error("Couldn't save your goal");
+    else onSaved();
   };
   return (
     <section className="k-card flex flex-wrap items-center gap-5 p-5">
@@ -181,7 +186,7 @@ function SeasonGoal({ entries }: { entries: LibraryEntry[] }) {
         <h3 className="font-display text-lg">
           {titleCase(season)} {year} goal
         </h3>
-        <p className="text-sm text-muted">{target ? `${done} of ${target} completed this season` : "Set a gentle target — no streaks, no penalties."}</p>
+        <p className="text-sm text-muted">{target ? `${done} of ${target} completed this season${done >= target ? " — goal reached!" : ""}` : "Set a gentle target — no streaks, no penalties."}</p>
         {target > 0 && (
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={done} aria-valuemin={0} aria-valuemax={target} aria-label="Seasonal goal">
             <div className="h-full rounded-full bg-gradient-to-r from-primary to-accent" style={{ width: `${Math.min(100, (done / target) * 100)}%` }} />
@@ -190,7 +195,19 @@ function SeasonGoal({ entries }: { entries: LibraryEntry[] }) {
       </div>
       <label className="flex items-center gap-2 text-sm">
         Target
-        <input type="number" min={0} max={200} className="k-input !min-h-9 w-20 text-center" value={target || ""} placeholder="—" onChange={(e) => save(Math.max(0, Math.min(200, Number(e.target.value) || 0)))} />
+        <input
+          type="number"
+          min={0}
+          max={200}
+          className="k-input !min-h-9 w-20 text-center"
+          key={target}
+          defaultValue={target || ""}
+          placeholder="—"
+          onBlur={(e) => {
+            const n = Math.max(0, Math.min(200, Number(e.target.value) || 0));
+            if (n !== target) save(n);
+          }}
+        />
       </label>
     </section>
   );

@@ -13,7 +13,8 @@ import { rowToEntry } from "@/lib/data/remote";
 import { useAuth, type Profile } from "@/stores/auth";
 import { useLibrary } from "@/stores/library";
 import { useSettings } from "@/stores/settings";
-import { computeAchievements, computeDna, type Achievement } from "@/lib/dna";
+import { computeDna, type Achievement } from "@/lib/dna";
+import { useAchievements } from "./achievements";
 import type { LibraryEntry } from "@/lib/library/types";
 import { THEME_IDS, THEMES, isThemeId, type ThemeId } from "@/lib/themes";
 import { Avatar } from "@/components/shell/user-menu";
@@ -230,7 +231,7 @@ export function ProfileShell({ username, tab, children }: { username: string; ta
 export function ProfileOverview({ d }: { d: ProfileData }) {
   const gamification = useSettings((s) => s.gamification);
   const activity = useUserActivity(d.guest || !isSupabaseConfigured ? undefined : d.profile?.id, 15);
-  const achievements = useMemo(() => computeAchievements(d.entries), [d.entries]);
+  const { achievements } = useAchievements(d.entries, d.guest ? null : (d.profile?.id ?? null), d.isMe);
   const p = d.profile!;
   const favorites = d.entries.filter((e) => e.favorite).slice(0, 12);
   const watching = d.entries.filter((e) => e.status === "CURRENT").slice(0, 8);
@@ -313,7 +314,7 @@ export function ProfileOverview({ d }: { d: ProfileData }) {
           <section aria-labelledby="ach-h">
             <h2 id="ach-h" className="font-display text-lg mb-3">Achievements · {achievements.filter((a) => a.earned).length}/{achievements.length}</h2>
             <ul className="space-y-2">
-              {achievements
+              {[...achievements]
                 .sort((a, b) => Number(b.earned) - Number(a.earned))
                 .slice(0, 7)
                 .map((a) => (

@@ -190,6 +190,26 @@ describe("watch parties", () => {
   });
 });
 
+describe("gamification", () => {
+  it("lets users record only their own, real achievements", async () => {
+    await as(db, bob, async () => {
+      await db.query("insert into user_achievements (user_id, achievement_id) values ($1, 'critic')", [bob]);
+      await expect(db.query("insert into user_achievements (user_id, achievement_id) values ($1, 'critic')", [alice])).rejects.toThrow(/row-level security/);
+      await expect(db.query("insert into user_achievements (user_id, achievement_id) values ($1, 'made-up')", [bob])).rejects.toThrow();
+    });
+    // Visible to people who can see the profile, even though they can't write it.
+    await as(db, alice, async () => expect(await rows(db, "select * from user_achievements where user_id = $1", [bob])).toHaveLength(1));
+  });
+
+  it("keeps seasonal goals private and bounded", async () => {
+    await as(db, bob, async () => {
+      await db.query("insert into seasonal_goals (user_id, season, year, target) values ($1, 'FALL', 2026, 5)", [bob]);
+      await expect(db.query("insert into seasonal_goals (user_id, season, year, target) values ($1, 'FALL', 2027, 999)", [bob])).rejects.toThrow(/check constraint/);
+    });
+    await as(db, alice, async () => expect(await rows(db, "select * from seasonal_goals")).toHaveLength(0));
+  });
+});
+
 describe("account deletion", () => {
   it("cascades every user-owned row", async () => {
     await db.query("delete from auth.users where id = $1", [alice]);
