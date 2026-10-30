@@ -684,8 +684,10 @@ export function TrailerBlock({ media }: { media: MediaDetail }) {
           <span className="k-btn-primary absolute left-1/2 top-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full transition-transform group-hover:scale-110">
             <Play className="size-6 fill-current" aria-hidden />
           </span>
-          <span className="absolute bottom-3 left-3 text-xs text-white/80">Plays from YouTube (privacy-enhanced mode) when clicked</span>
         </button>
+      )}
+      {!play && (
+        <span className="pointer-events-none absolute bottom-3 left-3 text-xs text-white/80">Plays from YouTube (privacy-enhanced mode) when clicked</span>
       )}
     </div>
   );
@@ -702,7 +704,7 @@ export function AniListReviews({ media }: { media: MediaDetail }) {
         {reviews.map((r) => (
           <li key={r.id} className="k-card p-4">
             <div className="flex items-center gap-2 text-xs text-muted">
-              {r.user.avatar.medium && <Image src={r.user.avatar.medium} alt="" width={24} height={24} className="rounded-full" />}
+              {r.user.avatar.medium && <Image src={r.user.avatar.medium} alt="" width={24} height={24} className="rounded-full" unoptimized />}
               <span className="font-semibold text-fg">{r.user.name}</span>
               {r.score != null && <ScorePill score={r.score} className="ml-auto text-fg" />}
             </div>

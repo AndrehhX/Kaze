@@ -75,11 +75,11 @@ export function SiteHeader() {
             type="button"
             onClick={() => setOpen(true)}
             className="k-btn k-btn-ghost k-btn-sm hidden w-56 justify-start !px-3 text-muted md:inline-flex xl:w-64"
-            aria-label="Search anime (Ctrl K)"
+            aria-keyshortcuts="Control+K /"
           >
             <Search className="size-4" aria-hidden />
             <span className="flex-1 text-left font-normal normal-case tracking-normal">Search anime…</span>
-            <kbd className="rounded border border-line px-1.5 font-mono text-[0.625rem]">Ctrl K</kbd>
+            <kbd aria-hidden className="rounded border border-line px-1.5 font-mono text-[0.625rem]">Ctrl K</kbd>
           </button>
           <button type="button" onClick={() => setOpen(true)} className="k-btn k-btn-ghost k-btn-icon k-btn-sm md:hidden" aria-label="Search">
             <Search className="size-[18px]" aria-hidden />

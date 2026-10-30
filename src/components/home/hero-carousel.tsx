@@ -191,7 +191,7 @@ export function HeroCarousel({ items, kickerPrefix, trendingIds }: { items: Medi
               exit={reduced ? { opacity: 0 } : { opacity: 0, x: -60, rotate: -8, scale: 0.9 }}
               transition={reduced ? { duration: 0.2 } : m.spring}
             >
-              <Image src={item.coverImage.extraLarge ?? ""} alt="" fill sizes="300px" className="object-cover" />
+              <Image src={item.coverImage.extraLarge ?? ""} alt="" fill sizes="300px" className="object-cover" unoptimized />
             </motion.div>
           </AnimatePresence>
           {item.title.native && (

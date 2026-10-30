@@ -328,7 +328,8 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
     };
     track = resolve();
     const read = () => {
-      if (!track?.cues) return setCues([]);
+      // Keep the same array when there is nothing to show so React can bail out.
+      if (!track?.cues) return setCues((c) => (c.length ? [] : c));
       setCues(Array.from(track.cues).map((c) => ({ start: c.startTime, end: c.endTime, text: cueText((c as VTTCue).text ?? "") })));
     };
     read();

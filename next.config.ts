@@ -19,7 +19,8 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: https://s4.anilist.co https://img1.ak.crunchyroll.com https://img.anili.st https://i.ytimg.com ${supabaseOrigin}`.trim(),
   "font-src 'self' data:",
-  `media-src 'self' blob: ${mediaHosts.join(" ")}`,
+  // hls.js uses an inline data: WebVTT placeholder for subtitle tracks.
+  `media-src 'self' blob: data: ${mediaHosts.join(" ")}`,
   `connect-src 'self' https://graphql.anilist.co ${mediaHosts.join(" ")} ${supabaseOrigin} ${supabaseWs}${isDev ? " ws://localhost:*" : ""}`.trim(),
   "frame-src https://www.youtube-nocookie.com",
   "worker-src 'self' blob:",
@@ -42,9 +43,11 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    // AniList's CDN already serves sized JPEG/PNG covers; proxying them through the
-    // optimizer only added latency and upstream timeouts, so images load directly.
-    unoptimized: true,
+    // Banners (the LCP image) are resized to AVIF/WebP per device. Covers and
+    // portraits are already small on AniList's CDN and load directly (see SafeImage).
+    formats: ["image/avif", "image/webp"],
+    // AniList file names are content-hashed, so optimized copies can be cached for long.
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       { protocol: "https", hostname: "s4.anilist.co" },
       { protocol: "https", hostname: "img.anili.st" },
@@ -61,7 +64,7 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "DENY" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), picture-in-picture=(self), fullscreen=(self)" },
+          { key: "Permissions-Policy", value: `camera=(), microphone=(), geolocation=(), picture-in-picture=(self "https://www.youtube-nocookie.com"), fullscreen=(self "https://www.youtube-nocookie.com"), autoplay=(self "https://www.youtube-nocookie.com"), encrypted-media=(self "https://www.youtube-nocookie.com")` },
           ...(isDev ? [] : [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]),
         ],
       },

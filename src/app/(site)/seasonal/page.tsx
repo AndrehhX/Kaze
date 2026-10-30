@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getSeason } from "@/lib/anilist/service";
 import { SEASONS } from "@/lib/anilist/browse-params";
@@ -46,6 +47,8 @@ export default function SeasonalPage({ searchParams }: PageProps<"/seasonal">) {
 
 async function SeasonalContent({ searchParams }: { searchParams: PageProps<"/seasonal">["searchParams"] }) {
   const sp = await searchParams;
+  // The current season depends on the clock, so this must be rendered at request time.
+  await connection();
   const current = seasonOf(new Date());
   const season = ORDER.includes(sp.season as MediaSeason) ? (sp.season as MediaSeason) : current.season;
   const yearN = Number(sp.year);

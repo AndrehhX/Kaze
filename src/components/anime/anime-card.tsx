@@ -90,7 +90,8 @@ export function AnimeCard({ media, rank, priority, sizes = "(max-width: 640px) 4
         }
       }}
     >
-      <Link href={href} className="block rounded-[var(--k-radius-card)] outline-none" aria-label={`${title}${year ? `, ${year}` : ""}`}>
+      <Link href={href} className="block rounded-[var(--k-radius-card)] outline-none">
+        <span className="sr-only">{`${title}${year ? `, ${year}` : ""}`}</span>
         <motion.div layoutId={reduced ? undefined : layoutId} className="k-poster aspect-[2/3] w-full" style={{ backgroundColor: media.coverImage.color ?? undefined }}>
           <SafeImage
             src={media.coverImage.extraLarge || media.coverImage.large || ""}
@@ -120,7 +121,7 @@ export function AnimeCard({ media, rank, priority, sizes = "(max-width: 640px) 4
               <ScorePill score={media.averageScore} className="text-[0.6875rem]" />
             </span>
           ) : null}
-          <div className="absolute inset-x-0 bottom-0 z-[2] translate-y-2 p-2.5 text-white opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
+          <div aria-hidden className="absolute inset-x-0 bottom-0 z-[2] translate-y-2 p-2.5 text-white opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
             <p className="clamp-2 text-[0.6875rem] leading-snug text-white/85">{media.genres.slice(0, 3).join(" · ")}</p>
             <p className="mt-1 text-[0.6875rem] font-semibold text-white">
               {[formatLabel(media.format), media.episodes ? `${media.episodes} ep` : null].filter(Boolean).join(" · ")}

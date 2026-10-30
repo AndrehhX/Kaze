@@ -36,7 +36,7 @@ test.describe("KAZE critical flows", () => {
 
   test("library operations persist on the device", async ({ page }) => {
     await page.goto("/anime/154587");
-    await page.getByRole("button", { name: /^Add .* to your list$/ }).first().click();
+    await page.getByRole("button", { name: /^Add to list: / }).first().click();
     await page.getByRole("menuitem", { name: /Watching/ }).click();
     await page.getByRole("button", { name: "Mark next episode watched" }).click();
     await page.goto("/library?tab=CURRENT");
@@ -77,7 +77,7 @@ test.describe("KAZE critical flows", () => {
   test("command palette is keyboard-first", async ({ page }) => {
     await page.goto("/");
     // Shortcuts attach on hydration; list buttons enable once the client stores load.
-    await expect(page.getByRole("button", { name: /^Add .* to your list$/ }).first()).toBeEnabled();
+    await expect(page.getByRole("button", { name: /^Add to list: / }).first()).toBeEnabled();
     await page.keyboard.press("Control+k");
     const input = page.getByRole("combobox");
     await expect(input).toBeFocused();

@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts"
+    "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
+    "smoke": "node scripts/crawl.mjs && node scripts/interact.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.3.1",
@@ -33,6 +34,7 @@
     "zustand": "^5.0.16"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@electric-sql/pglite": "^0.5.13",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/turbopack": "^4",

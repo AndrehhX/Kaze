@@ -17,9 +17,10 @@ export function KazeMark({ className }: { className?: string }) {
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/" className={cn("group flex items-center gap-2 rounded-md", className)} aria-label="KAZE home">
+    <Link href="/" className={cn("group flex items-center gap-2 rounded-md", className)}>
       <KazeMark className="transition-transform duration-500 group-hover:-rotate-6" />
       <span className="font-display text-xl leading-none tracking-[0.06em] !normal-case">KAZE</span>
+      <span className="sr-only">home</span>
       <span className="k-jp -ml-0.5 text-sm text-primary-ink" lang="ja" aria-hidden>
         風
       </span>

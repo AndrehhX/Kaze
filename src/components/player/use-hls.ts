@@ -2,7 +2,7 @@
 
 /* eslint-disable react-hooks/immutability, react-hooks/set-state-in-effect -- the player drives imperative browser media APIs (HTMLVideoElement, hls.js, TextTrack) from effects and handlers by design. */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type Hls from "hls.js";
 import type { MediaAsset } from "@/lib/media/types";
 
@@ -109,20 +109,20 @@ export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryK
     };
   }, [video, asset.src, asset.kind, asset.subtitles, retryKey]);
 
-  const setLevel = (index: number) => {
+  const setLevel = useCallback((index: number) => {
     const h = hlsRef.current;
     if (!h) return;
     h.currentLevel = index; // -1 → auto
     setState((s) => ({ ...s, autoLevel: index === -1, currentLevel: index === -1 ? s.currentLevel : index }));
-  };
-  const setAudio = (index: number) => {
+  }, []);
+  const setAudio = useCallback((index: number) => {
     if (hlsRef.current) hlsRef.current.audioTrack = index;
-  };
-  const setHlsSubtitle = (index: number) => {
+  }, []);
+  const setHlsSubtitle = useCallback((index: number) => {
     const h = hlsRef.current;
     if (!h) return;
     h.subtitleTrack = index;
     h.subtitleDisplay = index >= 0;
-  };
+  }, []);
   return { state, hls: hlsRef, setLevel, setAudio, setHlsSubtitle };
 }

@@ -28,6 +28,11 @@ export function RevealItem({ children, className, as = "div" }: { children: Reac
   );
 }
 
+/** AniList covers, character and staff portraits are already sized for cards. */
+export function isPreSized(src: ImageProps["src"]) {
+  return typeof src === "string" && /\/media\/anime\/cover\/|\/media\/character\/|\/media\/staff\/|\/user\/avatar\/|i\.ytimg\.com/.test(src);
+}
+
 /** next/image with a graceful broken-image fallback and a fade-in on load. */
 export function SafeImage({ className, alt, fallbackLabel, tint, ...props }: ImageProps & { fallbackLabel?: string; tint?: string | null }) {
   const [state, setState] = useState<"loading" | "ok" | "error">("loading");
@@ -46,6 +51,7 @@ export function SafeImage({ className, alt, fallbackLabel, tint, ...props }: Ima
   }
   return (
     <Image
+      unoptimized={isPreSized(props.src)}
       {...props}
       alt={alt}
       className={cn("transition-[opacity,scale] duration-700", state === "loading" ? "scale-[1.02] opacity-0" : "scale-100 opacity-100", className)}

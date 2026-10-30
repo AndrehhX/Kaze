@@ -30,6 +30,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         {/* Applies the saved theme before first paint — no flash of the wrong theme. */}
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        {/* Posters and covers load straight from AniList's CDN. */}
+        <link rel="preconnect" href="https://s4.anilist.co" crossOrigin="" />
       </head>
       <body className="antialiased">
         <a href="#main" className="k-btn k-btn-primary fixed left-3 top-3 z-[100] -translate-y-24 focus:translate-y-0">

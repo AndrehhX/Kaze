@@ -55,7 +55,10 @@ export default async function AnimePage({ params }: PageProps<"/anime/[id]">) {
       <DetailHero media={media} />
       <SectionNav />
 
-      <section id="overview" aria-label="Overview" className="container-k mt-10 grid scroll-mt-32 gap-6 lg:grid-cols-[1fr_340px]">
+      <section id="overview" aria-labelledby="overview-h" className="container-k mt-10 grid scroll-mt-32 gap-6 lg:grid-cols-[1fr_340px]">
+        <h2 id="overview-h" className="sr-only">
+          Overview
+        </h2>
         <div className="space-y-6">
           <TagCloud media={media} />
           <ScoreDistribution media={media} />

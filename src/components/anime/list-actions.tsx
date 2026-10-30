@@ -34,7 +34,7 @@ export function ListMenu({ media, size = "md", className, align = "start" }: { m
         <button
           type="button"
           className={cn("k-btn", entry ? "k-btn-outline" : "k-btn-ghost", size === "sm" && "k-btn-sm", className)}
-          aria-label={entry ? `List status: ${statusMeta(entry.status).label}. Change` : `Add ${title} to your list`}
+          aria-label={entry ? `${statusMeta(entry.status).short}: change list status for ${title}` : `Add to list: ${title}`}
           disabled={!hydrated}
         >
           {entry ? <Check className="size-4 text-primary-ink" aria-hidden /> : <Plus className="size-4" aria-hidden />}

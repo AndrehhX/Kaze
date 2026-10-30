@@ -40,7 +40,7 @@ export function UserMenu() {
   if (status === "loading") return <span className="k-skeleton size-8 !rounded-full" aria-hidden />;
   if (status !== "signed-in") {
     return (
-      <Link href="/login" className="k-btn k-btn-primary k-btn-sm">
+      <Link href="/login" className="k-btn k-btn-primary k-btn-sm" aria-label="Sign in">
         <LogIn className="size-4" aria-hidden /> <span className="max-sm:hidden">Sign in</span>
       </Link>
     );

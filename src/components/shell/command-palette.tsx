@@ -117,7 +117,7 @@ export function CommandPalette() {
       label: t,
       hint: [formatLabel(r.format), r.seasonYear].filter(Boolean).join(" · "),
       icon: r.coverImage.large ? (
-        <Image src={r.coverImage.large} alt="" width={28} height={40} className="h-10 w-7 rounded-sm object-cover" />
+        <Image src={r.coverImage.large} alt="" width={28} height={40} className="h-10 w-7 rounded-sm object-cover" unoptimized />
       ) : (
         <Film className="size-4" />
       ),

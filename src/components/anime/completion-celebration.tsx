@@ -60,7 +60,7 @@ export function CompletionCelebration() {
               />
             ))}
           <div className="k-poster relative h-24 w-16 shrink-0">
-            {entry.media.cover && <Image src={entry.media.cover} alt="" fill sizes="64px" className="object-cover" />}
+            {entry.media.cover && <Image src={entry.media.cover} alt="" fill sizes="64px" className="object-cover" unoptimized />}
           </div>
           <div className="min-w-0">
             <p className="k-label text-primary-ink">
