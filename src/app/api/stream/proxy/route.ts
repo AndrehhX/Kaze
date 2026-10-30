@@ -38,14 +38,28 @@ export async function GET(req: Request) {
   } else if (!referer && (targetUrl.includes('megavid.buzz') || targetUrl.includes('megavid.se'))) {
     referer = 'https://megavid.buzz/';
     if (!origin) origin = 'https://megavid.buzz';
+  } else if (targetUrl.includes('zilla-networks.com')) {
+    if (!referer) {
+      const match = targetUrl.match(/\/(?:m3u8|segs)\/([a-zA-Z0-9]+)/);
+      referer = match?.[1] ? `https://player.zilla-networks.com/play/${match[1]}` : 'https://player.zilla-networks.com/';
+    }
+    origin = 'https://player.zilla-networks.com';
   }
 
   const upstreamHeaders: HeadersInit = {
-    'User-Agent': USER_AGENT,
+    'User-Agent': targetUrl.includes('zilla-networks.com')
+      ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0'
+      : USER_AGENT,
   };
 
   if (referer) upstreamHeaders['Referer'] = referer;
   if (origin) upstreamHeaders['Origin'] = origin;
+
+  if (targetUrl.includes('zilla-networks.com')) {
+    upstreamHeaders['Sec-Fetch-Dest'] = 'empty';
+    upstreamHeaders['Sec-Fetch-Mode'] = 'cors';
+    upstreamHeaders['Sec-Fetch-Site'] = 'same-origin';
+  }
 
   const range = req.headers.get('range');
   if (range) {
@@ -119,8 +133,14 @@ export async function GET(req: Request) {
       });
     }
 
-    // 3. Segmentos de video binario (TS / MP4)
-    if (targetUrl.includes('.mp4') || contentType.includes('mp4') || contentType.includes('octet-stream')) {
+    // 3. Segmentos de video binario (TS / MP4 / fMP4)
+    if (
+      targetUrl.includes('.mp4') ||
+      targetUrl.includes('.html') ||
+      targetUrl.includes('/segs/') ||
+      contentType.includes('mp4') ||
+      contentType.includes('octet-stream')
+    ) {
       responseHeaders.set('Content-Type', 'video/mp4');
     } else if (targetUrl.includes('.ts') || contentType.includes('mp2t')) {
       responseHeaders.set('Content-Type', 'video/mp2t');

@@ -176,7 +176,10 @@ async function resolveFromAnimeAV1(
       // 1. Servidor HLS (Zilla-networks) - Máxima calidad y fluidez
       const zillaMatch = block.match(/player\.zilla-networks\.com\/play\/([a-zA-Z0-9]+)/);
       if (zillaMatch?.[1]) {
-        const m3u8Url = `https://player.zilla-networks.com/m3u8/${zillaMatch[1]}`;
+        const zillaId = zillaMatch[1];
+        const m3u8Url = `https://player.zilla-networks.com/m3u8/${zillaId}`;
+        const playReferer = `https://player.zilla-networks.com/play/${zillaId}`;
+        const playOrigin = 'https://player.zilla-networks.com';
         return {
           serverName: `Stream Ultra HD (${isDubAudio ? 'Audio Latino' : 'Sub Español'})`,
           audioLanguage: isDubAudio ? 'es-419' : 'ja',
@@ -184,7 +187,7 @@ async function resolveFromAnimeAV1(
           asset: {
             id: `av1-hls-${episode}-${isDubAudio ? 'dub' : 'sub'}`,
             kind: 'hls',
-            src: toClientProxyUrl(m3u8Url, 'https://animeav1.com/'),
+            src: toClientProxyUrl(m3u8Url, playReferer, playOrigin),
             subtitles: [],
             markers: [],
             duration: 1440,
@@ -330,6 +333,38 @@ async function extractMP4Upload(embedUrl: string): Promise<string | null> {
 }
 
 /**
+ * Extractor para Ok.ru / Odnoklassniki (MP4 1080p y HLS de alta velocidad sin bloqueos).
+ */
+async function extractOkRu(embedUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(embedUrl, {
+      headers: { 'User-Agent': USER_AGENT, Referer: 'https://ok.ru/' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const dataOptions = html.match(/data-options="([^"]+)"/);
+    if (!dataOptions) return null;
+    const raw = dataOptions[1].replace(/&quot;/g, '"');
+    const json = JSON.parse(raw);
+    const meta =
+      typeof json?.flashvars?.metadata === 'string'
+        ? JSON.parse(json.flashvars.metadata)
+        : json?.flashvars?.metadata;
+    if (meta?.videos && Array.isArray(meta.videos) && meta.videos.length > 0) {
+      const best =
+        meta.videos.find((v: { name?: string; url?: string }) => v.name === 'full' || v.name === '1080') ||
+        meta.videos[meta.videos.length - 1];
+      if (best?.url) return best.url;
+    }
+    if (meta?.ondemandHls) return meta.ondemandHls;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+/**
  * Proveedor 1: Latanime (Doblaje Latino y Castellano).
  */
 async function resolveFromLatanime(
@@ -374,7 +409,25 @@ async function resolveFromLatanime(
     }
 
     for (const server of rawServers) {
-      if (server.name.includes('mp4upload') || server.url.includes('mp4upload')) {
+      if (server.name.includes('ok') || server.url.includes('ok.ru')) {
+        const direct = await extractOkRu(server.url);
+        if (direct) {
+          recordProviderOutcome('latanime', 'found');
+          return {
+            serverName: `OkRu (${dialect === 'castellano' ? 'Castellano' : 'Latino'})`,
+            audioLanguage: dialect === 'castellano' ? 'es-ES' : 'es-419',
+            quality: '1080p',
+            asset: {
+              id: `latanime-ok-${episode}`,
+              kind: direct.includes('.m3u8') ? 'hls' : 'mp4',
+              src: toClientProxyUrl(direct, 'https://ok.ru/'),
+              subtitles: [],
+              markers: [],
+              duration: 1440,
+            },
+          };
+        }
+      } else if (server.name.includes('mp4upload') || server.url.includes('mp4upload')) {
         const direct = await extractMP4Upload(server.url);
         if (direct) {
           recordProviderOutcome('latanime', 'found');

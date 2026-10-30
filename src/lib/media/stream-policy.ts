@@ -50,6 +50,7 @@ export const ALLOWED_CDN_DOMAINS: string[] = [
   'jkdesa.com',
   'mega.nz',
   'ok.ru',
+  'okcdn.ru',
   'odnoklassniki.ru',
   'wyzie.io',
   'sub.wyzie.io',
