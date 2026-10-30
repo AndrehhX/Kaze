@@ -821,7 +821,8 @@ create policy notifications_owner_read on public.notifications for select using 
 create policy notifications_owner_update on public.notifications for update using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy notifications_owner_delete on public.notifications for delete using (user_id = auth.uid());
 
-create policy rooms_read on public.watch_party_rooms for select using (public.can_join_room(id) or public.is_room_member(id));
+-- host_id is checked on the row itself: lookups can't see a row during INSERT ... RETURNING.
+create policy rooms_read on public.watch_party_rooms for select using (host_id = auth.uid() or public.can_join_room(id) or public.is_room_member(id));
 create policy rooms_insert on public.watch_party_rooms for insert with check (host_id = auth.uid() and state_version = 0);
 create policy rooms_end on public.watch_party_rooms for update using (host_id = auth.uid()) with check (host_id = auth.uid());
 
