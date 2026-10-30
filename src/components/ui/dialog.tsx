@@ -3,7 +3,7 @@
 import * as D from "@radix-ui/react-dialog";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useKazeMotion } from "@/lib/motion";
 
@@ -30,6 +30,17 @@ export function Dialog({
   trigger?: ReactNode;
 }) {
   const { reduced, m } = useKazeMotion();
+
+  useEffect(() => {
+    return () => {
+      if (typeof document !== "undefined") {
+        document.body.style.pointerEvents = "";
+        document.body.removeAttribute("data-scroll-locked");
+        document.body.style.overflow = "";
+        document.documentElement.style.overflow = "";
+      }
+    };
+  }, []);
   const panelMotion =
     side === "bottom"
       ? { initial: { y: "100%" }, animate: { y: 0 }, exit: { y: "100%" } }

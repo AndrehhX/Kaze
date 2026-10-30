@@ -368,6 +368,7 @@ export function ProfileShell({
           <Link
             key={k}
             href={href}
+            prefetch={true}
             aria-current={tab === k ? "page" : undefined}
             className={cn(
               "relative px-4 py-3 text-sm font-semibold text-muted hover:text-fg",

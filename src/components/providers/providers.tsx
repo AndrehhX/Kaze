@@ -18,7 +18,7 @@ export function Providers({ children }: { children: ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 5 * 60_000,
-            gcTime: 30 * 60_000,
+            gcTime: 60 * 60_000,
             refetchOnWindowFocus: false,
             retry: (count, err) => count < 2 && (err as { status?: number }).status !== 404,
           },

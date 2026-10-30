@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   if (q.length < 2) return json({ results: [] });
   try {
     const results = await suggestMedia(q.toLowerCase());
-    return json({ results }, { cache: "public, max-age=120, s-maxage=600" });
+    return json({ results }, { cache: "public, max-age=180, s-maxage=1800, stale-while-revalidate=86400" });
   } catch (err) {
     return errorResponse(err);
   }

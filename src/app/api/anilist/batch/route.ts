@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   if (!ids.length) return json({ media: [] });
   try {
     const media = await getMediaBatch([...new Set(ids)].sort((a, b) => a - b));
-    return json({ media }, { cache: "public, max-age=300, s-maxage=3600" });
+    return json({ media }, { cache: "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400" });
   } catch (err) {
     return errorResponse(err);
   }

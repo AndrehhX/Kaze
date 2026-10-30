@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     const params = parseBrowseParams(req.nextUrl.searchParams);
     const data = await browseMedia({ ...params, perPage: 30 });
-    return json(data, { cache: "public, max-age=60, s-maxage=600, stale-while-revalidate=3600" });
+    return json(data, { cache: "public, max-age=180, s-maxage=900, stale-while-revalidate=86400" });
   } catch (err) {
     return errorResponse(err);
   }

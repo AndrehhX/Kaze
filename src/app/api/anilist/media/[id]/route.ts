@@ -9,7 +9,7 @@ export async function GET(req: Request, ctx: RouteContext<"/api/anilist/media/[i
   try {
     const media = await getMediaDetail(id);
     if (!media || media.isAdult) return json({ error: "Not found" }, { status: 404 });
-    return json({ media }, { cache: "public, max-age=300, s-maxage=3600" });
+    return json({ media }, { cache: "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400" });
   } catch (err) {
     return errorResponse(err);
   }

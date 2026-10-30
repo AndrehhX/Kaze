@@ -97,18 +97,26 @@ export function UserMenu() {
                 <p className="truncate text-xs text-muted">Perfil en este dispositivo</p>
               </div>
               <DM.Separator className="my-1 h-px bg-line" />
-              <DM.Item className={item} onSelect={() => router.push("/profile")}>
-                <UserRound className="size-4 text-primary" /> Tu universo (Perfil)
+              <DM.Item asChild className={item}>
+                <Link href="/profile" prefetch={true} className="flex w-full items-center gap-2.5">
+                  <UserRound className="size-4 text-primary" /> Tu universo (Perfil)
+                </Link>
               </DM.Item>
-              <DM.Item className={item} onSelect={() => router.push("/settings/profile")}>
-                <Paintbrush className="size-4 text-accent" /> Personalizar perfil
+              <DM.Item asChild className={item}>
+                <Link href="/settings/profile" prefetch={true} className="flex w-full items-center gap-2.5">
+                  <Paintbrush className="size-4 text-accent" /> Personalizar perfil
+                </Link>
               </DM.Item>
-              <DM.Item className={item} onSelect={() => router.push("/settings")}>
-                <Settings className="size-4" /> Configuración
+              <DM.Item asChild className={item}>
+                <Link href="/settings" prefetch={true} className="flex w-full items-center gap-2.5">
+                  <Settings className="size-4" /> Configuración
+                </Link>
               </DM.Item>
               <DM.Separator className="my-1 h-px bg-line" />
-              <DM.Item className={item} onSelect={() => router.push("/login")}>
-                <LogIn className="size-4" /> Iniciar sesión
+              <DM.Item asChild className={item}>
+                <Link href="/login" prefetch={true} className="flex w-full items-center gap-2.5">
+                  <LogIn className="size-4" /> Iniciar sesión
+                </Link>
               </DM.Item>
             </DM.Content>
           </DM.Portal>
@@ -141,17 +149,25 @@ export function UserMenu() {
             <p className="truncate text-xs text-muted">@{username}</p>
           </div>
           <DM.Separator className="my-1 h-px bg-line" />
-          <DM.Item className={item} onSelect={() => router.push(`/profile/${encodeURIComponent(username)}`)}>
-            <UserRound className="size-4 text-primary" /> Tu universo (Perfil)
+          <DM.Item asChild className={item}>
+            <Link href={`/profile/${encodeURIComponent(username)}`} prefetch={true} className="flex w-full items-center gap-2.5">
+              <UserRound className="size-4 text-primary" /> Tu universo (Perfil)
+            </Link>
           </DM.Item>
-          <DM.Item className={item} onSelect={() => router.push("/settings/profile")}>
-            <Paintbrush className="size-4 text-accent" /> Personalizar perfil
+          <DM.Item asChild className={item}>
+            <Link href="/settings/profile" prefetch={true} className="flex w-full items-center gap-2.5">
+              <Paintbrush className="size-4 text-accent" /> Personalizar perfil
+            </Link>
           </DM.Item>
-          <DM.Item className={item} onSelect={() => router.push("/settings")}>
-            <Settings className="size-4" /> Configuración
+          <DM.Item asChild className={item}>
+            <Link href="/settings" prefetch={true} className="flex w-full items-center gap-2.5">
+              <Settings className="size-4" /> Configuración
+            </Link>
           </DM.Item>
-          <DM.Item className={item} onSelect={() => router.push("/settings/integrations")}>
-            <Link2 className="size-4" /> Cuentas conectadas
+          <DM.Item asChild className={item}>
+            <Link href="/settings/integrations" prefetch={true} className="flex w-full items-center gap-2.5">
+              <Link2 className="size-4" /> Cuentas conectadas
+            </Link>
           </DM.Item>
           <DM.Separator className="my-1 h-px bg-line" />
           <DM.Item className={item} onSelect={() => signOut().then(() => router.refresh())}>

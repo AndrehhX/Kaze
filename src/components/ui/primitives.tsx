@@ -52,6 +52,7 @@ export function SafeImage({ className, alt, fallbackLabel, tint, ...props }: Ima
   return (
     <Image
       unoptimized={isPreSized(props.src)}
+      decoding="async"
       {...props}
       alt={alt}
       className={cn("transition-[opacity,scale] duration-700", state === "loading" ? "scale-[1.02] opacity-0" : "scale-100 opacity-100", className)}

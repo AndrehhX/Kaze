@@ -13,7 +13,7 @@ export async function GET(req: Request, ctx: RouteContext<"/api/anilist/recommen
       .filter((n) => n.mediaRecommendation && !n.mediaRecommendation.isAdult && n.rating > 0)
       .map((n) => ({ rating: n.rating, media: n.mediaRecommendation! }));
     const relations = m.relations.edges.filter((e) => e.node.type === "ANIME" && !e.node.isAdult);
-    return json({ source: { id: m.id, title: m.title, genres: m.genres, coverImage: m.coverImage }, items, relations }, { cache: "public, max-age=600, s-maxage=3600" });
+    return json({ source: { id: m.id, title: m.title, genres: m.genres, coverImage: m.coverImage }, items, relations }, { cache: "public, max-age=600, s-maxage=3600, stale-while-revalidate=86400" });
   } catch (err) {
     return errorResponse(err);
   }

@@ -19,7 +19,7 @@ export class AniListError extends Error {
 }
 
 const inflight = new Map<string, Promise<unknown>>();
-// Cache en memoria (TTL 10 min) para respuestas públicas de AniList: carga instantánea a 0ms.
+// Cache en memoria (TTL 15 min) para respuestas públicas de AniList: carga instantánea a 0ms.
 const memoryCache = new Map<string, { data: unknown; expiresAt: number }>();
 
 type FetchOptions = {
@@ -51,17 +51,27 @@ export async function anilistRequest<T>(query: string, variables: Record<string,
     for (let attempt = 0; ; attempt++) {
       let res: Response;
       try {
-        res = await fetch(ANILIST_ENDPOINT, {
+        const fetchHeaders: Record<string, string> = {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(opts.token ? { Authorization: `Bearer ${opts.token}` } : {}),
+        };
+
+        const fetchInit: RequestInit & { next?: { revalidate: number } } = {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            ...(opts.token ? { Authorization: `Bearer ${opts.token}` } : {}),
-          },
+          headers: fetchHeaders,
           body,
           signal: opts.signal,
-          cache: "no-store",
-        });
+        };
+
+        if (opts.token) {
+          fetchInit.cache = "no-store";
+        } else {
+          // Revalidación cada 15 min en Next.js Data Cache para peticiones públicas
+          fetchInit.next = { revalidate: 900 };
+        }
+
+        res = await fetch(ANILIST_ENDPOINT, fetchInit);
       } catch (err) {
         if (attempt < retries && !opts.signal?.aborted) {
           await sleep(400 * 2 ** attempt);
@@ -93,8 +103,8 @@ export async function anilistRequest<T>(query: string, variables: Record<string,
       }
       if (!res.ok || !json.data) throw new AniListError(`AniList request failed (${res.status})`, res.status);
       if (key && !opts.token) {
-        memoryCache.set(key, { data: json.data, expiresAt: Date.now() + 10 * 60_000 });
-        if (memoryCache.size > 400) {
+        memoryCache.set(key, { data: json.data, expiresAt: Date.now() + 15 * 60_000 });
+        if (memoryCache.size > 500) {
           const firstKey = memoryCache.keys().next().value;
           if (firstKey) memoryCache.delete(firstKey);
         }

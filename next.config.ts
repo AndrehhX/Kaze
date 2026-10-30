@@ -31,10 +31,21 @@ const csp = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  compress: true,
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
   devIndicators: false,
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "motion",
+      "motion/react",
+      "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-dialog",
+      "sonner",
+    ],
+  },
   onDemandEntries: {
     maxInactiveAge: 60 * 60 * 1000,
     pagesBufferLength: 50,

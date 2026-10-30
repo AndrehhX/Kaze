@@ -9,7 +9,7 @@ export async function GET(req: Request, ctx: RouteContext<"/api/anilist/characte
   try {
     const character = await getCharacter(id);
     if (!character) return json({ error: "Not found" }, { status: 404 });
-    return json({ character }, { cache: "public, max-age=3600, s-maxage=86400" });
+    return json({ character }, { cache: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800" });
   } catch (err) {
     return errorResponse(err);
   }
