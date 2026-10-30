@@ -4,7 +4,7 @@ import { demoProvider } from "./demo-catalog";
 import { animeStreamingProvider } from "./anime-provider";
 import { resolvePlayableStream } from "./providers/stream-resolver";
 import { isMalIdDubbedInSpanish, resolveMalId } from "./dub-catalog";
-import type { Entitlement, MediaProvider, PlaybackGrant } from "./types";
+import type { Entitlement, MediaProvider, PlaybackGrant, ServerOption } from "./types";
 
 /**
  * Provider registry. To add a licensed source, implement MediaProvider and
@@ -39,7 +39,8 @@ export async function createPlaybackGrant(
   seriesId: string,
   episodeId: string,
   userId: string | null,
-  preferredAudio?: "latino" | "castellano" | "sub"
+  preferredAudio?: "latino" | "castellano" | "sub",
+  preferredServer?: "fast" | "clean"
 ): Promise<GrantResult> {
   const found = await resolveSeries(seriesId);
   if (!found) return { ok: false, entitlement: { allowed: false, reason: "not-licensed" }, status: 404 };
@@ -55,6 +56,8 @@ export async function createPlaybackGrant(
   let audioLanguage: "es-419" | "es-ES" | "ja" | undefined;
   let serverName: string | undefined;
   let isDubbedAvailable: boolean | undefined;
+  let availableServers: ServerOption[] | undefined;
+  let currentServer: "fast" | "clean" | undefined;
 
   if (series.anilistId) {
     const malId = resolveMalId(series.anilistId);
@@ -64,11 +67,14 @@ export async function createPlaybackGrant(
       title: series.title,
       episodeNumber: Number(episodeId) || 1,
       preferredAudio,
+      preferredServer,
     });
     if (resolved) {
       playAsset = resolved.asset;
       audioLanguage = resolved.audioLanguage;
       serverName = resolved.serverName;
+      availableServers = resolved.availableServers;
+      currentServer = resolved.serverType;
     }
   }
 
@@ -108,6 +114,8 @@ export async function createPlaybackGrant(
       audioLanguage,
       serverName,
       isDubbedAvailable,
+      availableServers,
+      currentServer,
     },
   };
 }

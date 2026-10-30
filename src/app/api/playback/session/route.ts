@@ -7,6 +7,7 @@ const body = z.object({
   seriesId: z.string().min(1).max(64),
   episodeId: z.string().min(1).max(64),
   preferredAudio: z.enum(["latino", "castellano", "sub"]).optional(),
+  preferredServer: z.enum(["fast", "clean"]).optional(),
 });
 
 /**
@@ -24,7 +25,8 @@ export async function POST(req: Request) {
     parsed.data.seriesId,
     parsed.data.episodeId,
     user?.id ?? null,
-    parsed.data.preferredAudio
+    parsed.data.preferredAudio,
+    parsed.data.preferredServer
   );
   if (!result.ok) return json({ error: "Playback not available", reason: result.entitlement.reason }, { status: result.status });
 

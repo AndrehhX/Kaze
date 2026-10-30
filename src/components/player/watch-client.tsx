@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { LayoutGroup, motion } from "motion/react";
-import { Captions, Keyboard, Popcorn, Sparkles, Volume2 } from "lucide-react";
+import { Captions, Keyboard, Popcorn, Server, Sparkles, Volume2 } from "lucide-react";
 import { useState } from "react";
 import type { PlaybackGrant } from "@/lib/media/types";
 import { Player } from "./player";
@@ -18,22 +18,28 @@ import { Dialog } from "@/components/ui/dialog";
 export async function requestGrant(
   seriesId: string,
   episodeId: string,
-  preferredAudio?: "latino" | "sub"
+  preferredAudio?: "latino" | "sub",
+  preferredServer?: "fast" | "clean"
 ): Promise<PlaybackGrant> {
   const res = await fetch("/api/playback/session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ seriesId, episodeId, preferredAudio }),
+    body: JSON.stringify({ seriesId, episodeId, preferredAudio, preferredServer }),
   });
   const body = await res.json().catch(() => null);
   if (!res.ok) throw Object.assign(new Error(body?.error ?? "Reproducción no disponible"), { status: res.status, reason: body?.reason });
   return body.grant as PlaybackGrant;
 }
 
-export function usePlaybackGrant(seriesId: string, episodeId: string, preferredAudio?: "latino" | "sub") {
+export function usePlaybackGrant(
+  seriesId: string,
+  episodeId: string,
+  preferredAudio?: "latino" | "sub",
+  preferredServer?: "fast" | "clean"
+) {
   return useQuery({
-    queryKey: ["grant", seriesId, episodeId, preferredAudio],
-    queryFn: () => requestGrant(seriesId, episodeId, preferredAudio),
+    queryKey: ["grant", seriesId, episodeId, preferredAudio, preferredServer],
+    queryFn: () => requestGrant(seriesId, episodeId, preferredAudio, preferredServer),
     staleTime: 60 * 60_000,
     retry: 1,
   });
@@ -56,7 +62,13 @@ const SHORTCUTS: [string, string][] = [
 export function WatchClient({ seriesId, episodeId }: { seriesId: string; episodeId: string }) {
   const router = useRouter();
   const [preferredAudio, setPreferredAudio] = useState<"latino" | "sub">("latino");
-  const { data: grant, isLoading, error, refetch } = usePlaybackGrant(seriesId, episodeId, preferredAudio);
+  const [preferredServer, setPreferredServer] = useState<"fast" | "clean">("fast");
+  const { data: grant, isLoading, error, refetch } = usePlaybackGrant(
+    seriesId,
+    episodeId,
+    preferredAudio,
+    preferredServer
+  );
   const theater = useSettings((s) => s.player.theater);
   const items = useProgress((s) => s.items);
   const { m, reduced } = useKazeMotion();
@@ -83,12 +95,13 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
             {isLoading || !grant ? (
               <Skeleton className="aspect-video w-full !rounded-[var(--k-radius-panel)]" />
             ) : (
-              <Player key={`${grant.episode.id}-${preferredAudio}`} grant={grant} onNavigateEpisode={go} />
+              <Player key={`${grant.episode.id}-${preferredAudio}-${preferredServer}`} grant={grant} onNavigateEpisode={go} />
             )}
             {grant && (
               <div className={cn("mt-5", theater && "container-k")}>
-                {/* Selector de Audio y Subtítulos debajo del reproductor */}
-                <div className="mb-5 rounded-2xl border border-line bg-surface/85 p-3.5 sm:p-4 backdrop-blur shadow-sm">
+                {/* Selector de Audio, Subtítulos y Servidores debajo del reproductor */}
+                <div className="mb-5 rounded-2xl border border-line bg-surface/85 p-3.5 sm:p-4 backdrop-blur shadow-sm space-y-3.5">
+                  {/* Fila 1: Idioma de Audio y Subtítulos */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted">
@@ -140,21 +153,58 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
                     </div>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-line/60 flex flex-wrap items-center justify-between gap-2 text-[0.75rem] text-muted">
-                    <div className="flex items-center gap-2">
+                  {/* Fila 2: Selector de Servidor (⚡ 1080p Ultra Rápido vs ✨ 1080p HD Limpio) */}
+                  <div className="pt-3 border-t border-line/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted">
+                        <Server className="size-3.5 text-primary" /> Servidor:
+                      </span>
+                      <div className="inline-flex rounded-xl bg-elevated p-1 border border-line">
+                        <button
+                          type="button"
+                          onClick={() => setPreferredServer("fast")}
+                          className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                            preferredServer === "fast"
+                              ? "bg-primary text-black shadow-sm"
+                              : "text-muted hover:text-fg"
+                          )}
+                        >
+                          <span>⚡</span>
+                          <span>1080p Ultra Rápido</span>
+                          <span className="hidden sm:inline text-[0.625rem] opacity-75 font-mono px-1 rounded bg-black/10">
+                            HLS
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPreferredServer("clean")}
+                          className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                            preferredServer === "clean"
+                              ? "bg-primary text-black shadow-sm"
+                              : "text-muted hover:text-fg"
+                          )}
+                        >
+                          <span>✨</span>
+                          <span>1080p HD Limpio</span>
+                          <span className="hidden sm:inline text-[0.625rem] opacity-75 font-mono px-1 rounded bg-black/10">
+                            Sin Marcas
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[0.75rem] text-muted">
                       <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                       <span>
-                        Servidor: <strong className="text-fg">{grant.serverName ?? "Stream Ultra HD"}</strong>
+                        Activo: <strong className="text-fg">{grant.serverName ?? "1080p Ultra Rápido"}</strong>
                       </span>
                       {grant.audioLanguage && (
                         <span className="rounded bg-line px-1.5 py-0.5 text-[0.6875rem] uppercase font-mono text-fg/80">
-                          {grant.audioLanguage === "ja" ? "Audio Japonés" : "Audio Latino"}
+                          {grant.audioLanguage === "ja" ? "Sub Español" : "Audio Latino"}
                         </span>
                       )}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-primary-ink font-medium">
-                      <Sparkles className="size-3.5" />
-                      <span>Calidad 1080p disponible</span>
                     </div>
                   </div>
                 </div>

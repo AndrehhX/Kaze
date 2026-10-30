@@ -48,6 +48,13 @@ export type Entitlement =
   | { allowed: true; reason: "demo-open-license" | "licensed" }
   | { allowed: false; reason: "not-licensed" | "region" | "auth-required" | "unknown-episode" };
 
+export type ServerOption = {
+  id: "fast" | "clean";
+  name: string;
+  badge: string;
+  description: string;
+};
+
 export type PlaybackGrant = {
   sessionId: string;
   series: Pick<CatalogSeries, "id" | "title" | "titleJp" | "license" | "demo" | "color" | "anilistId" | "banner" | "cover">;
@@ -60,6 +67,8 @@ export type PlaybackGrant = {
   audioLanguage?: "es-419" | "es-ES" | "ja";
   serverName?: string;
   isDubbedAvailable?: boolean;
+  availableServers?: ServerOption[];
+  currentServer?: "fast" | "clean";
 };
 
 /** Replaceable provider contract; a licensed CDN/DRM provider implements the same interface. */

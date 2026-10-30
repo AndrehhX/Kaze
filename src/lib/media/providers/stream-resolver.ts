@@ -1,7 +1,7 @@
 import { isMalIdDubbedInSpanish, resolveMalId, VERIFIED_LATINO_DUB_MAP } from '../dub-catalog';
 import { isProviderAvailable, recordProviderOutcome } from '../circuit-breaker';
 import { fetchAniSkipMarkers } from '../aniskip';
-import type { MediaAsset, TimingMarker } from '../types';
+import type { MediaAsset, ServerOption, TimingMarker } from '../types';
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
@@ -24,6 +24,7 @@ export interface StreamResolutionOptions {
   title: string;
   episodeNumber: number;
   preferredAudio?: 'latino' | 'castellano' | 'sub';
+  preferredServer?: 'fast' | 'clean';
 }
 
 export interface ResolvedStream {
@@ -31,6 +32,8 @@ export interface ResolvedStream {
   serverName: string;
   audioLanguage: 'es-419' | 'es-ES' | 'ja';
   quality: string;
+  serverType?: 'fast' | 'clean';
+  availableServers?: ServerOption[];
 }
 
 /**
@@ -181,7 +184,8 @@ async function resolveFromAnimeAV1(
         const playReferer = `https://player.zilla-networks.com/play/${zillaId}`;
         const playOrigin = 'https://player.zilla-networks.com';
         return {
-          serverName: `Stream Ultra HD (${isDubAudio ? 'Audio Latino' : 'Sub Español'})`,
+          serverName: `1080p Ultra Rápido (${isDubAudio ? 'Audio Latino' : 'Sub Español'})`,
+          serverType: 'fast',
           audioLanguage: isDubAudio ? 'es-419' : 'ja',
           quality: '1080p',
           asset: {
@@ -414,7 +418,8 @@ async function resolveFromLatanime(
         if (direct) {
           recordProviderOutcome('latanime', 'found');
           return {
-            serverName: `OkRu (${dialect === 'castellano' ? 'Castellano' : 'Latino'})`,
+            serverName: `1080p HD Limpio (${dialect === 'castellano' ? 'Castellano' : 'Latino'})`,
+            serverType: 'clean',
             audioLanguage: dialect === 'castellano' ? 'es-ES' : 'es-419',
             quality: '1080p',
             asset: {
@@ -721,9 +726,17 @@ export async function resolvePlayableStream(
     : Promise.resolve<TimingMarker[]>([]);
 
   let streamResult: ResolvedStream | null = null;
+  const wantClean = opts.preferredServer === 'clean';
 
-  // 2. Prioridad 1: AnimeAV1 HLS Ultra HD (Sub Español y Audio Latino nativos)
-  streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio);
+  // Si se pide servidor limpio y es audio con doblaje, priorizar OkRu de Latanime (sin marcas)
+  if (wantClean && isDubbed && (opts.preferredAudio === 'latino' || opts.preferredAudio === 'castellano')) {
+    streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, opts.preferredAudio === 'castellano' ? 'castellano' : 'latino');
+  }
+
+  // Prioridad habitual o fallback: AnimeAV1 HLS Ultra HD (Sub Español y Audio Latino nativos)
+  if (!streamResult) {
+    streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio);
+  }
 
   // 3. Si se solicitó explícitamente SUB y no se encontró en AnimeAV1:
   if (!streamResult && opts.preferredAudio === 'sub') {
@@ -738,6 +751,11 @@ export async function resolvePlayableStream(
     if (streamResult) {
       const markers = await markersPromise;
       streamResult.asset.markers = markers;
+      streamResult.availableServers = [
+        { id: 'fast', name: '⚡ 1080p Ultra Rápido', badge: 'HLS', description: 'Carga instantánea en 0.5s' },
+        { id: 'clean', name: '✨ 1080p HD Limpio', badge: 'Directo', description: 'Sin marcas de agua' },
+      ];
+      streamResult.serverType = streamResult.serverType ?? 'fast';
     }
     return streamResult;
   }
@@ -763,10 +781,17 @@ export async function resolvePlayableStream(
     streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, 'latino');
   }
 
-  // 7. Inyectar marcas AniSkip al asset resultante
+  // 7. Inyectar marcas AniSkip y lista de servidores disponibles
   if (streamResult) {
     const markers = await markersPromise;
     streamResult.asset.markers = markers;
+    streamResult.availableServers = [
+      { id: 'fast', name: '⚡ 1080p Ultra Rápido', badge: 'HLS', description: 'Carga instantánea en 0.5s' },
+      { id: 'clean', name: '✨ 1080p HD Limpio', badge: 'Directo', description: 'Sin marcas de agua' },
+    ];
+    if (!streamResult.serverType) {
+      streamResult.serverType = streamResult.serverName.includes('Limpio') || streamResult.serverName.includes('OkRu') ? 'clean' : 'fast';
+    }
   }
 
   return streamResult;
