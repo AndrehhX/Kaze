@@ -11,14 +11,17 @@ import { snapshotFromMedia } from "@/lib/library/types";
 import { useAuth } from "@/stores/auth";
 import { ReviewComposer, ReviewList } from "./reviews";
 import { DiscussionList } from "./discussions";
+import { useIsModerator } from "./moderation";
 import { Skeleton } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 
-export function CommunityTabs({ active }: { active: "hub" | "reviews" | "discussions" }) {
+export function CommunityTabs({ active }: { active: "hub" | "reviews" | "discussions" | "moderation" }) {
+  const isMod = useIsModerator().data;
   const tabs = [
     ["hub", "/community", "Overview"],
     ["reviews", "/community/reviews", "Reviews"],
     ["discussions", "/community/discussions", "Discussions"],
+    ...(isMod || active === "moderation" ? ([["moderation", "/community/moderation", "Moderation"]] as const) : []),
   ] as const;
   return (
     <nav aria-label="Community" className="mt-6 flex gap-1 border-b border-line">
