@@ -1,0 +1,66 @@
+import { Suspense } from "react";
+import { getHomeData } from "@/lib/anilist/service";
+import { HeroCarousel, HeroSkeleton } from "@/components/home/hero-carousel";
+import {
+  CalendarHint,
+  CommunityFavorites,
+  HiddenGemsSection,
+  OpenCinemaBanner,
+  RailSection,
+  RecentlyReleased,
+  SeasonBento,
+  StatCredit,
+  TopRatedEditorial,
+  UpcomingSection,
+} from "@/components/home/sections";
+import { BecauseYouLoved, ContinueWatching, FavoriteGenres, FriendsAreWatching, LibraryNudge, RecommendedForYou } from "@/components/home/personal";
+import { RailSkeleton } from "@/components/anime/skeletons";
+import { SEASONS } from "@/lib/anilist/browse-params";
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<HomeSkeleton />}>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+async function HomeContent() {
+  const d = await getHomeData();
+  const seen = new Set<number>();
+  const hero = [...d.trending, ...d.season].filter((m) => m.bannerImage && !seen.has(m.id) && seen.add(m.id)).slice(0, 6);
+  const seasonLabel = `${SEASONS.find((s) => s.value === d.seasonInfo.season)?.label} ${d.seasonInfo.year}`;
+  const pool = [...d.trending, ...d.season, ...d.top, ...d.gems, ...d.favourites];
+
+  return (
+    <>
+      <HeroCarousel items={hero} kickerPrefix={seasonLabel} trendingIds={d.trending.map((t) => t.id)} />
+      <ContinueWatching />
+      <LibraryNudge />
+      <RailSection id="trending-h" title="Trending Now" jp="急上昇" kicker="Right now on AniList" media={d.trending} ranked href="/discover?sort=TRENDING_DESC" />
+      <SeasonBento media={d.season} season={d.seasonInfo.season} year={d.seasonInfo.year} />
+      <RecommendedForYou pool={pool} />
+      <RecentlyReleased items={d.recent} />
+      <TopRatedEditorial media={d.top} />
+      <HiddenGemsSection media={d.gems} />
+      <OpenCinemaBanner />
+      <UpcomingSection media={d.upcoming} />
+      <FavoriteGenres />
+      <FriendsAreWatching />
+      <BecauseYouLoved />
+      <CommunityFavorites media={d.favourites} />
+      <CalendarHint />
+      <StatCredit />
+    </>
+  );
+}
+
+function HomeSkeleton() {
+  return (
+    <>
+      <HeroSkeleton />
+      <RailSkeleton />
+      <RailSkeleton />
+    </>
+  );
+}
