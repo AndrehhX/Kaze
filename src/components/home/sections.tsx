@@ -148,9 +148,9 @@ export function TopRatedEditorial({ media }: { media: MediaCard[] }) {
           </Link>
         }
       />
-      <Reveal as="div" className="grid gap-x-10 md:grid-cols-2">
+      <Reveal as="div" className="grid grid-cols-1 gap-x-10 md:grid-cols-2">
         {media.slice(0, 10).map((m, i) => (
-          <RevealItem key={m.id}>
+          <RevealItem key={m.id} className="min-w-0">
             <Link href={`/anime/${m.id}`} className="group flex items-center gap-4 border-b border-line py-3">
               <span className="k-outline-num w-12 shrink-0 text-right text-4xl">{String(i + 1).padStart(2, "0")}</span>
               <div className="k-poster relative aspect-[2/3] w-11 shrink-0">

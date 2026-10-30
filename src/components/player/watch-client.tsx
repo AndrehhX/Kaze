@@ -59,7 +59,7 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
 
   return (
     <LayoutGroup>
-      <div className={cn("pt-4 transition-colors duration-500", theater && "bg-black/40")}>
+      <div className={cn("overflow-x-clip pt-4 transition-colors duration-500", theater && "bg-black/40")}>
         <div className={cn("mx-auto grid gap-6", theater ? "max-w-[1800px] px-0 sm:px-4" : "container-k lg:grid-cols-[1fr_340px]")}>
           <motion.div layout={!reduced} transition={m.spring} className="min-w-0">
             {isLoading || !grant ? (

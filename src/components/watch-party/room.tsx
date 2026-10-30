@@ -237,7 +237,7 @@ function RoomInner({ roomId }: { roomId: string }) {
 
   const active = participants.filter((p) => !p.left_at);
   return (
-    <div className="container-k grid gap-6 pt-4 xl:grid-cols-[1fr_360px]">
+    <div className="container-k grid gap-6 overflow-x-clip pt-4 xl:grid-cols-[1fr_360px]">
       <div className="min-w-0">
         <div className="relative">
           {grantError ? (

@@ -249,6 +249,8 @@
    ────────────────────────────────────────────────────────────── */
 @layer base {
   html {
+    /* Belt and braces: mobile browsers widen the layout viewport for any overflow. */
+    overflow-x: clip;
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
     scrollbar-color: var(--k-line) transparent;

@@ -76,6 +76,8 @@ test.describe("KAZE critical flows", () => {
 
   test("command palette is keyboard-first", async ({ page }) => {
     await page.goto("/");
+    // Shortcuts attach on hydration; list buttons enable once the client stores load.
+    await expect(page.getByRole("button", { name: /^Add .* to your list$/ }).first()).toBeEnabled();
     await page.keyboard.press("Control+k");
     const input = page.getByRole("combobox");
     await expect(input).toBeFocused();
@@ -91,12 +93,15 @@ test.describe("KAZE critical flows", () => {
   });
 
   test("mobile navigation and layout @mobile", async ({ page }) => {
+    const device = page.viewportSize()!.width;
+    for (const path of ["/", "/discover", "/anime/21", "/watch/open-cinema/1", "/library"]) {
+      await page.goto(path);
+      // Mobile browsers widen the layout viewport when content overflows, so compare to the device width.
+      await expect.poll(() => page.evaluate(() => window.innerWidth), { message: `horizontal overflow on ${path}` }).toBe(device);
+    }
     await page.goto("/");
     const nav = page.getByRole("navigation", { name: "Primary mobile" });
     await expect(nav).toBeVisible();
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    expect(overflow).toBeLessThanOrEqual(1);
-    // The pathname-aware bar replaces the static shell once it streams in.
     const universe = nav.getByRole("button", { name: "Universe" });
     await expect(universe).toBeVisible();
     await universe.click();

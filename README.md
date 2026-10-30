@@ -46,7 +46,6 @@ Register a client at anilist.co/settings/developer with redirect `<SITE_URL>/api
 ## Known limitations / roadmap
 
 - No live Supabase project was available while building, so auth, social, watch parties and AniList OAuth are implemented and type-checked but **not exercised end-to-end**. Verify against a real project before relying on them.
-- E2E: 7 of 9 pass. Failing: the mobile tab-bar click test (Playwright reports `<main>` intercepting the tap on Pixel 7 emulation — unresolved) and the command-palette test (presses Ctrl+K before hydration; needs a hydration wait).
 - Demo skip-intro/credits markers are approximate catalog metadata.
 - Rate limiting is in-memory (per instance); use Redis for multi-instance deploys.
 - CSP uses `'unsafe-inline'` for scripts (Next bootstrap + theme script); move to nonces if you need strict CSP.
