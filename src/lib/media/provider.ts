@@ -72,6 +72,14 @@ export async function createPlaybackGrant(
     }
   }
 
+  if (!playAsset.src) {
+    return {
+      ok: false,
+      entitlement: { allowed: false, reason: "not-licensed" },
+      status: 404,
+    };
+  }
+
   const brief = (i: number) => {
     const e = series.episodes[i];
     return e ? { id: e.id, number: e.number, title: e.title } : null;

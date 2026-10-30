@@ -78,6 +78,147 @@ const VERIFIED_LATANIME_SLUGS: Record<string, string> = {
   '54595:latino': 'dandadan-latino',
 };
 
+const VERIFIED_ANIMEAV1_SLUGS: Record<string, string> = {
+  'chainsaw man': 'chainsaw-man',
+  'jujutsu kaisen': 'jujutsu-kaisen',
+  'solo leveling': 'ore-dake-level-up-na-ken',
+  'dandadan': 'dandadan',
+  'frieren': 'sousou-no-frieren',
+  'kimetsu no yaiba': 'kimetsu-no-yaiba',
+  'demon slayer': 'kimetsu-no-yaiba',
+  'shingeki no kyojin': 'shingeki-no-kyojin',
+  'attack on titan': 'shingeki-no-kyojin',
+  'one piece': 'one-piece',
+  'boku no hero academia': 'boku-no-hero-academia',
+  'my hero academia': 'boku-no-hero-academia',
+  'oshi no ko': 'oshi-no-ko',
+  'death note': 'death-note',
+  'naruto': 'naruto',
+  'bleach': 'bleach',
+  'dragon ball super': 'dragon-ball-super',
+  'spy x family': 'spy-x-family',
+  'black clover': 'black-clover',
+  'mashle': 'mashle',
+  'overlord': 'overlord',
+  'horimiya': 'horimiya',
+  'dr stone': 'dr-stone',
+  'vinland saga': 'vinland-saga',
+  'kaiju no 8': 'kaijuu-8-gou',
+};
+
+const av1SlugCache = new Map<string, string>();
+
+async function resolveAnimeAV1Slug(animeTitle: string): Promise<string | null> {
+  const clean = cleanSearchTitle(animeTitle);
+  for (const [key, slug] of Object.entries(VERIFIED_ANIMEAV1_SLUGS)) {
+    if (clean.includes(key) || key.includes(clean)) return slug;
+  }
+  if (av1SlugCache.has(clean)) return av1SlugCache.get(clean)!;
+
+  const directSlug = clean.replace(/\s+/g, '-');
+  try {
+    const res = await fetch(`https://animeav1.com/catalogo?search=${encodeURIComponent(clean)}`, {
+      headers: { 'User-Agent': USER_AGENT },
+      signal: AbortSignal.timeout(4000),
+    });
+    if (res.ok) {
+      const html = await res.text();
+      const match = html.match(/\/media\/([a-zA-Z0-9_\-]+)/);
+      if (match?.[1]) {
+        av1SlugCache.set(clean, match[1]);
+        return match[1];
+      }
+    }
+  } catch {
+    // fallback
+  }
+
+  av1SlugCache.set(clean, directSlug);
+  return directSlug;
+}
+
+/**
+ * Proveedor 0: AnimeAV1 (HLS Multi-Audio 1080p Ultra HD en Sub Español y Audio Latino).
+ */
+async function resolveFromAnimeAV1(
+  animeTitle: string,
+  episode: number,
+  preferredAudio: 'sub' | 'latino' | 'castellano' = 'sub'
+): Promise<ResolvedStream | null> {
+  const slug = await resolveAnimeAV1Slug(animeTitle);
+  if (!slug) return null;
+
+  const epUrl = `https://animeav1.com/media/${slug}/${episode}`;
+  try {
+    const res = await fetch(epUrl, {
+      headers: { 'User-Agent': USER_AGENT },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+
+    const html = await res.text();
+    const isDub = preferredAudio === 'latino' || preferredAudio === 'castellano';
+
+    const dubBlock = html.match(/DUB:\s*(\[[^\]]*\])/)?.[1] || '';
+    const subBlock = html.match(/SUB:\s*(\[[^\]]*\])/)?.[1] || '';
+
+    const primaryBlock = isDub ? dubBlock : subBlock;
+    const fallbackBlock = isDub ? subBlock : dubBlock;
+
+    const targetBlocks = [
+      { block: primaryBlock, isDubAudio: isDub },
+      ...(isDub ? [{ block: fallbackBlock, isDubAudio: false }] : []),
+    ];
+
+    for (const { block, isDubAudio } of targetBlocks) {
+      if (!block) continue;
+
+      // 1. Servidor HLS (Zilla-networks) - Máxima calidad y fluidez
+      const zillaMatch = block.match(/player\.zilla-networks\.com\/play\/([a-zA-Z0-9]+)/);
+      if (zillaMatch?.[1]) {
+        const m3u8Url = `https://player.zilla-networks.com/m3u8/${zillaMatch[1]}`;
+        return {
+          serverName: `Stream Ultra HD (${isDubAudio ? 'Audio Latino' : 'Sub Español'})`,
+          audioLanguage: isDubAudio ? 'es-419' : 'ja',
+          quality: '1080p',
+          asset: {
+            id: `av1-hls-${episode}-${isDubAudio ? 'dub' : 'sub'}`,
+            kind: 'hls',
+            src: toClientProxyUrl(m3u8Url, 'https://animeav1.com/'),
+            subtitles: [],
+            markers: [],
+            duration: 1440,
+          },
+        };
+      }
+
+      // 2. YourUpload directo
+      const yourUploadMatch = block.match(/yourupload\.com\/embed\/([a-zA-Z0-9]+)/);
+      if (yourUploadMatch?.[1]) {
+        const direct = await extractYourUpload(`https://www.yourupload.com/embed/${yourUploadMatch[1]}`);
+        if (direct) {
+          return {
+            serverName: `YourUpload (${isDubAudio ? 'Audio Latino' : 'Sub Español'})`,
+            audioLanguage: isDubAudio ? 'es-419' : 'ja',
+            quality: '1080p',
+            asset: {
+              id: `av1-yu-${episode}`,
+              kind: 'mp4',
+              src: toClientProxyUrl(direct, 'https://www.yourupload.com/'),
+              subtitles: [],
+              markers: [],
+              duration: 1440,
+            },
+          };
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 const slugCache = new Map<string, string>();
 
 /**
@@ -528,8 +669,11 @@ export async function resolvePlayableStream(
 
   let streamResult: ResolvedStream | null = null;
 
-  // 2. Si se solicitó explícitamente SUB (Japonés subtitulado):
-  if (opts.preferredAudio === 'sub') {
+  // 2. Prioridad 1: AnimeAV1 HLS Ultra HD (Sub Español y Audio Latino nativos)
+  streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio);
+
+  // 3. Si se solicitó explícitamente SUB y no se encontró en AnimeAV1:
+  if (!streamResult && opts.preferredAudio === 'sub') {
     streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber);
     if (!streamResult) {
       streamResult = await resolveFromTioAnime(malId, opts.title, opts.episodeNumber);
@@ -545,12 +689,12 @@ export async function resolvePlayableStream(
     return streamResult;
   }
 
-  // 3. Si se prefiere o permite DUB Latino:
-  if (!streamResult && isDubbed) {
-    streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, 'latino');
+  // 4. Si se prefiere o permite DUB Latino y no se encontró en AnimeAV1:
+  if (!streamResult && isDubbed && (opts.preferredAudio === 'latino' || opts.preferredAudio === 'castellano' || !opts.preferredAudio)) {
+    streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, opts.preferredAudio === 'castellano' ? 'castellano' : 'latino');
   }
 
-  // 4. Si aún no hay stream, fallback a Sub Español (JKanime -> TioAnime -> AnimeFLV)
+  // 5. Fallback a Sub Español (JKanime -> TioAnime -> AnimeFLV)
   if (!streamResult) {
     streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber);
   }
@@ -561,12 +705,12 @@ export async function resolvePlayableStream(
     streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId);
   }
 
-  // 5. Fallback final a DUB si no se encontró SUB (solo para preferencias latino/no especificadas)
-  if (!streamResult && isDubbed) {
+  // 6. Fallback final a DUB si aún no hay stream y el anime cuenta con doblaje
+  if (!streamResult && isDubbed && opts.preferredAudio !== 'sub') {
     streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, 'latino');
   }
 
-  // 6. Inyectar marcas AniSkip al asset resultante
+  // 7. Inyectar marcas AniSkip al asset resultante
   if (streamResult) {
     const markers = await markersPromise;
     streamResult.asset.markers = markers;
