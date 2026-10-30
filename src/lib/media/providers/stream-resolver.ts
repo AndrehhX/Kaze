@@ -6,7 +6,7 @@ import type { MediaAsset, ServerOption, TimingMarker } from '../types';
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-const PROXY_BASE = '/api/stream/proxy';
+const PROXY_BASE = process.env.NEXT_PUBLIC_STREAM_PROXY_URL || 'https://orunei-stream.thealex230820.workers.dev/api/stream/proxy';
 
 /**
  * Genera la URL relativa para que el cliente acceda a través del proxy seguro de Next.js.

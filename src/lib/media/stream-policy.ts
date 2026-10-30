@@ -111,7 +111,7 @@ export function rewriteM3U8(
   baseUrl: string,
   referer = '',
   origin = '',
-  proxyBase = '/api/stream/proxy'
+  proxyBase = process.env.NEXT_PUBLIC_STREAM_PROXY_URL || 'https://orunei-stream.thealex230820.workers.dev/api/stream/proxy'
 ): string {
   const lines = String(content || '').split('\n');
   const rewritten = lines.map((line) => {
