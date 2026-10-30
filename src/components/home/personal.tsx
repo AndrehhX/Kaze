@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, Film, Heart, PlayCircle, Sparkles, Users } from "lucide-react";
-import { useMemo } from "react";
+import { ArrowUpRight, Film, Heart, PlayCircle, Sparkles, Users, X } from "lucide-react";
+import { useEffect, useMemo } from "react";
+import { toast } from "sonner";
+import { useLocal } from "@/stores/local";
+import { getSupabaseBrowser } from "@/lib/supabase/client";
+import type { LibraryEntry } from "@/lib/library/types";
 import type { MediaCard } from "@/lib/anilist/types";
 import { useLibrary } from "@/stores/library";
 import { recentProgress, useProgress } from "@/stores/progress";
@@ -31,6 +35,8 @@ export function ContinueWatching() {
   const { list } = useLibraryList();
   const playable = recentProgress(items, 8);
   const watching = list.filter((e) => e.status === "CURRENT" || e.status === "REPEATING").sort((a, b) => b.updatedAt - a.updatedAt);
+
+  const airing = useAiringStatus(watching);
 
   if (!hydrated || (!playable.length && !watching.length)) return null;
   return (
@@ -76,7 +82,7 @@ export function ContinueWatching() {
                   {e.media.episodes ? ` of ${e.media.episodes}` : ""}
                 </p>
                 <p className="clamp-2 text-sm font-semibold leading-snug">{e.media.title}</p>
-                <p className="mt-1 text-xs text-muted">Tracked in your library</p>
+                <AiringLine status={airing.get(e.mediaId)} />
               </div>
             </Link>
           )),
@@ -86,9 +92,86 @@ export function ContinueWatching() {
   );
 }
 
+type Airing = { unwatched: number; nextEpisode: number | null; inDays: number | null };
+
+/**
+ * New-episode awareness from AniList's real airing data: how many aired
+ * episodes are ahead of your progress, and when the next one airs.
+ */
+function useAiringStatus(watching: LibraryEntry[]) {
+  const ids = watching.map((e) => e.mediaId).slice(0, 50).sort((a, b) => a - b);
+  const { data } = useQuery({ queryKey: ["airing", ids], queryFn: ({ signal }) => api.batch(ids, signal), enabled: ids.length > 0, staleTime: 30 * 60_000 });
+  return useMemo(() => {
+    const map = new Map<number, Airing>();
+    for (const m of data?.media ?? []) {
+      const e = watching.find((w) => w.mediaId === m.id);
+      if (!e) continue;
+      const aired = m.nextAiringEpisode ? m.nextAiringEpisode.episode - 1 : m.status === "FINISHED" ? (m.episodes ?? e.progress) : e.progress;
+      map.set(m.id, {
+        unwatched: Math.max(0, aired - e.progress),
+        nextEpisode: m.nextAiringEpisode?.episode ?? null,
+        inDays: m.nextAiringEpisode ? Math.max(0, Math.round(m.nextAiringEpisode.timeUntilAiring / 86400)) : null,
+      });
+    }
+    return map;
+  }, [data, watching]);
+}
+
+function AiringLine({ status }: { status?: Airing }) {
+  if (!status) return <p className="mt-1 text-xs text-muted">Tracked in your library</p>;
+  if (status.unwatched > 0)
+    return (
+      <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-fg">
+        <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+        {status.unwatched} new episode{status.unwatched > 1 ? "s" : ""} aired
+      </p>
+    );
+  if (status.nextEpisode) return <p className="mt-1 text-xs text-muted">Episode {status.nextEpisode} airs {status.inDays === 0 ? "today" : `in ${status.inDays}d`}</p>;
+  return <p className="mt-1 text-xs text-muted">All aired episodes watched</p>;
+}
+
+/** "Not interested" list: device copy, mirrored to recommendation_preferences for signed-in users. */
+function useHiddenRecs() {
+  const hidden = useLocal((s) => s.hiddenRecs);
+  const me = useAuth((s) => s.user?.id);
+  const remote = useQuery({
+    queryKey: ["rec-prefs", me],
+    enabled: Boolean(me),
+    queryFn: async () => {
+      const { data } = await getSupabaseBrowser()!.from("recommendation_preferences").select("excluded_media").eq("user_id", me!).maybeSingle();
+      return (data?.excluded_media as number[] | undefined) ?? [];
+    },
+  });
+  useEffect(() => {
+    if (remote.data?.length) useLocal.getState().setHiddenRecs([...useLocal.getState().hiddenRecs, ...remote.data]);
+  }, [remote.data]);
+  const persist = (ids: number[]) => {
+    if (!me) return;
+    getSupabaseBrowser()!
+      .from("recommendation_preferences")
+      .upsert({ user_id: me, excluded_media: ids.slice(-500), updated_at: new Date().toISOString() })
+      .then(({ error }) => error && console.warn("[kaze] rec prefs sync failed", error.message));
+  };
+  const hide = (id: number, title: string) => {
+    useLocal.getState().hideRec(id);
+    persist(useLocal.getState().hiddenRecs);
+    toast(`Got it: we won't recommend ${title} again`, {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          useLocal.getState().unhideRec(id);
+          persist(useLocal.getState().hiddenRecs);
+        },
+      },
+    });
+  };
+  return { hidden, hide };
+}
+
 /** 4 · Recommended For You: explainable rule-based engine over a real candidate pool. */
 export function RecommendedForYou({ pool }: { pool: MediaCard[] }) {
   const { list, hydrated } = useLibraryList();
+  const { hidden, hide } = useHiddenRecs();
   const profile = useMemo(() => buildGenreProfile(list), [list]);
   const seeds = useMemo(
     () =>
@@ -113,8 +196,15 @@ export function RecommendedForYou({ pool }: { pool: MediaCard[] }) {
         peer.set(it.media.id, [...(peer.get(it.media.id) ?? []), { seedTitle: seed.media.title, rating: it.rating }]);
       }
     }
-    return recommend([...extra, ...pool], { profile, exclude: new Set(list.map((e) => e.mediaId)), peerSignals: peer }, 16);
-  }, [recQueries.data, pool, profile, list]);
+    return recommend([...extra, ...pool], { profile, exclude: new Set([...list.map((e) => e.mediaId), ...hidden]), peerSignals: peer }, 16);
+  }, [recQueries.data, pool, profile, list, hidden]);
+  const discovery = useMemo(() => {
+    const seen = new Set<number>();
+    return [...pool]
+      .filter((m) => !seen.has(m.id) && seen.add(m.id) && !hidden.includes(m.id))
+      .sort((a, b) => (b.averageScore ?? 0) - (a.averageScore ?? 0))
+      .slice(0, 14);
+  }, [pool, hidden]);
 
   if (!hydrated) return null;
   const enough = profile.sampleSize >= 2;
@@ -127,7 +217,8 @@ export function RecommendedForYou({ pool }: { pool: MediaCard[] }) {
         kicker={enough ? `Based on ${profile.top.slice(0, 3).join(", ") || "your library"}` : "Discovery picks"}
       />
       {!enough ? (
-        <EmptyState
+        <>
+          <EmptyState
           icon={<Sparkles className="size-6" />}
           jp="好"
           title="Personal picks unlock after a couple of titles"
@@ -143,11 +234,28 @@ export function RecommendedForYou({ pool }: { pool: MediaCard[] }) {
             </Link>
           }
         />
+          <div className="mt-6">
+            <Rail label="Discovery picks">
+              {discovery.map((m) => (
+                <AnimeCard key={m.id} media={m} caption="Highly rated on AniList" layoutScope="disc" />
+              ))}
+            </Rail>
+          </div>
+        </>
       ) : recs.length ? (
         <Rail label="Recommended for you">
           {recs.map((r) => (
-            <div key={r.media.id} title={r.factors.map((f) => `${f.label}: +${f.value}`).join("\n")}>
+            <div key={r.media.id} className="group/rec relative" title={r.factors.map((f) => `${f.label}: +${f.value}`).join("\n")}>
               <AnimeCard media={r.media} caption={r.reason} layoutScope="rec" />
+              <button
+                type="button"
+                className="k-btn k-btn-icon k-btn-sm absolute left-1.5 top-1.5 z-[5] !size-7 !min-h-7 bg-black/65 text-white opacity-0 backdrop-blur transition-opacity focus-visible:opacity-100 group-hover/rec:opacity-100 max-md:opacity-100"
+                aria-label={`Not interested in ${r.media.title.english || r.media.title.romaji}`}
+                title="Not interested"
+                onClick={() => hide(r.media.id, r.media.title.english || r.media.title.romaji || "this")}
+              >
+                <X className="size-3.5" />
+              </button>
             </div>
           ))}
         </Rail>

@@ -10,7 +10,12 @@ type LocalState = {
   recentlyViewed: RecentItem[];
   recentSearches: string[];
   savedSearches: { id: string; name: string; query: string; at: number }[];
+  /** Titles marked "Not interested" (merged with the account copy when signed in). */
+  hiddenRecs: number[];
   hydrated: boolean;
+  hideRec: (id: number) => void;
+  unhideRec: (id: number) => void;
+  setHiddenRecs: (ids: number[]) => void;
   pushViewed: (item: Omit<RecentItem, "at">) => void;
   clearViewed: () => void;
   pushSearch: (q: string) => void;
@@ -25,7 +30,11 @@ export const useLocal = create<LocalState>()(
       recentlyViewed: [],
       recentSearches: [],
       savedSearches: [],
+      hiddenRecs: [],
       hydrated: false,
+      hideRec: (id) => set((s) => ({ hiddenRecs: [...new Set([...s.hiddenRecs, id])].slice(-500) })),
+      unhideRec: (id) => set((s) => ({ hiddenRecs: s.hiddenRecs.filter((x) => x !== id) })),
+      setHiddenRecs: (ids) => set({ hiddenRecs: [...new Set(ids)].slice(-500) }),
       pushViewed: (item) =>
         set((s) => ({ recentlyViewed: [{ ...item, at: Date.now() }, ...s.recentlyViewed.filter((r) => r.id !== item.id)].slice(0, 20) })),
       clearViewed: () => set({ recentlyViewed: [] }),
