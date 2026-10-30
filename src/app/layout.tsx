@@ -26,16 +26,17 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" data-theme={DEFAULT_THEME} className={fontVariables} suppressHydrationWarning>
+    <html lang="es" translate="no" data-theme={DEFAULT_THEME} className={`${fontVariables} notranslate`} suppressHydrationWarning>
       <head>
+        <meta name="google" content="notranslate" />
         {/* Applies the saved theme before first paint — no flash of the wrong theme. */}
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         {/* Posters and covers load straight from AniList's CDN. */}
         <link rel="preconnect" href="https://s4.anilist.co" crossOrigin="" />
       </head>
-      <body className="antialiased">
+      <body className="antialiased" suppressHydrationWarning>
         <a href="#main" className="k-btn k-btn-primary fixed left-3 top-3 z-[100] -translate-y-24 focus:translate-y-0">
-          Skip to content
+          Saltar al contenido
         </a>
         <Providers>{children}</Providers>
       </body>

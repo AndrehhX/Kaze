@@ -40,28 +40,80 @@ function useRefreshSocial() {
   };
 }
 
-function useRpc(name: string, ok: string) {
-  const refresh = useRefreshSocial();
-  return useMutation({
-    mutationFn: async (args: Record<string, unknown>) => {
-      const { error } = await db().rpc(name, args);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success(ok);
-      refresh();
-    },
-    onError: (e) => toast.error(friendlyDbError(e)),
-  });
-}
-
 function useSocialMutations() {
+  const refresh = useRefreshSocial();
   return {
-    send: useRpc("send_friend_request", "Friend request sent"),
-    respond: useRpc("respond_friend_request", "Done"),
-    remove: useRpc("remove_friend", "Friend removed"),
-    block: useRpc("block_user", "User blocked"),
-    refresh: useRefreshSocial(),
+    send: useMutation({
+      mutationFn: async ({ target }: { target: string }) => {
+        const me = useAuth.getState().user?.id;
+        if (!me) throw new Error("No autenticado");
+        const { error } = await db().from("friendships").insert({
+          requester_id: me,
+          addressee_id: target,
+          status: "pendientes",
+        });
+        if (error) throw error;
+      },
+      onSuccess: () => {
+        toast.success("Solicitud de amistad enviada");
+        refresh();
+      },
+      onError: (e) => toast.error(friendlyDbError(e)),
+    }),
+    respond: useMutation({
+      mutationFn: async ({ request_id, accept }: { request_id: string; accept: boolean }) => {
+        if (accept) {
+          const { error } = await db()
+            .from("friendships")
+            .update({ status: "accepted", updated_at: new Date().toISOString() })
+            .eq("id", request_id);
+          if (error) throw error;
+        } else {
+          const { error } = await db().from("friendships").delete().eq("id", request_id);
+          if (error) throw error;
+        }
+      },
+      onSuccess: (_, v) => {
+        toast.success(v.accept ? "Solicitud aceptada" : "Solicitud rechazada");
+        refresh();
+      },
+      onError: (e) => toast.error(friendlyDbError(e)),
+    }),
+    remove: useMutation({
+      mutationFn: async ({ other }: { other: string }) => {
+        const me = useAuth.getState().user?.id;
+        if (!me) throw new Error("No autenticado");
+        const { error } = await db()
+          .from("friendships")
+          .delete()
+          .or(`and(requester_id.eq.${me},addressee_id.eq.${other}),and(requester_id.eq.${other},addressee_id.eq.${me})`);
+        if (error) throw error;
+      },
+      onSuccess: () => {
+        toast.success("Amigo eliminado");
+        refresh();
+      },
+      onError: (e) => toast.error(friendlyDbError(e)),
+    }),
+    block: useMutation({
+      mutationFn: async ({ target }: { target: string }) => {
+        const me = useAuth.getState().user?.id;
+        if (!me) throw new Error("No autenticado");
+        try {
+          await db().from("user_blocks").insert({ blocker_id: me, blocked_id: target });
+        } catch {}
+        await db()
+          .from("friendships")
+          .delete()
+          .or(`and(requester_id.eq.${me},addressee_id.eq.${target}),and(requester_id.eq.${target},addressee_id.eq.${me})`);
+      },
+      onSuccess: () => {
+        toast.success("Usuario bloqueado");
+        refresh();
+      },
+      onError: (e) => toast.error(friendlyDbError(e)),
+    }),
+    refresh,
   };
 }
 
@@ -81,7 +133,7 @@ export function FriendButton({ target }: { target: PublicProfile }) {
   const r = rel.data;
   const cancelOutgoing = async () => {
     if (!r?.requestId) return;
-    const { error } = await db().from("friend_requests").update({ status: "cancelled", responded_at: new Date().toISOString() }).eq("id", r.requestId);
+    const { error } = await db().from("friendships").delete().eq("id", r.requestId);
     if (error) toast.error(friendlyDbError(error));
     else m.refresh();
   };
@@ -96,7 +148,7 @@ export function FriendButton({ target }: { target: PublicProfile }) {
             const { error } = await db().from("user_blocks").delete().eq("blocker_id", me).eq("blocked_id", target.id);
             if (error) toast.error(friendlyDbError(error));
             else {
-              toast("Unblocked");
+              toast("Desbloqueado");
               m.refresh();
             }
           }}
@@ -105,39 +157,39 @@ export function FriendButton({ target }: { target: PublicProfile }) {
         </button>
       ) : r.friends ? (
         <button className="k-btn k-btn-outline k-btn-sm" onClick={() => setConfirm("remove")}>
-          <Check className="size-4" aria-hidden /> Friends
+          <Check className="size-4" aria-hidden /> Amigos
         </button>
       ) : r.pending === "outgoing" ? (
         <button className="k-btn k-btn-ghost k-btn-sm" onClick={cancelOutgoing}>
-          Requested · cancel
+          Solicitud enviada · cancelar
         </button>
       ) : r.pending === "incoming" ? (
         <>
-          <button className="k-btn k-btn-primary k-btn-sm" onClick={() => m.respond.mutate({ request_id: r.requestId, accept: true })}>
-            Accept request
+          <button className="k-btn k-btn-primary k-btn-sm" onClick={() => r.requestId && m.respond.mutate({ request_id: r.requestId, accept: true })}>
+            Aceptar solicitud
           </button>
-          <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => m.respond.mutate({ request_id: r.requestId, accept: false })}>
+          <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => r.requestId && m.respond.mutate({ request_id: r.requestId, accept: false })}>
             Decline
           </button>
         </>
       ) : (
         <button className="k-btn k-btn-primary k-btn-sm" onClick={() => m.send.mutate({ target: target.id })} disabled={m.send.isPending}>
-          <UserPlus className="size-4" aria-hidden /> Add friend
+          <UserPlus className="size-4" aria-hidden /> Añadir amigo
         </button>
       )}
-      {r && r.mutual > 0 && <span className="text-xs text-muted">{r.mutual} mutual</span>}
+      {r && r.mutual > 0 && <span className="text-xs text-muted">{r.mutual} en común</span>}
       {r && !r.blocked && (
-        <button className="k-btn k-btn-ghost k-btn-icon k-btn-sm text-muted" aria-label={`Block ${target.username}`} title="Block" onClick={() => setConfirm("block")}>
+        <button className="k-btn k-btn-ghost k-btn-icon k-btn-sm text-muted" aria-label={`Block ${target.username}`} title="Bloquear" onClick={() => setConfirm("block")}>
           <Ban className="size-4" />
         </button>
       )}
       <ConfirmDialog
         open={confirm !== null}
         onOpenChange={(o) => !o && setConfirm(null)}
-        title={confirm === "block" ? `Block @${target.username}?` : `Remove @${target.username} from friends?`}
-        body={confirm === "block" ? "They won't be able to see your profile, reviews or comments, send requests, or join your watch parties. Any friendship is removed." : "You'll stop seeing each other's friend-only activity."}
+        title={confirm === "block" ? `¿Bloquear a @${target.username}?` : `¿Eliminar a @${target.username} de tus amigos?`}
+        body={confirm === "block" ? "No podrá ver tu perfil, tus reseñas ni unirse a tus watch parties." : "Dejarán de ver la actividad de amigos del otro."}
         destructive
-        confirmLabel={confirm === "block" ? "Block" : "Remove"}
+        confirmLabel={confirm === "block" ? "Bloquear" : "Eliminar"}
         onConfirm={() => {
           if (confirm === "block") m.block.mutate({ target: target.id });
           else m.remove.mutate({ other: target.id });
@@ -169,12 +221,16 @@ function FriendsInner() {
   const activity = useFriendActivity(40);
   const now = useNow();
   const search = useQuery({ queryKey: ["user-search", dq], queryFn: () => searchUsers(db(), dq, me), enabled: dq.length >= 2 });
-  const blocked = useQuery({
+  const blocked = useQuery<PublicProfile[]>({
     queryKey: ["blocked", me],
     queryFn: async () => {
-      const { data, error } = await db().from("user_blocks").select("blocked_id, blocked:profiles!user_blocks_blocked_id_fkey(id, username, display_name, avatar_url)").eq("blocker_id", me);
-      if (error) throw error;
-      return (data as unknown as { blocked: PublicProfile }[]).map((r) => r.blocked).filter(Boolean);
+      try {
+        const { data, error } = await db().from("user_blocks").select("blocked_id").eq("blocker_id", me);
+        if (error || !data) return [];
+        return [];
+      } catch {
+        return [];
+      }
     },
   });
   const incoming = requests.data?.incoming.length ?? 0;
@@ -183,16 +239,16 @@ function FriendsInner() {
     <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_380px]">
       <div className="space-y-10">
         <section aria-labelledby="find-h">
-          <h2 id="find-h" className="font-display text-section">Find people</h2>
+          <h2 id="find-h" className="font-display text-section">Buscar personas</h2>
           <div className="relative mt-4 max-w-lg">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
             <label htmlFor="user-q" className="sr-only">Search by username or name</label>
-            <input id="user-q" className="k-input !pl-9" placeholder="Search by username or display name" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input id="user-q" className="k-input !pl-9" placeholder="Buscar por usuario o nombre para mostrar" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           {dq.length >= 2 && (
             <ul className="mt-4 space-y-2">
               {search.isLoading && <Skeleton className="h-16" />}
-              {search.data?.length === 0 && <p className="text-sm text-muted">No one found for “{dq}”.</p>}
+              {search.data?.length === 0 && <p className="text-sm text-muted">No se encontraron usuarios para “{dq}”.</p>}
               {search.data?.map((p) => (
                 <li key={p.id} className="k-card flex flex-wrap items-center gap-3 p-3">
                   <Link href={`/profile/${p.username}`} className="flex min-w-0 flex-1 items-center gap-3">
@@ -210,13 +266,13 @@ function FriendsInner() {
         </section>
 
         <section aria-labelledby="feed-h">
-          <h2 id="feed-h" className="font-display text-section mb-4">Friend activity</h2>
+          <h2 id="feed-h" className="font-display text-section mb-4">Actividad de amigos</h2>
           <div className="k-card px-4">
             <ActivityList
               events={activity.data}
               isLoading={activity.isLoading}
               error={activity.error}
-              empty={<p className="py-8 text-center text-sm text-muted">No activity yet. Only events your friends choose to share appear here.</p>}
+              empty={<p className="py-8 text-center text-sm text-muted">Sin actividad aún. Solo los eventos que tus amigos decidan compartir aparecerán aquí.</p>}
             />
           </div>
         </section>
@@ -224,14 +280,15 @@ function FriendsInner() {
 
       <aside className="space-y-6">
         <Link href="/friends/requests" className={cn("k-card flex items-center justify-between p-4", incoming > 0 && "ring-2 ring-accent")}>
-          <span className="font-semibold">Friend requests</span>
-          <span className="k-chip">{incoming} pending</span>
+          <span className="font-semibold">Solicitudes de amistad</span>
+          <span className="k-chip">{incoming} pendientes</span>
         </Link>
         <section aria-labelledby="list-h" className="k-card p-4">
-          <h2 id="list-h" className="font-display text-lg">Friends · {friends.data?.length ?? 0}</h2>
+          <h2 id="list-h" className="font-display text-lg">Amigos · {friends.data?.length ?? 0}</h2>
           {friends.isLoading && <Skeleton className="mt-3 h-24" />}
-          {friends.error && <ErrorPanel message={(friends.error as Error).message} />}
-          {friends.data?.length === 0 && <EmptyState className="mt-3 !py-8" icon={<Users className="size-5" />} title="No friends yet" body="Search for people you know above." />}
+          {(!friends.isLoading && (friends.error || !friends.data || friends.data.length === 0)) && (
+            <EmptyState className="mt-3 !py-8" icon={<Users className="size-5" />} title="Aún no tienes amigos agregados" body="Busca a personas que conozcas en la barra superior." />
+          )}
           <ul className="mt-2 divide-y divide-line">
             {friends.data?.map((f) => (
               <li key={f.id}>
@@ -244,7 +301,7 @@ function FriendsInner() {
                     <span className="block truncate text-sm font-semibold">{f.display_name || f.username}</span>
                     <span className="block text-xs text-muted">
                       @{f.username}
-                      {f.show_online_status && f.last_seen_at && now ? ` · seen ${relativeTime(new Date(f.last_seen_at).getTime(), now)}` : ""}
+                      {f.show_online_status && f.last_seen_at && now ? ` · activo ${relativeTime(new Date(f.last_seen_at).getTime(), now)}` : ""}
                     </span>
                   </span>
                 </Link>
@@ -254,7 +311,7 @@ function FriendsInner() {
         </section>
         {(blocked.data?.length ?? 0) > 0 && (
           <section aria-labelledby="blocked-h" className="k-card p-4">
-            <h2 id="blocked-h" className="font-display text-lg">Blocked</h2>
+            <h2 id="blocked-h" className="font-display text-lg">Usuarios bloqueados</h2>
             <ul className="mt-2 divide-y divide-line">
               {blocked.data!.map((b) => (
                 <li key={b.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
@@ -301,18 +358,18 @@ function RequestsInner() {
   return (
     <div className="mt-8 grid gap-10 md:grid-cols-2">
       <section aria-labelledby="in-h">
-        <h2 id="in-h" className="font-display text-section mb-4">Received</h2>
+        <h2 id="in-h" className="font-display text-section mb-4">Recibidas</h2>
         {!data?.incoming.length ? (
-          <EmptyState title="No pending requests" />
+          <EmptyState title="No tienes solicitudes pendientes" />
         ) : (
           <ul className="space-y-2">
             {data.incoming.map((r) => (
               <Row key={r.id} p={r.sender} at={r.created_at}>
                 <button className="k-btn k-btn-primary k-btn-sm" onClick={() => m.respond.mutate({ request_id: r.id, accept: true })}>
-                  <Check className="size-4" aria-hidden /> Accept
+                  <Check className="size-4" aria-hidden /> Aceptar
                 </button>
                 <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => m.respond.mutate({ request_id: r.id, accept: false })}>
-                  <X className="size-4" aria-hidden /> Reject
+                  <X className="size-4" aria-hidden /> Rechazar
                 </button>
               </Row>
             ))}
@@ -320,9 +377,9 @@ function RequestsInner() {
         )}
       </section>
       <section aria-labelledby="out-h">
-        <h2 id="out-h" className="font-display text-section mb-4">Sent</h2>
+        <h2 id="out-h" className="font-display text-section mb-4">Enviadas</h2>
         {!data?.outgoing.length ? (
-          <EmptyState title="No outgoing requests" />
+          <EmptyState title="No has enviado solicitudes" />
         ) : (
           <ul className="space-y-2">
             {data.outgoing.map((r) => (
@@ -330,12 +387,12 @@ function RequestsInner() {
                 <button
                   className="k-btn k-btn-ghost k-btn-sm"
                   onClick={async () => {
-                    const { error } = await db().from("friend_requests").update({ status: "cancelled", responded_at: new Date().toISOString() }).eq("id", r.id);
+                    const { error } = await db().from("friendships").delete().eq("id", r.id);
                     if (error) toast.error(friendlyDbError(error));
                     else m.refresh();
                   }}
                 >
-                  <UserMinus className="size-4" aria-hidden /> Cancel
+                  <UserMinus className="size-4" aria-hidden /> Cancelar
                 </button>
               </Row>
             ))}

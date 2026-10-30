@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AppearanceSettings } from "@/components/settings/panels";
 
-export const metadata: Metadata = { title: "Appearance · Settings" };
+export const metadata: Metadata = { title: "Apariencia · Configuración" };
 
 export default function Page() {
   return (

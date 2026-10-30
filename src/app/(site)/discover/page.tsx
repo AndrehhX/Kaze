@@ -5,7 +5,7 @@ import { FALLBACK_GENRES } from "@/lib/anilist/browse-params";
 import { DiscoverClient } from "@/components/discover/discover-client";
 import { GridSkeleton, PageHeaderSkeleton } from "@/components/anime/skeletons";
 
-export const metadata: Metadata = { title: "Discover", description: "Search and filter the full AniList anime catalog." };
+export const metadata: Metadata = { title: "Descubrir", description: "Busca y filtra el catálogo completo de anime de AniList." };
 
 async function loadMeta() {
   try {

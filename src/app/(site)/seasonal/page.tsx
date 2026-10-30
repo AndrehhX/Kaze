@@ -10,7 +10,7 @@ import { seasonOf } from "@/lib/utils";
 import { SeasonalView } from "@/components/discover/seasonal-view";
 import { GridSkeleton, PageHeaderSkeleton } from "@/components/anime/skeletons";
 
-export const metadata: Metadata = { title: "Seasonal chart" };
+export const metadata: Metadata = { title: "Temporada de Anime" };
 
 const ORDER: MediaSeason[] = ["WINTER", "SPRING", "SUMMER", "FALL"];
 

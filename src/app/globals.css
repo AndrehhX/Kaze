@@ -1,3 +1,9 @@
+
+/* Ultra-low latency touch and click interaction */
+html, body, button, a, input, select, textarea, [role="button"], [role="tab"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
 @import "tailwindcss";
 
 /* ──────────────────────────────────────────────────────────────
@@ -249,8 +255,6 @@
    ────────────────────────────────────────────────────────────── */
 @layer base {
   html {
-    /* Belt and braces: mobile browsers widen the layout viewport for any overflow. */
-    overflow-x: clip;
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
     scrollbar-color: var(--k-line) transparent;
@@ -425,13 +429,16 @@
     font-weight: 600;
     font-size: 0.9375rem;
     border-radius: var(--k-radius-btn);
-    transition: transform 0.2s var(--k-ease-out), box-shadow 0.25s var(--k-ease-out), background-color 0.2s, color 0.2s, opacity 0.2s;
+    touch-action: manipulation;
     white-space: nowrap;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
+    transition: transform 60ms cubic-bezier(0, 0, 0.2, 1), background-color 80ms ease, opacity 80ms ease, box-shadow 80ms ease, color 80ms ease;
+    cursor: pointer;
   }
   .k-btn:active:not(:disabled) {
-    transform: scale(0.97);
+    transform: scale(0.95);
+    transition-duration: 25ms;
   }
   .k-btn:disabled,
   .k-btn[aria-disabled="true"] {
@@ -891,4 +898,23 @@ html[data-motion="reduce"] *::after {
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
   scroll-behavior: auto !important;
+}
+
+/* Snappy instant dropdown & popover animations */
+[data-radix-menu-content],
+[data-radix-popper-content],
+[data-radix-dropdown-menu-content] {
+  animation: k-dropdown-pop 75ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  will-change: transform, opacity;
+}
+
+@keyframes k-dropdown-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }

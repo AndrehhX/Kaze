@@ -2,51 +2,76 @@ import { z } from "zod";
 import type { BrowseParams, BrowseSort, MediaFormat, MediaSeason, MediaSource, MediaStatus } from "./types";
 
 export const SORTS: { value: BrowseSort; label: string }[] = [
-  { value: "POPULARITY_DESC", label: "Most popular" },
-  { value: "TRENDING_DESC", label: "Trending" },
-  { value: "SCORE_DESC", label: "Highest rated" },
-  { value: "FAVOURITES_DESC", label: "Most favourited" },
-  { value: "START_DATE_DESC", label: "Newest" },
-  { value: "START_DATE", label: "Oldest" },
-  { value: "TITLE_ROMAJI", label: "Title A–Z" },
-  { value: "EPISODES_DESC", label: "Most episodes" },
+  { value: "POPULARITY_DESC", label: "Más populares" },
+  { value: "TRENDING_DESC", label: "Tendencias" },
+  { value: "SCORE_DESC", label: "Mejor valorados" },
+  { value: "FAVOURITES_DESC", label: "Más favoritos" },
+  { value: "START_DATE_DESC", label: "Más recientes" },
+  { value: "START_DATE", label: "Más antiguos" },
+  { value: "TITLE_ROMAJI", label: "Título A–Z" },
+  { value: "EPISODES_DESC", label: "Más episodios" },
 ];
 
 export const FORMATS: { value: MediaFormat; label: string }[] = [
-  { value: "TV", label: "TV" },
-  { value: "MOVIE", label: "Movie" },
+  { value: "TV", label: "Serie TV" },
+  { value: "MOVIE", label: "Película" },
   { value: "ONA", label: "ONA" },
   { value: "OVA", label: "OVA" },
-  { value: "SPECIAL", label: "Special" },
-  { value: "TV_SHORT", label: "TV Short" },
-  { value: "MUSIC", label: "Music" },
+  { value: "SPECIAL", label: "Especial" },
+  { value: "TV_SHORT", label: "Corto TV" },
+  { value: "MUSIC", label: "Musical" },
 ];
 
 export const SEASONS: { value: MediaSeason; label: string; jp: string }[] = [
-  { value: "WINTER", label: "Winter", jp: "冬" },
-  { value: "SPRING", label: "Spring", jp: "春" },
-  { value: "SUMMER", label: "Summer", jp: "夏" },
-  { value: "FALL", label: "Fall", jp: "秋" },
+  { value: "WINTER", label: "Invierno", jp: "冬" },
+  { value: "SPRING", label: "Primavera", jp: "春" },
+  { value: "SUMMER", label: "Verano", jp: "夏" },
+  { value: "FALL", label: "Otoño", jp: "秋" },
 ];
 
 export const STATUSES: { value: MediaStatus; label: string }[] = [
-  { value: "RELEASING", label: "Airing" },
-  { value: "FINISHED", label: "Finished" },
-  { value: "NOT_YET_RELEASED", label: "Upcoming" },
-  { value: "HIATUS", label: "Hiatus" },
-  { value: "CANCELLED", label: "Cancelled" },
+  { value: "RELEASING", label: "En emisión" },
+  { value: "FINISHED", label: "Finalizado" },
+  { value: "NOT_YET_RELEASED", label: "Próximamente" },
+  { value: "HIATUS", label: "En pausa" },
+  { value: "CANCELLED", label: "Cancelado" },
 ];
 
 export const SOURCES: { value: MediaSource; label: string }[] = [
   { value: "ORIGINAL", label: "Original" },
   { value: "MANGA", label: "Manga" },
-  { value: "LIGHT_NOVEL", label: "Light novel" },
-  { value: "WEB_NOVEL", label: "Web novel" },
-  { value: "NOVEL", label: "Novel" },
-  { value: "VISUAL_NOVEL", label: "Visual novel" },
-  { value: "VIDEO_GAME", label: "Video game" },
-  { value: "OTHER", label: "Other" },
+  { value: "LIGHT_NOVEL", label: "Novela ligera" },
+  { value: "WEB_NOVEL", label: "Novela web" },
+  { value: "NOVEL", label: "Novela" },
+  { value: "VISUAL_NOVEL", label: "Novela visual" },
+  { value: "VIDEO_GAME", label: "Videojuego" },
+  { value: "OTHER", label: "Otro" },
 ];
+
+export const GENRE_LABELS: Record<string, string> = {
+  Action: "Acción",
+  Adventure: "Aventura",
+  Comedy: "Comedia",
+  Drama: "Drama",
+  Ecchi: "Ecchi",
+  Fantasy: "Fantasía",
+  Horror: "Terror",
+  "Mahou Shoujo": "Chicas Mágicas",
+  Mecha: "Mecha",
+  Music: "Música",
+  Mystery: "Misterio",
+  Psychological: "Psicológico",
+  Romance: "Romance",
+  "Sci-Fi": "Ciencia Ficción",
+  "Slice of Life": "Recuentos de la vida",
+  Sports: "Deportes",
+  Supernatural: "Sobrenatural",
+  Thriller: "Suspense",
+};
+
+export function genreLabel(genre: string): string {
+  return GENRE_LABELS[genre] ?? genre;
+}
 
 export const FALLBACK_GENRES = [
   "Action",

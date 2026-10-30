@@ -21,10 +21,21 @@ const STATUS_WEIGHT: Record<LibraryEntry["status"], number> = {
 
 export function buildGenreProfile(entries: LibraryEntry[]): GenreProfile {
   const weights: Record<string, number> = {};
+  const now = Date.now();
+  const HALF_LIFE_MS = 45 * 864e5; // 45 días de vida media
+
   for (const e of entries) {
     let w = STATUS_WEIGHT[e.status];
     if (e.score != null) w *= e.score >= 80 ? 1.5 : e.score >= 60 ? 1 : 0.4;
     if (e.favorite) w += 0.6;
+
+    // Decaimiento temporal suave (los gustos recientes tienen mayor peso)
+    if (e.updatedAt) {
+      const age = Math.max(0, now - new Date(e.updatedAt).getTime());
+      const decay = 0.5 ** (age / HALF_LIFE_MS);
+      w *= 0.4 + 0.6 * decay;
+    }
+
     for (const g of e.media.genres) weights[g] = (weights[g] ?? 0) + w;
   }
   const max = Math.max(0, ...Object.values(weights));

@@ -38,13 +38,13 @@ export function ListMenu({ media, size = "md", className, align = "start" }: { m
           disabled={!hydrated}
         >
           {entry ? <Check className="size-4 text-primary-ink" aria-hidden /> : <Plus className="size-4" aria-hidden />}
-          <span>{entry ? statusMeta(entry.status).short : "Add to list"}</span>
+          <span>{entry ? statusMeta(entry.status).short : "Añadir a mi lista"}</span>
           <ChevronDown className="size-3.5 opacity-60" aria-hidden />
         </button>
       </DM.Trigger>
       <DM.Portal>
         <DM.Content align={align} sideOffset={8} className="k-panel z-[90] min-w-56 !bg-surface p-1.5 data-[state=open]:animate-in">
-          <DM.Label className="k-label px-3 pb-1 pt-2 text-muted">Status</DM.Label>
+          <DM.Label className="k-label px-3 pb-1 pt-2 text-muted">Estado en lista</DM.Label>
           {LIBRARY_STATUSES.map((s) => (
             <DM.Item key={s.value} className={itemCls} onSelect={() => setStatus(s.value)}>
               <span className="grid size-4 place-items-center">{entry?.status === s.value && <Check className="size-4 text-primary-ink" />}</span>
@@ -59,7 +59,7 @@ export function ListMenu({ media, size = "md", className, align = "start" }: { m
               <DM.Separator className="my-1.5 h-px bg-line" />
               <DM.Sub>
                 <DM.SubTrigger className={itemCls}>
-                  <FolderPlus className="size-4" aria-hidden /> <span className="flex-1">Collections</span>
+                  <FolderPlus className="size-4" aria-hidden /> <span className="flex-1">Colecciones</span>
                 </DM.SubTrigger>
                 <DM.Portal>
                   <DM.SubContent className="k-panel z-[91] min-w-52 !bg-surface p-1.5" sideOffset={6}>
@@ -96,13 +96,13 @@ export function ListMenu({ media, size = "md", className, align = "start" }: { m
                 onSelect={() => {
                   const snapshot = entry;
                   remove(media.id);
-                  toast(`Removed from your library`, {
+                  toast(`Eliminado de tu biblioteca`, {
                     description: title,
-                    action: { label: "Undo", onClick: () => useLibrary.getState().importEntries([snapshot], { overwrite: true }) },
+                    action: { label: "Deshacer", onClick: () => useLibrary.getState().importEntries([snapshot], { overwrite: true }) },
                   });
                 }}
               >
-                <Trash2 className="size-4" aria-hidden /> Remove from library
+                <Trash2 className="size-4" aria-hidden /> Quitar de la biblioteca
               </DM.Item>
             </>
           )}

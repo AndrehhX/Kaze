@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { Compass, Home, Library, LayoutGrid, Search, Settings } from "lucide-react";
+import { Compass, Home, Library, LayoutGrid, Paintbrush, Search, Settings, UserRound } from "lucide-react";
 import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { PRIMARY_NAV, isActive } from "./nav-config";
@@ -11,35 +11,48 @@ import { ThemePreviewCard, useThemeSwitch } from "./theme-switcher";
 import { THEME_IDS } from "@/lib/themes";
 import { useSettings } from "@/stores/settings";
 import { useAuth } from "@/stores/auth";
+import { useGuestProfile } from "@/lib/profile/guest";
+import { Avatar } from "./user-menu";
 import { cn } from "@/lib/utils";
 import { useCurrentPath } from "@/stores/route";
 import { useKazeMotion } from "@/lib/motion";
 
-/**
- * Mobile is not a squeezed desktop bar: a thumb-reach tab bar with a raised
- * search action, plus a "Universe" sheet holding every other section and the
- * theme picker.
- */
 export function MobileNav() {
   const path = useCurrentPath();
   const setPalette = usePalette((s) => s.setOpen);
   const [sheet, setSheet] = useState(false);
   const theme = useSettings((s) => s.theme);
   const profile = useAuth((s) => s.profile);
+  const [guestProfile] = useGuestProfile();
   const { switchTo, overlay } = useThemeSwitch();
   const { reduced } = useKazeMotion();
 
+  const displayName = profile?.display_name || (profile?.username ? `@${profile.username}` : guestProfile.display_name || "Invitado");
+  const avatarUrl = profile?.avatar_url || guestProfile.avatar_url;
+  const avatarFrame = profile?.avatar_frame || guestProfile.avatar_frame;
+  const profileUrl = profile?.username ? `/profile/${encodeURIComponent(profile.username)}` : "/profile/guest";
+
+  const closeAndClear = () => {
+    setSheet(false);
+    if (typeof document !== "undefined") {
+      document.body.style.pointerEvents = "";
+      document.body.removeAttribute("data-scroll-locked");
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    }
+  };
+
   const tabs = [
-    { href: "/", label: "Home", icon: Home, active: path === "/" },
-    { href: "/discover", label: "Discover", icon: Compass, active: path.startsWith("/discover") },
-    { href: "#search", label: "Search", icon: Search, active: false },
-    { href: "/library", label: "Library", icon: Library, active: path.startsWith("/library") },
-    { href: "#more", label: "Universe", icon: LayoutGrid, active: sheet },
+    { href: "/", label: "Inicio", icon: Home, active: path === "/" },
+    { href: "/discover", label: "Descubrir", icon: Compass, active: path.startsWith("/discover") },
+    { href: "#search", label: "Buscar", icon: Search, active: false },
+    { href: "/library", label: "Biblioteca", icon: Library, active: path.startsWith("/library") },
+    { href: "#more", label: "Universo", icon: LayoutGrid, active: sheet },
   ];
 
   return (
     <>
-      <nav aria-label="Primary mobile" className="k-nav fixed inset-x-0 bottom-0 z-50 border-t border-line pb-safe lg:hidden">
+      <nav aria-label="Navegación móvil" className="k-nav fixed inset-x-0 bottom-0 z-50 border-t border-line pb-safe lg:hidden">
         <ul className="mx-auto grid h-[var(--k-mobile-bar-h)] max-w-lg grid-cols-5 items-center px-2">
           {tabs.map((t) => {
             const inner = (
@@ -72,7 +85,7 @@ export function MobileNav() {
                     {inner}
                   </button>
                 ) : (
-                  <Link href={t.href} className={cls} aria-current={t.active ? "page" : undefined}>
+                  <Link href={t.href} prefetch={true} className={cls} aria-current={t.active ? "page" : undefined}>
                     {inner}
                   </Link>
                 )}
@@ -82,14 +95,42 @@ export function MobileNav() {
         </ul>
       </nav>
 
-      <Dialog open={sheet} onOpenChange={setSheet} title="Your universe" side="bottom">
+      <Dialog open={sheet} onOpenChange={setSheet} title="Tu universo" side="bottom">
         <div className="px-5 pb-6">
+          {/* Tarjeta de Perfil Rápida */}
+          <div className="mb-4 flex items-center justify-between rounded-xl bg-surface/90 p-3.5 border border-line shadow-sm">
+            <div className="flex items-center gap-3 min-w-0">
+              <Avatar src={avatarUrl} name={displayName} size={42} frame={avatarFrame} />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-fg">{displayName}</p>
+                <p className="truncate text-xs text-muted">Tu universo personal</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href={profileUrl}
+                prefetch={true}
+                onClick={closeAndClear}
+                className="k-btn k-btn-primary k-btn-sm text-xs font-semibold"
+              >
+                Ver perfil
+              </Link>
+            </div>
+          </div>
+
+          {/* Cuadrícula de Navegación del Universo */}
           <ul className="grid grid-cols-3 gap-2">
-            {[...PRIMARY_NAV, ...(profile ? [{ href: `/profile/${profile.username}`, label: "Profile", jp: "プロフィール", icon: LayoutGrid }] : []), { href: "/settings", label: "Settings", jp: "設定", icon: Settings }].map((n) => (
+            {[
+              { href: profileUrl, label: "Mi Universo", jp: "自分", icon: UserRound },
+              { href: "/settings/profile", label: "Personalizar", jp: "装飾", icon: Paintbrush },
+              ...PRIMARY_NAV,
+              { href: "/settings", label: "Configuración", jp: "設定", icon: Settings },
+            ].map((n) => (
               <li key={n.href}>
                 <Link
                   href={n.href}
-                  onClick={() => setSheet(false)}
+                  prefetch={true}
+                  onClick={closeAndClear}
                   className={cn(
                     "k-card flex aspect-[5/4] flex-col justify-between p-3 text-sm font-medium",
                     isActive(n, path) && "ring-2 ring-primary",
@@ -97,14 +138,15 @@ export function MobileNav() {
                 >
                   <n.icon className="size-5 text-primary-ink" aria-hidden />
                   <span>
-                    <span className="block leading-tight">{n.label}</span>
+                    <span className="block leading-tight text-xs font-semibold">{n.label}</span>
                     <span className="k-jp text-[0.625rem] text-muted">{n.jp}</span>
                   </span>
                 </Link>
               </li>
             ))}
           </ul>
-          <p className="k-label mb-2 mt-6 text-muted">Atmosphere</p>
+
+          <p className="k-label mb-2 mt-6 text-muted">Atmósfera visual</p>
           <div className="grid grid-cols-2 gap-2">
             {THEME_IDS.map((id) => (
               <button
@@ -127,4 +169,3 @@ export function MobileNav() {
     </>
   );
 }
-

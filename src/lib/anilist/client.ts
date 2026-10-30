@@ -19,6 +19,8 @@ export class AniListError extends Error {
 }
 
 const inflight = new Map<string, Promise<unknown>>();
+// Cache en memoria (TTL 10 min) para respuestas públicas de AniList: carga instantánea a 0ms.
+const memoryCache = new Map<string, { data: unknown; expiresAt: number }>();
 
 type FetchOptions = {
   token?: string;
@@ -33,6 +35,15 @@ export async function anilistRequest<T>(query: string, variables: Record<string,
   const body = JSON.stringify({ query, variables });
   // Never share in-flight requests between users.
   const key = opts.token ? null : body;
+
+  // Si ya tenemos la respuesta en memoria y sigue vigente, responder instantáneamente
+  if (key && !opts.token) {
+    const hit = memoryCache.get(key);
+    if (hit && Date.now() < hit.expiresAt) {
+      return hit.data as T;
+    }
+  }
+
   if (key && inflight.has(key)) return inflight.get(key) as Promise<T>;
 
   const run = (async () => {
@@ -81,6 +92,13 @@ export async function anilistRequest<T>(query: string, variables: Record<string,
         throw new AniListError(first.message, first.status ?? res.status);
       }
       if (!res.ok || !json.data) throw new AniListError(`AniList request failed (${res.status})`, res.status);
+      if (key && !opts.token) {
+        memoryCache.set(key, { data: json.data, expiresAt: Date.now() + 10 * 60_000 });
+        if (memoryCache.size > 400) {
+          const firstKey = memoryCache.keys().next().value;
+          if (firstKey) memoryCache.delete(firstKey);
+        }
+      }
       return json.data;
     }
   })();

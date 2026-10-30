@@ -73,8 +73,7 @@ export function ActivityList({ events, isLoading, error, empty }: { events?: Act
         ))}
       </div>
     );
-  if (error) return <ErrorPanel title="Couldn't load activity" message={(error as Error).message} />;
-  if (!events?.length) return <>{empty}</>;
+  if (error || !events?.length) return <>{empty}</>;
   return (
     <ul>
       {events.map((e) => (
@@ -89,15 +88,15 @@ export function FriendsActivityRail() {
   const { data, isLoading, error } = useFriendActivity(20);
   const now = useNow();
   if (isLoading) return <Skeleton className="h-28" />;
-  if (error) return <ErrorPanel title="Couldn't load friend activity" message={(error as Error).message} />;
+  if (error) return null;
   const watching = (data ?? []).filter((e) => e.media_id);
   if (!watching.length)
     return (
       <EmptyState
         icon={<Users className="size-6" />}
         jp="友"
-        title="No friend activity yet"
-        body="When friends start, finish or rate something — and their privacy settings allow it — it shows up here."
+        title="Aún no hay actividad de amigos"
+        body="Cuando tus amigos comiencen, terminen o califiquen un anime, aparecerá aquí."
         action={
           <Link href="/friends" className="k-btn k-btn-primary k-btn-sm">
             Find friends
@@ -106,7 +105,7 @@ export function FriendsActivityRail() {
       />
     );
   return (
-    <Rail label="Friend activity" itemClassName="w-[78vw] xs:w-[56vw] sm:w-[40vw] md:w-[30vw] lg:w-[23vw] xl:w-[19vw]">
+    <Rail label="Actividad de amigos" itemClassName="w-[78vw] xs:w-[56vw] sm:w-[40vw] md:w-[30vw] lg:w-[23vw] xl:w-[19vw]">
       {watching.map((e) => {
         const name = e.user?.display_name || e.user?.username || "Friend";
         return (

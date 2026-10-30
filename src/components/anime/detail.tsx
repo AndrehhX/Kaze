@@ -1,4 +1,5 @@
 "use client";
+import { genreLabel } from "@/lib/anilist/browse-params";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -8,8 +9,9 @@ import { Check, ChevronDown, Clapperboard, ExternalLink, Eye, Minus, Play, Plus,
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { CharacterEdge, MediaDetail } from "@/lib/anilist/types";
-import { cleanDescription, cn, formatLabel, formatNumber, statusLabel, titleCase } from "@/lib/utils";
+import { cleanDescription, cn, formatDuration, formatLabel, formatNumber, statusLabel, titleCase } from "@/lib/utils";
 import { useLibrary } from "@/stores/library";
+import { useProgress } from "@/stores/progress";
 import { useLocal } from "@/stores/local";
 import { LIBRARY_STATUSES, statusMeta } from "@/lib/library/types";
 import { api } from "@/lib/api-client";
@@ -89,9 +91,9 @@ export function DetailHero({ media }: { media: MediaDetail }) {
             <span className="k-chip">{formatLabel(media.format)}</span>
             <span className="k-chip">{statusLabel(media.status)}</span>
           </div>
-          <h1 className="font-display text-title mt-4 max-w-[22ch] text-balance-k">{title}</h1>
+          <h1 className="font-display text-title mt-4 max-w-3xl break-words text-balance-k">{title}</h1>
           {media.title.native && (
-            <p className="k-jp mt-2 text-lg text-muted" lang="ja">
+            <p className="k-jp mt-2 text-base md:text-lg text-muted line-clamp-2 max-w-2xl" lang="ja">
               {media.title.native}
             </p>
           )}
@@ -110,14 +112,14 @@ export function DetailHero({ media }: { media: MediaDetail }) {
               <dd className="mt-1 text-xl font-bold">{formatNumber(media.popularity)}</dd>
             </div>
             <div>
-              <dt className="k-label text-muted">Episodes</dt>
+              <dt className="k-label text-muted">Episodios</dt>
               <dd className="mt-1 text-xl font-bold">
                 {media.episodes ?? (media.nextAiringEpisode ? `${media.nextAiringEpisode.episode - 1}+` : "—")}
                 {media.duration ? <span className="ml-1 text-xs font-normal text-muted">× {media.duration}m</span> : null}
               </dd>
             </div>
             <div>
-              <dt className="k-label text-muted">Studio</dt>
+              <dt className="k-label text-muted">Estudio</dt>
               <dd className="mt-1 truncate text-sm font-semibold">
                 {studio ? (
                   <Link href={`/discover?studio=${encodeURIComponent(studio.name)}`} className="hover:text-primary-ink">
@@ -130,31 +132,53 @@ export function DetailHero({ media }: { media: MediaDetail }) {
             </div>
           </dl>
 
-          <ul className="mt-5 flex flex-wrap gap-1.5" aria-label="Genres">
+          <ul className="mt-5 flex flex-wrap gap-1.5" aria-label="Géneros">
             {media.genres.map((g) => (
               <li key={g}>
                 <Link className="k-chip" href={`/discover?genres=${encodeURIComponent(g)}`}>
-                  {g}
+                  {genreLabel(g)}
                 </Link>
               </li>
             ))}
           </ul>
 
-          <div className="mt-6 flex flex-wrap items-center gap-2.5">
-            <a href="#availability" className="k-btn k-btn-primary">
-              <Tv className="size-4" aria-hidden /> Watch options
-            </a>
-            <ListMenu media={media} />
-            <FavoriteButton media={media} />
-            {media.trailer?.site === "youtube" && (
-              <button className="k-btn k-btn-ghost" onClick={() => setTrailer(true)}>
-                <Clapperboard className="size-4" aria-hidden /> Trailer
-              </button>
-            )}
-            <button className="k-btn k-btn-ghost k-btn-icon" onClick={share} aria-label="Share">
-              <Share2 className="size-4" aria-hidden />
-            </button>
-          </div>
+          {(() => {
+            const entry = useLibrary.getState().entries[media.id];
+            const progressItems = useProgress.getState().items;
+            const currentEp = entry?.progress ?? 0;
+            const nextEp = currentEp > 0 ? (media.episodes && currentEp >= media.episodes ? currentEp : currentEp + 1) : 1;
+            const resumeProg = progressItems[`${media.id}::${currentEp || 1}`];
+            const isResuming = resumeProg && !resumeProg.completed && resumeProg.position > 15;
+            const targetEp = isResuming ? (currentEp || 1) : nextEp;
+            const playLabel = isResuming
+              ? `Reanudar Ep. ${targetEp} (${formatDuration(resumeProg.position)})`
+              : currentEp > 0 && media.episodes && currentEp >= media.episodes
+              ? "Volver a ver (Ep. 1)"
+              : currentEp > 0
+              ? `Continuar Ep. ${nextEp}`
+              : "Ver episodio 1";
+
+            return (
+              <div className="mt-6 flex flex-wrap items-center gap-2.5">
+                <Link href={`/watch/${media.id}/${targetEp}`} prefetch={true} className="k-btn k-btn-primary font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]">
+                  <Play className="size-4 fill-current" /> {playLabel}
+                </Link>
+                <a href="#availability" className="k-btn k-btn-ghost backdrop-blur">
+                  <Tv className="size-4" aria-hidden /> Opciones
+                </a>
+                <ListMenu media={media} />
+                <FavoriteButton media={media} />
+                {media.trailer?.site === "youtube" && (
+                  <button className="k-btn k-btn-ghost backdrop-blur" onClick={() => setTrailer(true)}>
+                    <Clapperboard className="size-4" aria-hidden /> Tráiler
+                  </button>
+                )}
+                <button className="k-btn k-btn-ghost k-btn-icon" onClick={share} aria-label="Compartir">
+                  <Share2 className="size-4" aria-hidden />
+                </button>
+              </div>
+            );
+          })()}
 
           {desc && (
             <div className="mt-6 max-w-3xl">
@@ -174,16 +198,16 @@ export function DetailHero({ media }: { media: MediaDetail }) {
 }
 
 const SECTIONS = [
-  ["overview", "Overview"],
-  ["episodes", "Episodes"],
-  ["characters", "Characters"],
-  ["staff", "Staff"],
+  ["overview", "Resumen"],
+  ["episodes", "Episodios"],
+  ["characters", "Personajes"],
+  ["staff", "Equipo"],
   ["related", "Related"],
-  ["recommendations", "Recommended"],
+  ["recommendations", "Recomendados"],
   ["trailer", "Trailer"],
-  ["reviews", "Reviews"],
+  ["reviews", "Reseñas"],
   ["discussions", "Discussions"],
-  ["friends", "Friends"],
+  ["friends", "Amigos"],
   ["availability", "Availability"],
 ] as const;
 
@@ -226,14 +250,14 @@ export function YourEntry({ media }: { media: MediaDetail }) {
   if (!entry)
     return (
       <div className="k-card p-5">
-        <p className="k-label text-muted">Your entry</p>
-        <p className="mt-2 text-sm text-muted">Not in your library yet.</p>
+        <p className="k-label text-muted">Tu estado</p>
+        <p className="mt-2 text-sm text-muted">Aún no está en tu biblioteca.</p>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button className="k-btn k-btn-primary k-btn-sm" onClick={() => upsert(media, { status: "CURRENT", progress: 0 })}>
-            <Play className="size-4" aria-hidden /> Watching
+            <Play className="size-4" aria-hidden /> Viendo
           </button>
           <button className="k-btn k-btn-outline k-btn-sm" onClick={() => upsert(media, { status: "PLANNING" })}>
-            <Plus className="size-4" aria-hidden /> Plan
+            <Plus className="size-4" aria-hidden /> Por ver
           </button>
         </div>
       </div>
@@ -241,15 +265,15 @@ export function YourEntry({ media }: { media: MediaDetail }) {
   return (
     <div className="k-card space-y-4 p-5">
       <div className="flex items-center justify-between">
-        <p className="k-label text-muted">Your entry</p>
+        <p className="k-label text-muted">Tu estado</p>
         <span className="k-chip !bg-primary/15 text-primary-ink">{statusMeta(entry.status).label}</span>
       </div>
       <div>
         <label htmlFor="ep-progress" className="text-xs text-muted">
-          Episode progress
+          Progreso de episodios
         </label>
         <div className="mt-1.5 flex items-center gap-2">
-          <button className="k-btn k-btn-ghost k-btn-icon k-btn-sm" aria-label="One episode back" onClick={() => upsert(media, { progress: entry.progress - 1 })} disabled={entry.progress <= 0}>
+          <button className="k-btn k-btn-ghost k-btn-icon k-btn-sm" aria-label="Un episodio menos" onClick={() => upsert(media, { progress: entry.progress - 1 })} disabled={entry.progress <= 0}>
             <Minus className="size-4" />
           </button>
           <input
@@ -265,7 +289,7 @@ export function YourEntry({ media }: { media: MediaDetail }) {
           <span className="text-sm text-muted">/ {total ?? "?"}</span>
           <button
             className="k-btn k-btn-primary k-btn-icon k-btn-sm ml-auto"
-            aria-label="Mark next episode watched"
+            aria-label="Marcar siguiente episodio como visto"
             onClick={() => upsert(media, { progress: entry.progress + 1, ...(entry.status === "PLANNING" || entry.status === "PAUSED" ? { status: "CURRENT" } : {}) })}
             disabled={total != null && entry.progress >= total}
           >
@@ -273,7 +297,7 @@ export function YourEntry({ media }: { media: MediaDetail }) {
           </button>
         </div>
         {total ? (
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={entry.progress} aria-valuemin={0} aria-valuemax={total} aria-label="Progress">
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={entry.progress} aria-valuemin={0} aria-valuemax={total} aria-label="Progreso">
             <div className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-[width]" style={{ width: `${(entry.progress / total) * 100}%` }} />
           </div>
         ) : null}
@@ -311,7 +335,7 @@ export function YourEntry({ media }: { media: MediaDetail }) {
       </div>
       <div>
         <label htmlFor="entry-notes" className="text-xs text-muted">
-          Private notes <span className="opacity-70">(only you can see these)</span>
+          Notas privadas <span className="opacity-70">(visibles solo para ti)</span>
         </label>
         <textarea
           id="entry-notes"
@@ -320,7 +344,7 @@ export function YourEntry({ media }: { media: MediaDetail }) {
           maxLength={4000}
           defaultValue={entry.notes}
           onBlur={(e) => e.target.value !== entry.notes && upsert(media, { notes: e.target.value })}
-          placeholder="Favourite arc, where you left off, who recommended it…"
+          placeholder="Arco favorito, dónde lo dejaste, quién te lo recomendó…"
         />
       </div>
     </div>
@@ -329,21 +353,21 @@ export function YourEntry({ media }: { media: MediaDetail }) {
 
 export function InfoList({ media }: { media: MediaDetail }) {
   const rows: [string, React.ReactNode][] = [
-    ["Format", formatLabel(media.format)],
-    ["Episodes", media.episodes ?? "—"],
-    ["Duration", media.duration ? `${media.duration} min` : "—"],
-    ["Status", statusLabel(media.status)],
-    ["Start", fuzzy(media.startDate) ?? "—"],
-    ["End", fuzzy(media.endDate) ?? "—"],
-    ["Season", media.season && media.seasonYear ? <Link className="hover:text-primary-ink" href={`/seasonal?season=${media.season}&year=${media.seasonYear}`}>{titleCase(media.season)} {media.seasonYear}</Link> : "—"],
-    ["Source", media.source ? titleCase(media.source) : "—"],
-    ["Studios", media.allStudios.edges.filter((e) => e.node.isAnimationStudio).map((e) => e.node.name).join(", ") || "—"],
-    ["Producers", media.allStudios.edges.filter((e) => !e.node.isAnimationStudio).slice(0, 4).map((e) => e.node.name).join(", ") || "—"],
-    ["Country", media.countryOfOrigin ?? "—"],
-    ["Favourites", formatNumber(media.favourites)],
+    ["Formato", formatLabel(media.format)],
+    ["Episodios", media.episodes ?? "—"],
+    ["Duración", media.duration ? `${media.duration} min` : "—"],
+    ["Estado", statusLabel(media.status)],
+    ["Estreno", fuzzy(media.startDate) ?? "—"],
+    ["Fin", fuzzy(media.endDate) ?? "—"],
+    ["Temporada", media.season && media.seasonYear ? <Link className="hover:text-primary-ink" href={`/seasonal?season=${media.season}&year=${media.seasonYear}`}>{titleCase(media.season)} {media.seasonYear}</Link> : "—"],
+    ["Fuente", media.source ? titleCase(media.source) : "—"],
+    ["Estudios", media.allStudios.edges.filter((e) => e.node.isAnimationStudio).map((e) => e.node.name).join(", ") || "—"],
+    ["Productores", media.allStudios.edges.filter((e) => !e.node.isAnimationStudio).slice(0, 4).map((e) => e.node.name).join(", ") || "—"],
+    ["País", media.countryOfOrigin ?? "—"],
+    ["Favoritos", formatNumber(media.favourites)],
   ];
   if (media.hashtag) rows.push(["Hashtag", media.hashtag]);
-  if (media.synonyms.length) rows.push(["Also known as", media.synonyms.slice(0, 3).join(" · ")]);
+  if (media.synonyms.length) rows.push(["También conocido como", media.synonyms.slice(0, 3).join(" · ")]);
   return (
     <dl className="k-card divide-y divide-line px-5 py-2 text-sm">
       {rows.map(([k, v]) => (
@@ -443,13 +467,13 @@ export function EpisodesPreview({ media }: { media: MediaDetail }) {
   const entry = useLibrary((s) => s.entries[media.id]);
   const episodes = useMemo(() => buildEpisodes(media, Math.floor((now ?? 0) / 1000) || Math.floor(Date.UTC(2000, 0) / 1000)), [media, now]);
   if (!now) return <Skeleton className="h-40" />;
-  if (!episodes.length) return <p className="text-sm text-muted">Episode information isn&apos;t available yet.</p>;
+  if (!episodes.length) return <p className="text-sm text-muted">La información de episodios aún no está disponible.</p>;
   return (
     <>
       <EpisodeGrid media={media} episodes={episodes.slice(0, 8)} progress={entry?.progress ?? 0} />
       {episodes.length > 8 && (
         <Link href={`/anime/${media.id}/episodes`} className="k-btn k-btn-outline k-btn-sm mt-4">
-          All {episodes.length} episodes
+          Ver los {episodes.length} episodios
         </Link>
       )}
     </>
@@ -458,51 +482,97 @@ export function EpisodesPreview({ media }: { media: MediaDetail }) {
 
 export function EpisodeGrid({ media, episodes, progress }: { media: MediaDetail; episodes: ReturnType<typeof buildEpisodes>; progress: number }) {
   const upsert = useLibrary((s) => s.upsert);
+  const progressItems = useProgress((s) => s.items);
   const now = useNow();
+  const fallbackThumb = media.bannerImage || media.coverImage?.extraLarge || media.coverImage?.large || null;
   return (
     <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {episodes.map((ep) => {
-        const watched = ep.number <= progress;
+        const prog = progressItems[`${media.id}::${ep.number}`];
+        const watched = ep.number <= progress || Boolean(prog?.completed);
+        const inProgress = !watched && Boolean(prog && !prog.completed && prog.position > 15 && prog.duration > 0);
+        const thumb = ep.thumbnail || fallbackThumb;
         return (
-          <li key={ep.number} className={cn("k-card group overflow-hidden", !ep.aired && "opacity-70")}>
-            <div className="relative aspect-video bg-elevated">
-              {ep.thumbnail ? (
-                // Official thumbnails supplied by AniList's licensed streaming metadata.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={ep.thumbnail} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="absolute inset-0 grid place-items-center">
-                  <span className="k-outline-num text-5xl">{String(ep.number).padStart(2, "0")}</span>
-                </div>
-              )}
-              {watched && (
-                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-[var(--k-radius-chip)] bg-black/70 px-2 py-0.5 text-[0.625rem] font-bold uppercase text-white">
-                  <Check className="size-3" aria-hidden /> Watched
-                </span>
-              )}
-            </div>
-            <div className="p-3">
-              <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-primary-ink">Episode {ep.number}</p>
-              <p className="clamp-2 mt-0.5 min-h-[2.5em] text-sm font-semibold leading-snug">{ep.title ?? `Episode ${ep.number}`}</p>
-              <p className="mt-1 text-xs text-muted">
-                {[ep.durationMin ? `${ep.durationMin} min` : null, ep.airingAt ? `${ep.aired ? "Aired" : "Airs"} ${new Date(ep.airingAt * 1000).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}` : null, !ep.aired && !ep.airingAt ? "Not aired" : null]
-                  .filter(Boolean)
-                  .join(" · ") || (now ? "" : "")}
-              </p>
-              <div className="mt-3 flex items-center gap-2">
-                {ep.officialUrl ? (
-                  <a href={ep.officialUrl} target="_blank" rel="noopener noreferrer" className="k-btn k-btn-ghost k-btn-sm flex-1">
-                    <ExternalLink className="size-3.5" aria-hidden /> {ep.officialSite ?? "Official"}
-                  </a>
+          <li key={ep.number} className={cn("k-card group overflow-hidden flex flex-col justify-between", !ep.aired && "opacity-70")}>
+            <div>
+              <Link href={`/watch/${media.id}/${ep.number}`} className="relative block aspect-video bg-elevated overflow-hidden group/thumb">
+                {thumb ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={thumb} alt="" loading="lazy" className="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover/thumb:scale-105" referrerPolicy="no-referrer" />
                 ) : (
-                  <span className="flex-1 text-[0.6875rem] text-muted">Not streamable on KAZE</span>
+                  <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-primary/30 to-accent/20">
+                    <span className="k-outline-num text-5xl">{String(ep.number).padStart(2, "0")}</span>
+                  </div>
                 )}
+                <div className="absolute inset-0 grid place-items-center bg-black/30 opacity-0 group-hover/thumb:opacity-100 transition-opacity">
+                  <div className="grid size-11 place-items-center rounded-full bg-primary text-black shadow-lg">
+                    <Play className="size-5 fill-current ml-0.5" />
+                  </div>
+                </div>
+                {watched && (
+                  <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-[var(--k-radius-chip)] bg-black/85 px-2 py-0.5 text-[0.625rem] font-bold uppercase text-white backdrop-blur border border-white/10">
+                    <Check className="size-3 text-accent" aria-hidden /> Visto
+                  </span>
+                )}
+                {inProgress && (
+                  <>
+                    <div className="absolute inset-x-0 bottom-0 h-1.5 bg-black/60 overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${Math.min(100, (prog!.position / prog!.duration) * 100)}%` }} />
+                    </div>
+                    <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-[var(--k-radius-chip)] bg-primary/90 px-2 py-0.5 text-[0.625rem] font-bold text-black backdrop-blur">
+                      {Math.round((prog!.position / prog!.duration) * 100)}%
+                    </span>
+                  </>
+                )}
+              </Link>
+              <div className="p-3">
+                <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-primary-ink">Episodio {ep.number}</p>
+                <Link href={`/watch/${media.id}/${ep.number}`} className="clamp-2 mt-0.5 min-h-[2.5em] text-sm font-semibold leading-snug hover:text-primary transition-colors block">
+                  {ep.title ?? `Episodio ${ep.number}`}
+                </Link>
+                <p className="mt-1 text-xs text-muted">
+                  {inProgress ? (
+                    <span className="text-primary font-medium">Pausado en {formatDuration(prog!.position)}</span>
+                  ) : (
+                    [ep.durationMin ? `${ep.durationMin} min` : null, ep.airingAt ? `${ep.aired ? "Emitido" : "Emisión"} ${new Date(ep.airingAt * 1000).toLocaleDateString("es", { month: "short", day: "numeric", year: "numeric" })}` : null, !ep.aired && !ep.airingAt ? "No emitido" : null]
+                      .filter(Boolean)
+                      .join(" · ") || (now ? "" : "")
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="p-3 pt-0">
+              <div className="flex items-center gap-2">
+                <Link href={`/watch/${media.id}/${ep.number}`} className="k-btn k-btn-primary k-btn-sm flex-1 font-semibold">
+                  <Play className="size-3.5 fill-current" /> {inProgress ? "Reanudar" : watched ? "Volver a ver" : "Ver episodio"}
+                </Link>
                 {ep.aired && (
                   <button
-                    className={cn("k-btn k-btn-sm k-btn-icon", watched ? "k-btn-primary" : "k-btn-ghost")}
-                    aria-label={watched ? `Mark episode ${ep.number} unwatched` : `Mark watched up to episode ${ep.number}`}
+                    className={cn("k-btn k-btn-sm k-btn-icon", watched ? "k-btn-outline text-primary" : "k-btn-ghost")}
+                    aria-label={watched ? `Marcar episodio ${ep.number} como no visto` : `Marcar visto hasta episodio ${ep.number}`}
                     aria-pressed={watched}
-                    onClick={() => upsert(media, { progress: watched ? ep.number - 1 : ep.number, status: "CURRENT" })}
+                    onClick={() => {
+                      const nextProg = watched ? Math.max(0, ep.number - 1) : ep.number;
+                      upsert(media, { progress: nextProg, status: nextProg > 0 ? "CURRENT" : "PLANNING" });
+                      if (!watched) {
+                        useProgress.getState().save(
+                          {
+                            seriesId: String(media.id),
+                            episodeId: String(ep.number),
+                            position: 1200,
+                            duration: 1200,
+                            completed: true,
+                            title: ep.title,
+                            seriesTitle: displayTitle(media),
+                            thumbnail: ep.thumbnail,
+                            episodeNumber: ep.number,
+                          },
+                          { flush: true }
+                        );
+                      } else {
+                        useProgress.getState().clear(String(media.id), String(ep.number));
+                      }
+                    }}
                   >
                     <Eye className="size-4" aria-hidden />
                   </button>
@@ -518,7 +588,7 @@ export function EpisodeGrid({ media, episodes, progress }: { media: MediaDetail;
 
 export function CharacterGrid({ characters }: { characters: CharacterEdge[] }) {
   const [open, setOpen] = useState<CharacterEdge | null>(null);
-  if (!characters.length) return <p className="text-sm text-muted">No characters listed on AniList.</p>;
+  if (!characters.length) return <p className="text-sm text-muted">No hay personajes listados.</p>;
   return (
     <>
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -622,7 +692,7 @@ function CharacterDialog({ edge, onClose }: { edge: CharacterEdge; onClose: () =
 }
 
 export function StaffList({ media }: { media: MediaDetail }) {
-  if (!media.staff.edges.length) return <p className="text-sm text-muted">No staff listed.</p>;
+  if (!media.staff.edges.length) return <p className="text-sm text-muted">No hay equipo listado.</p>;
   return (
     <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {media.staff.edges.map((s, i) => (
@@ -699,7 +769,7 @@ export function AniListReviews({ media }: { media: MediaDetail }) {
   return (
     <div className="mt-8">
       <h3 className="font-display text-lg">From AniList reviewers</h3>
-      <p className="text-xs text-muted">Summaries of public AniList reviews — read the full text on AniList.</p>
+      <p className="text-xs text-muted">Resúmenes de reseñas públicas de AniList.</p>
       <ul className="mt-3 grid gap-3 md:grid-cols-2">
         {reviews.map((r) => (
           <li key={r.id} className="k-card p-4">

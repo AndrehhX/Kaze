@@ -143,7 +143,7 @@ export function CommandPalette() {
         ]
       : [];
   const recents: Command[] = !q
-    ? recent.slice(0, 4).map((r) => ({ id: `recent-${r}`, group: "Recent searches", label: r, icon: <History className="size-4" />, run: () => setQuery(r) }))
+    ? recent.slice(0, 4).map((r) => ({ id: `recent-${r}`, group: "Búsquedas recientes", label: r, icon: <History className="size-4" />, run: () => setQuery(r) }))
     : [];
   // Matching commands first (keyboard-first navigation), then anime results.
   const all = q ? [...filtered, ...results, ...searchAll] : [...recents, ...filtered];

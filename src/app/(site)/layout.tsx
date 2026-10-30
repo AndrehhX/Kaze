@@ -1,3 +1,4 @@
+import { NavigationProgress } from "@/components/shell/progress-bar";
 import { Suspense } from "react";
 import { SiteHeader } from "@/components/shell/site-header";
 import { MobileNav } from "@/components/shell/mobile-nav";
@@ -11,6 +12,9 @@ import { CompletionCelebration } from "@/components/anime/completion-celebration
 export default function SiteLayout({ children }: LayoutProps<"/">) {
   return (
     <>
+      <Suspense fallback={null}>
+        <NavigationProgress />
+      </Suspense>
       <ThemeBackdrop />
       {/* The pathname is runtime data: it streams in separately so the nav itself renders immediately. */}
       <Suspense fallback={null}>

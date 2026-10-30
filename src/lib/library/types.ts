@@ -3,12 +3,12 @@ import type { MediaCard, MediaListStatus } from "@/lib/anilist/types";
 export type LibraryStatus = MediaListStatus;
 
 export const LIBRARY_STATUSES: { value: LibraryStatus; label: string; jp: string; short: string }[] = [
-  { value: "CURRENT", label: "Watching", jp: "視聴中", short: "Watching" },
-  { value: "PLANNING", label: "Plan to Watch", jp: "予定", short: "Planning" },
-  { value: "COMPLETED", label: "Completed", jp: "完了", short: "Completed" },
-  { value: "PAUSED", label: "Paused", jp: "中断", short: "Paused" },
-  { value: "DROPPED", label: "Dropped", jp: "中止", short: "Dropped" },
-  { value: "REPEATING", label: "Rewatching", jp: "再視聴", short: "Rewatching" },
+  { value: "CURRENT", label: "Viendo", jp: "視聴中", short: "Viendo" },
+  { value: "PLANNING", label: "Por ver", jp: "予定", short: "Por ver" },
+  { value: "COMPLETED", label: "Completado", jp: "完了", short: "Completado" },
+  { value: "PAUSED", label: "En pausa", jp: "中断", short: "En pausa" },
+  { value: "DROPPED", label: "Abandonado", jp: "中止", short: "Abandonado" },
+  { value: "REPEATING", label: "Reviendo", jp: "再視聴", short: "Reviendo" },
 ];
 
 export function statusMeta(s: LibraryStatus) {

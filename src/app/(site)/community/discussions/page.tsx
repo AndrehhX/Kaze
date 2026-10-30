@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CommunityTabs } from "@/components/social/community";
 import { DiscussionList } from "@/components/social/discussions";
 
-export const metadata: Metadata = { title: "Discussions" };
+export const metadata: Metadata = { title: "Debates" };
 
 export default function Page() {
   return (

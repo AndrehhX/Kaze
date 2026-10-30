@@ -18,8 +18,8 @@ export function AuthGate({ children, feature, jp = "門" }: { children: ReactNod
       <EmptyState
         icon={<LogIn className="size-6" />}
         jp={jp}
-        title={`Sign in to use ${feature}`}
-        body="Your account keeps your library, friends and settings in sync across devices."
+        title={`Inicia sesión para usar ${feature}`}
+        body="Tu cuenta mantiene tu biblioteca, amigos y configuración sincronizados en todos tus dispositivos."
         action={
           <>
             <Link href={`/login?next=${encodeURIComponent(path)}`} className="k-btn k-btn-primary k-btn-sm">
@@ -40,7 +40,7 @@ export function BackendMissing({ feature }: { feature: string }) {
     <EmptyState
       icon={<Server className="size-6" />}
       jp="未"
-      title={`${feature} isn't configured on this deployment`}
+      title={`${feature} no está configurado en este entorno`}
       body={
         <>
           Accounts and social features run on Supabase. Set <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}

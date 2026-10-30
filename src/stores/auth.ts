@@ -9,6 +9,8 @@ export type Profile = {
   bio: string;
   avatar_url: string | null;
   banner_url: string | null;
+  avatar_frame?: string | null;
+  custom_accent?: string | null;
   profile_theme: string;
   favorite_genres: string[];
   favorite_anime: number[];

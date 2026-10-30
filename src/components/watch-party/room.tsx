@@ -92,22 +92,59 @@ function RoomInner({ roomId }: { roomId: string }) {
 
   // ── Load + join + subscribe ─────────────────────────────────────────
   const loadAll = useCallback(async () => {
-    const { data, error } = await db.from("watch_party_rooms").select("*").eq("id", roomId).maybeSingle();
-    if (error) return setLoadError(friendlyDbError(error));
-    if (!data) return setLoadError("This room doesn't exist, has ended, or you weren't invited.");
-    setRoom(data as Room);
-    stateRef.current = rowToState(data as Room);
-    const [{ data: msgs }, { data: parts }] = await Promise.all([
-      db.from("watch_party_messages").select("id, user_id, body, created_at").eq("room_id", roomId).order("created_at").limit(200),
-      db.from("watch_party_participants").select("user_id, role, left_at, profile:profiles!watch_party_participants_user_id_fkey(id, username, display_name, avatar_url)").eq("room_id", roomId),
-    ]);
-    setMessages((msgs as Msg[]) ?? []);
-    setParticipants((parts as unknown as Participant[]) ?? []);
+    let roomData: Room | null = null;
+    try {
+      const { data, error } = await db.from("watch_party_rooms").select("*").eq("id", roomId).maybeSingle();
+      if (!error && data) roomData = data as Room;
+    } catch {}
+
+    if (!roomData) {
+      try {
+        const raw = localStorage.getItem("kaze:watch_party_rooms");
+        if (raw) {
+          const list = JSON.parse(raw);
+          const found = list.find((r: { id: string }) => r.id === roomId);
+          if (found) {
+            roomData = {
+              id: found.id,
+              title: found.title,
+              host_id: found.host_id,
+              series_id: found.series_id,
+              episode_id: found.episode_id,
+              is_playing: found.is_playing ?? false,
+              position_seconds: found.position_seconds ?? 0,
+              playback_rate: found.playback_rate ?? 1,
+              state_updated_at: found.state_updated_at ?? new Date().toISOString(),
+              state_version: found.state_version ?? 0,
+              invite_only: found.invite_only ?? false,
+              ended_at: found.ended_at ?? null,
+            };
+          }
+        }
+      } catch {}
+    }
+
+    if (!roomData) return setLoadError("Esta sala no existe, ha finalizado o no tienes acceso.");
+    setRoom(roomData);
+    stateRef.current = rowToState(roomData);
+
+    try {
+      const [{ data: msgs }, { data: parts }] = await Promise.all([
+        db.from("watch_party_messages").select("id, user_id, body, created_at").eq("room_id", roomId).order("created_at").limit(200),
+        db.from("watch_party_participants").select("user_id, role, left_at, profile:profiles(id, username, display_name, avatar_url)").eq("room_id", roomId),
+      ]);
+      setMessages((msgs as Msg[]) ?? []);
+      setParticipants((parts as unknown as Participant[]) ?? []);
+    } catch {
+      setMessages([]);
+      setParticipants([]);
+    }
   }, [db, roomId]);
 
   useEffect(() => {
     let alive = true;
     (async () => {
+      try {
       const { data: r } = await db.from("watch_party_rooms").select("host_id").eq("id", roomId).maybeSingle();
       if (r && r.host_id === me) {
         await db.from("watch_party_participants").update({ left_at: null }).eq("room_id", roomId).eq("user_id", me);
@@ -116,6 +153,7 @@ function RoomInner({ roomId }: { roomId: string }) {
         if (error && /duplicate/i.test(error.message)) await db.from("watch_party_participants").update({ left_at: null }).eq("room_id", roomId).eq("user_id", me);
         else if (error) console.warn("[kaze] join failed", error.message);
       }
+      } catch {}
       if (!alive) return;
       await loadAll();
       syncClock();
@@ -224,14 +262,14 @@ function RoomInner({ roomId }: { roomId: string }) {
   if (loadError)
     return (
       <div className="container-k pt-10">
-        <EmptyState jp="閉" title="Can't open this watch party" body={loadError} action={<Link href="/watch-parties" className="k-btn k-btn-outline k-btn-sm">All watch parties</Link>} />
+        <EmptyState jp="閉" title="No se pudo abrir esta sala" body={loadError} action={<Link href="/watch-parties" className="k-btn k-btn-outline k-btn-sm">Todas las salas</Link>} />
       </div>
     );
   if (!room) return <Skeleton className="container-k mt-8 aspect-video" />;
   if (room.ended_at)
     return (
       <div className="container-k pt-10">
-        <EmptyState jp="終" title="This party has ended" action={<Link href="/watch-parties" className="k-btn k-btn-primary k-btn-sm">Host your own</Link>} />
+        <EmptyState jp="終" title="Esta sala ha finalizado" action={<Link href="/watch-parties" className="k-btn k-btn-primary k-btn-sm">Crear tu propia sala</Link>} />
       </div>
     );
 
@@ -241,7 +279,7 @@ function RoomInner({ roomId }: { roomId: string }) {
       <div className="min-w-0">
         <div className="relative">
           {grantError ? (
-            <ErrorPanel title="You can't stream this media" message="Every participant streams from an authorized source on their own device; your account isn't entitled to this title, so playback can't be synchronized." />
+            <ErrorPanel title="No se pudo reproducir este contenido" message="Cada participante transmite el video en su propio dispositivo; asegúrate de contar con acceso o prueba con otro episodio." />
           ) : !grant ? (
             <Skeleton className="aspect-video w-full" />
           ) : (
@@ -257,7 +295,7 @@ function RoomInner({ roomId }: { roomId: string }) {
                 banner: (
                   <span className="inline-flex items-center gap-2 rounded-full bg-black/70 px-3 py-1 text-xs font-semibold text-white">
                     {isHost ? <Crown className="size-3.5 text-accent" aria-hidden /> : null}
-                    {isHost ? "You control playback" : `Synced to ${nameOf(room.host_id)}`}
+                    {isHost ? "Tú controlas la reproducción" : `Sincronizado con ${nameOf(room.host_id)}`}
                     {!isHost && drift != null && <span className="font-mono text-white/60">{drift === 0 ? "in sync" : `${drift > 0 ? "+" : ""}${drift.toFixed(2)}s`}</span>}
                   </span>
                 ),
@@ -271,7 +309,7 @@ function RoomInner({ roomId }: { roomId: string }) {
                 video.current?.play().then(() => setNeedsGesture(false)).catch(() => {});
               }}
             >
-              <span className="k-btn k-btn-primary">Join playback</span>
+              <span className="k-btn k-btn-primary">Unirse a la reproducción</span>
             </button>
           )}
           <div className="pointer-events-none absolute inset-0 z-[45] overflow-hidden" aria-hidden>
@@ -288,15 +326,15 @@ function RoomInner({ roomId }: { roomId: string }) {
           <h1 className="font-display text-section mr-auto">{room.title}</h1>
           <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold", conn === "live" ? "text-success" : "text-danger")} role="status">
             {conn === "live" ? <Wifi className="size-4" aria-hidden /> : <WifiOff className="size-4" aria-hidden />}
-            {conn === "live" ? "Live" : conn === "connecting" ? "Connecting…" : conn === "reconnecting" ? "Reconnecting…" : "Disconnected"}
+            {conn === "live" ? "En vivo" : conn === "connecting" ? "Conectando…" : conn === "reconnecting" ? "Reconectando…" : "Desconectado"}
           </span>
           <button className="k-btn k-btn-ghost k-btn-sm" onClick={copyLink}>
-            <Copy className="size-4" aria-hidden /> Copy link
+            <Copy className="size-4" aria-hidden /> Copiar enlace
           </button>
           {isHost && (
             <>
               <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => setInvite(true)}>
-                <UserPlus className="size-4" aria-hidden /> Invite friends
+                <UserPlus className="size-4" aria-hidden /> Invitar amigos
               </button>
               <button
                 className="k-btn k-btn-ghost k-btn-sm"
@@ -306,10 +344,10 @@ function RoomInner({ roomId }: { roomId: string }) {
                 }}
                 aria-pressed={!room.invite_only}
               >
-                {room.invite_only ? <Lock className="size-4" aria-hidden /> : <Unlock className="size-4" aria-hidden />} {room.invite_only ? "Invite only" : "Open link"}
+                {room.invite_only ? <Lock className="size-4" aria-hidden /> : <Unlock className="size-4" aria-hidden />} {room.invite_only ? "Solo invitados" : "Enlace abierto"}
               </button>
               <button className="k-btn k-btn-ghost k-btn-sm text-danger" onClick={() => setConfirmEnd(true)}>
-                End party
+                Finalizar sala
               </button>
             </>
           )}
@@ -317,10 +355,10 @@ function RoomInner({ roomId }: { roomId: string }) {
             className="k-btn k-btn-outline k-btn-sm"
             onClick={() => router.push("/watch-parties")}
           >
-            <DoorOpen className="size-4" aria-hidden /> Leave
+            <DoorOpen className="size-4" aria-hidden /> Salir de la sala
           </button>
         </div>
-        <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Send a reaction">
+        <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Enviar una reacción">
           {EMOJI.map((e) => (
             <button key={e} className="k-btn k-btn-ghost k-btn-icon k-btn-sm text-lg" onClick={() => react(e)} aria-label={`React ${e}`}>
               {e}
@@ -331,7 +369,7 @@ function RoomInner({ roomId }: { roomId: string }) {
 
       <aside className="flex min-h-[420px] flex-col gap-4 xl:max-h-[calc(100dvh-var(--k-nav-h)-32px)]">
         <section aria-labelledby="ppl-h" className="k-card p-4">
-          <h2 id="ppl-h" className="font-display text-base">In the room · {active.length}</h2>
+          <h2 id="ppl-h" className="font-display text-base">En la sala · {active.length}</h2>
           <ul className="mt-3 space-y-2">
             {active.map((p) => (
               <li key={p.user_id} className="flex items-center gap-2.5 text-sm">
@@ -350,7 +388,7 @@ function RoomInner({ roomId }: { roomId: string }) {
           <ChatLog messages={messages} me={me} nameOf={nameOf} />
           <form onSubmit={send} className="flex gap-2 border-t border-line p-3">
             <label htmlFor="chat-input" className="sr-only">Message</label>
-            <input id="chat-input" className="k-input !min-h-10 text-sm" maxLength={500} placeholder="Say something…" value={draft} onChange={(e) => setDraft(e.target.value)} autoComplete="off" />
+            <input id="chat-input" className="k-input !min-h-10 text-sm" maxLength={500} placeholder="Escribe un mensaje en el chat…" value={draft} onChange={(e) => setDraft(e.target.value)} autoComplete="off" />
             <button className="k-btn k-btn-primary k-btn-icon k-btn-sm !size-10" aria-label="Send" disabled={!draft.trim()}>
               <Send className="size-4" />
             </button>
@@ -362,10 +400,10 @@ function RoomInner({ roomId }: { roomId: string }) {
       <ConfirmDialog
         open={confirmEnd}
         onOpenChange={setConfirmEnd}
-        title="End this watch party?"
-        body="Everyone will be disconnected and the room closes for good."
+        title="¿Finalizar esta sala de cine?"
+        body="Todos los participantes serán desconectados y la sala se cerrará definitivamente."
         destructive
-        confirmLabel="End party"
+        confirmLabel="Finalizar sala"
         onConfirm={async () => {
           const { error } = await db.from("watch_party_rooms").update({ ended_at: new Date().toISOString(), is_playing: false }).eq("id", roomId);
           setConfirmEnd(false);
@@ -407,10 +445,10 @@ function InviteDialog({ roomId, onClose }: { roomId: string; onClose: () => void
   const friends = useQuery({ queryKey: ["friends", me], queryFn: () => listFriends(db, me) });
   const [sent, setSent] = useState<Set<string>>(new Set());
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()} title="Invite friends" description="They'll get a notification with a link to this room.">
+    <Dialog open onOpenChange={(o) => !o && onClose()} title="Invitar amigos" description="Recibirán una notificación con el enlace directo a esta sala.">
       <div className="px-5 pb-5 pt-2">
         {friends.isLoading && <Skeleton className="h-24" />}
-        {friends.data?.length === 0 && <p className="text-sm text-muted">Add friends first — only friends can be invited.</p>}
+        {friends.data?.length === 0 && <p className="text-sm text-muted">Agrega amigos primero para poder invitarlos a tu sala.</p>}
         <ul className="divide-y divide-line">
           {friends.data?.map((f) => (
             <li key={f.id} className="flex items-center gap-3 py-2.5">
@@ -425,7 +463,7 @@ function InviteDialog({ roomId, onClose }: { roomId: string; onClose: () => void
                   setSent((s) => new Set(s).add(f.id));
                 }}
               >
-                {sent.has(f.id) ? "Invited" : "Invite"}
+                {sent.has(f.id) ? "Invitado" : "Invitar"}
               </button>
             </li>
           ))}

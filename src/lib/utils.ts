@@ -99,27 +99,29 @@ export function titleCase(s: string) {
 export function formatLabel(format: string | null | undefined) {
   if (!format) return "";
   const map: Record<string, string> = {
-    TV: "TV",
-    TV_SHORT: "TV Short",
-    MOVIE: "Movie",
-    SPECIAL: "Special",
+    TV: "Serie TV",
+    TV_SHORT: "Corto TV",
+    MOVIE: "Película",
+    SPECIAL: "Especial",
     OVA: "OVA",
     ONA: "ONA",
-    MUSIC: "Music",
+    MUSIC: "Musical",
   };
   return map[format] ?? titleCase(format);
 }
 
 export function statusLabel(status: string | null | undefined) {
   const map: Record<string, string> = {
-    FINISHED: "Finished",
-    RELEASING: "Airing",
-    NOT_YET_RELEASED: "Upcoming",
-    CANCELLED: "Cancelled",
-    HIATUS: "Hiatus",
+    FINISHED: "Finalizado",
+    RELEASING: "En emisión",
+    NOT_YET_RELEASED: "Próximamente",
+    CANCELLED: "Cancelado",
+    HIATUS: "En pausa",
   };
   return status ? (map[status] ?? titleCase(status)) : "";
 }
+
+export { genreLabel } from "./anilist/browse-params";
 
 export function hashString(s: string): number {
   let h = 2166136261;

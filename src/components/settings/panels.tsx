@@ -62,10 +62,11 @@ export function SettingsOverview() {
   const profile = useAuth((s) => s.profile);
   const theme = useSettings((s) => s.theme);
   const cards = [
-    { href: "/settings/appearance", title: "Appearance", body: `${THEMES[theme].name} · motion & effects` },
-    { href: "/settings/account", title: "Account", body: status === "signed-in" ? `Signed in as @${profile?.username ?? "…"}` : status === "unconfigured" ? "Accounts not configured" : "Not signed in" },
-    { href: "/settings/privacy", title: "Privacy", body: profile ? `Profile is ${profile.visibility}` : "Profile visibility & activity sharing" },
-    { href: "/settings/integrations", title: "Integrations", body: "Connect AniList, import & sync your list" },
+    { href: "/settings/profile", title: "Perfil de Orunei", body: "Avatar, marcos animados, portada, bio, temas y vitrina" },
+    { href: "/settings/appearance", title: "Apariencia", body: `${THEMES[theme].name} · efectos y animaciones` },
+    { href: "/settings/account", title: "Cuenta", body: status === "signed-in" ? `Conectado como @${profile?.username ?? "…"}` : "Perfil local en este dispositivo" },
+    { href: "/settings/privacy", title: "Privacidad", body: profile ? `Perfil: ${profile.visibility}` : "Visibilidad del perfil y actividad" },
+    { href: "/settings/integrations", title: "Integraciones", body: "Conecta AniList, importa y sincroniza tu lista" },
   ];
   return (
     <ul className="grid gap-4 sm:grid-cols-2">
@@ -93,7 +94,7 @@ export function AppearanceSettings() {
   const { switchTo, overlay } = useThemeSwitch();
   return (
     <>
-      <Panel title="Theme" description={signedIn ? "Your theme follows your account to every device." : "Saved on this device. Sign in to carry it across devices."}>
+      <Panel title="Tema visual" description={signedIn ? "Tu tema acompaña a tu cuenta en todos tus dispositivos." : "Guardado en este dispositivo. Inicia sesión para sincronizarlo."}>
         <div className="grid gap-3 sm:grid-cols-2">
           {THEME_IDS.map((id) => (
             <button
@@ -111,13 +112,13 @@ export function AppearanceSettings() {
           ))}
         </div>
       </Panel>
-      <Panel title="Motion" description="Animations communicate state; you decide how much of it you want.">
+      <Panel title="Movimiento y animaciones" description="Las animaciones comunican estado; tú decides cuánta fluidez visual prefieres.">
         <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Motion preference">
           {(
             [
-              ["system", "Follow system", "Respects your OS “reduce motion” setting"],
-              ["reduce", "Reduced", "Fades only, no movement"],
-              ["full", "Full", "All cinematic transitions"],
+              ["system", "Seguir el sistema", "Respeta el ajuste de reducir movimiento del sistema"],
+              ["reduce", "Reducido", "Solo transiciones suaves, sin movimientos bruscos"],
+              ["full", "Completo", "Todas las transiciones cinemáticas fluidas"],
             ] as [MotionPref, string, string][]
           ).map(([v, l, d]) => (
             <button key={v} role="radio" aria-checked={motion === v} onClick={() => setMotion(v)} className={cn("k-card p-3 text-left", motion === v && "ring-2 ring-primary")}>
@@ -128,7 +129,7 @@ export function AppearanceSettings() {
             </button>
           ))}
         </div>
-        <Switch id="ambient-fx" label="Ambient effects" description="Sakura petals, light trails and scan sweeps in the background." checked={ambient} onChange={setAmbient} />
+        <Switch id="ambient-fx" label="Efectos ambientales" description="Pétalos de sakura, estelas de luz y destellos sutiles en el fondo." checked={ambient} onChange={setAmbient} />
       </Panel>
       {overlay}
     </>
@@ -163,7 +164,7 @@ function AccountInner() {
     const { error } = await db.auth.updateUser({ email }, { emailRedirectTo: `${location.origin}/auth/callback?next=/settings/account` });
     setBusy(null);
     if (error) toast.error(error.message);
-    else toast.success("Check both inboxes to confirm the change");
+    else toast.success("Revisa tu bandeja de entrada para confirmar el cambio de correo");
   };
   const updatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,7 +177,7 @@ function AccountInner() {
     if (error) toast.error(error.message);
     else {
       setPw("");
-      toast.success("Password updated");
+      toast.success("Contraseña actualizada con éxito");
       if (reset) router.replace("/settings/account");
     }
   };
@@ -185,8 +186,8 @@ function AccountInner() {
     const res = await fetch("/api/account/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: confirmText }) });
     const body = await res.json().catch(() => ({}));
     setBusy(null);
-    if (!res.ok) return toast.error(body.error ?? "Deletion failed");
-    toast.success(body.note ?? "Your account was deleted");
+    if (!res.ok) return toast.error(body.error ?? "Error al eliminar la cuenta");
+    toast.success(body.note ?? "Tu cuenta ha sido eliminada correctamente");
     await db.auth.signOut();
     localStorage.removeItem("kaze:library");
     localStorage.removeItem("kaze:progress");
@@ -195,64 +196,64 @@ function AccountInner() {
 
   return (
     <>
-      {reset && <p className="mb-6 rounded-[var(--k-radius-card)] bg-primary/15 p-4 text-sm">You followed a password reset link. Choose a new password below.</p>}
-      <Panel title="Email" description={user.emailConfirmed ? "Verified" : "Not yet verified — check your inbox."}>
+      {reset && <p className="mb-6 rounded-[var(--k-radius-card)] bg-primary/15 p-4 text-sm">Has seguido un enlace de recuperación. Elige una nueva contraseña a continuación.</p>}
+      <Panel title="Correo electrónico" description={user.emailConfirmed ? "Verificado" : "Pendiente de verificación — revisa tu correo."}>
         <form onSubmit={updateEmail} className="flex flex-wrap gap-2">
           <label htmlFor="acc-email" className="sr-only">Email</label>
           <input id="acc-email" type="email" className="k-input flex-1" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
           <button className="k-btn k-btn-outline" disabled={busy === "email" || email === user.email}>
-            {busy === "email" && <Loader2 className="size-4 animate-spin" />} Update
+            {busy === "email" && <Loader2 className="size-4 animate-spin" />} Actualizar correo
           </button>
         </form>
       </Panel>
-      <Panel title="Password">
+      <Panel title="Contraseña">
         <form onSubmit={updatePassword} className="space-y-2">
-          <label htmlFor="acc-pw" className="text-sm font-semibold">New password</label>
+          <label htmlFor="acc-pw" className="text-sm font-semibold">Nueva contraseña</label>
           <div className="flex flex-wrap gap-2">
             <input id="acc-pw" type="password" className="k-input flex-1" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" aria-invalid={Boolean(pwErr)} />
             <button className="k-btn k-btn-outline" disabled={busy === "pw" || !pw}>
-              {busy === "pw" && <Loader2 className="size-4 animate-spin" />} Change password
+              {busy === "pw" && <Loader2 className="size-4 animate-spin" />} Cambiar contraseña
             </button>
           </div>
-          {pwErr ? <p className="text-xs text-danger">{pwErr}</p> : <p className="text-xs text-muted">8+ characters with a letter and a number.</p>}
+          {pwErr ? <p className="text-xs text-danger">{pwErr}</p> : <p className="text-xs text-muted">Mínimo 8 caracteres con una letra y un número.</p>}
         </form>
       </Panel>
-      <Panel title="Sessions" description="Sign out everywhere else if you used a shared or lost device.">
+      <Panel title="Sesiones activas" description="Cierra sesión en los demás dispositivos si usaste un equipo compartido o extraviado.">
         <div className="flex flex-wrap gap-2">
           <button className="k-btn k-btn-outline k-btn-sm" onClick={() => setConfirmOthers(true)}>
-            Sign out other devices
+            Cerrar sesión en otros dispositivos
           </button>
           <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => signOut().then(() => router.replace("/"))}>
-            <LogOut className="size-4" aria-hidden /> Sign out here
+            <LogOut className="size-4" aria-hidden /> Cerrar sesión en este equipo
           </button>
         </div>
       </Panel>
-      <Panel title="Delete account" description="Permanently removes your profile, library, reviews, comments, friends and connected accounts. This can't be undone.">
+      <Panel title="Eliminar cuenta" description="Elimina permanentemente tu perfil, biblioteca, reseñas, comentarios, amigos y cuentas conectadas. Esta acción no se puede deshacer.">
         <button className="k-btn k-btn-sm bg-danger text-white" onClick={() => setDel(true)}>
-          <Trash2 className="size-4" aria-hidden /> Delete my account
+          <Trash2 className="size-4" aria-hidden /> Eliminar mi cuenta
         </button>
       </Panel>
       <ConfirmDialog
         open={confirmOthers}
         onOpenChange={setConfirmOthers}
-        title="Sign out other devices?"
-        body="Every other browser signed in to this account will be signed out."
-        confirmLabel="Sign them out"
+        title="Cerrar sesión en otros dispositivos?"
+        body="Se cerrará la sesión en todos los demás navegadores conectados a esta cuenta."
+        confirmLabel="Cerrar las demás sesiones"
         onConfirm={async () => {
           const { error } = await db.auth.signOut({ scope: "others" });
           setConfirmOthers(false);
           if (error) toast.error(error.message);
-          else toast.success("Other sessions signed out");
+          else toast.success("Las demás sesiones se han cerrado");
         }}
       />
-      <Dialog open={del} onOpenChange={setDel} title="Delete your account?" description="Type DELETE to confirm.">
+      <Dialog open={del} onOpenChange={setDel} title="¿Eliminar tu cuenta definitivamente?" description="Escribe ELIMINAR para confirmar.">
         <div className="space-y-3 px-5 pb-5 pt-2">
           <label htmlFor="del-confirm" className="sr-only">Type DELETE</label>
-          <input id="del-confirm" className="k-input" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder="DELETE" autoComplete="off" />
+          <input id="del-confirm" className="k-input" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder="ELIMINAR" autoComplete="off" />
           <div className="flex justify-end gap-2">
-            <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => setDel(false)}>Cancel</button>
-            <button className="k-btn k-btn-sm bg-danger text-white" disabled={confirmText !== "DELETE" || busy === "delete"} onClick={deleteAccount}>
-              {busy === "delete" ? "Deleting…" : "Delete forever"}
+            <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => setDel(false)}>Cancelar</button>
+            <button className="k-btn k-btn-sm bg-danger text-white" disabled={confirmText !== "ELIMINAR" && confirmText !== "DELETE" || busy === "delete"} onClick={deleteAccount}>
+              {busy === "delete" ? "Eliminando…" : "Eliminar para siempre"}
             </button>
           </div>
         </div>
@@ -269,8 +270,8 @@ export function PrivacySettings() {
       <AuthGate feature="privacy settings">
         <PrivacyInner />
       </AuthGate>
-      <Panel title="Gamification" description="Badges, milestones and seasonal goals. Entirely optional — no streak pressure, ever.">
-        <Switch id="gami" label="Show achievements & celebrations" checked={gamification} onChange={setGamification} />
+      <Panel title="Gamificación y Logros" description="Insignias, hitos y metas de temporada. Totalmente opcional y sin presiones.">
+        <Switch id="gami" label="Mostrar insignias y celebraciones de logros" checked={gamification} onChange={setGamification} />
       </Panel>
     </>
   );
@@ -286,27 +287,27 @@ function PrivacyInner() {
     setSaving(false);
     if (error) return toast.error(friendlyDbError(error));
     await refreshProfile();
-    toast.success("Privacy updated");
+    toast.success("Privacidad actualizada con éxito");
   };
   return (
-    <Panel title="Profile & activity" description="Enforced on the server by row-level security — not just hidden in the UI.">
+    <Panel title="Perfil y actividad" description="Protegido en el servidor mediante seguridad por filas (RLS). Tu información siempre segura.">
       <fieldset className="mb-4">
-        <legend className="mb-2 text-sm font-semibold">Who can see your profile</legend>
+        <legend className="mb-2 text-sm font-semibold">Quién puede ver tu perfil</legend>
         <div className="grid gap-2 sm:grid-cols-3">
           {(["public", "friends", "private"] as const).map((v) => (
             <button key={v} disabled={saving} aria-pressed={profile.visibility === v} onClick={() => save({ visibility: v })} className={cn("k-card p-3 text-left text-sm", profile.visibility === v && "ring-2 ring-primary")}>
               <span className="font-semibold capitalize">{v}</span>
-              <span className="mt-1 block text-xs text-muted">{v === "public" ? "Anyone, including signed-out visitors" : v === "friends" ? "Only accepted friends" : "Only you (friends see your name)"}</span>
+              <span className="mt-1 block text-xs text-muted">{v === "public" ? "Cualquier persona, incluidos visitantes" : v === "friends" ? "Solo amigos aceptados" : "Solo tú (privado)"}</span>
             </button>
           ))}
         </div>
       </fieldset>
       <div className="divide-y divide-line">
-        <Switch id="p-lists" label="Share my anime lists" checked={profile.show_lists} onChange={(v) => save({ show_lists: v })} disabled={saving} />
-        <Switch id="p-hist" label="Share my watch history" description="Continue-watching progress on the demo player." checked={profile.show_watch_history} onChange={(v) => save({ show_watch_history: v })} disabled={saving} />
-        <Switch id="p-favs" label="Share my favorites" checked={profile.show_favorites} onChange={(v) => save({ show_favorites: v })} disabled={saving} />
-        <Switch id="p-act" label="Share my activity" description="Started, completed, rated and reviewed events in friends' feeds." checked={profile.show_activity} onChange={(v) => save({ show_activity: v })} disabled={saving} />
-        <Switch id="p-online" label="Show when I'm online" description="Off by default." checked={profile.show_online_status} onChange={(v) => save(v ? { show_online_status: true } : { show_online_status: false, last_seen_at: null } as Partial<typeof profile>)} disabled={saving} />
+        <Switch id="p-lists" label="Compartir mis listas de anime" checked={profile.show_lists} onChange={(v) => save({ show_lists: v })} disabled={saving} />
+        <Switch id="p-hist" label="Compartir mi historial de visualización" description="Progreso y animes que estás viendo actualmente." checked={profile.show_watch_history} onChange={(v) => save({ show_watch_history: v })} disabled={saving} />
+        <Switch id="p-favs" label="Compartir mis animes favoritos" checked={profile.show_favorites} onChange={(v) => save({ show_favorites: v })} disabled={saving} />
+        <Switch id="p-act" label="Compartir mi actividad" description="Animes empezados, completados, calificaciones y reseñas en el feed de tus amigos." checked={profile.show_activity} onChange={(v) => save({ show_activity: v })} disabled={saving} />
+        <Switch id="p-online" label="Mostrar cuándo estoy en línea" description="Desactivado por defecto." checked={profile.show_online_status} onChange={(v) => save(v ? { show_online_status: true } : { show_online_status: false, last_seen_at: null } as Partial<typeof profile>)} disabled={saving} />
       </div>
       <p className="mt-4 text-xs text-muted">
         Blocked users can&apos;t see your profile, reviews or comments. Manage blocks in <Link href="/friends" className="underline">Friends</Link>.

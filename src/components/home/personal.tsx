@@ -33,53 +33,101 @@ export function ContinueWatching() {
   const items = useProgress((s) => s.items);
   const hydrated = useProgress((s) => s.hydrated);
   const { list } = useLibraryList();
-  const playable = recentProgress(items, 8);
+
+  // Filtrar exclusivamente animes reales con AniList ID numérico positivo, omitiendo demos
+  const isRealAnime = (p: { seriesId: string; isDemo?: boolean; seriesTitle?: string | null; title?: string | null }) => {
+    if (p.isDemo) return false;
+    const num = Number(p.seriesId);
+    if (!Number.isInteger(num) || num <= 0) return false;
+    const sTitle = (p.seriesTitle || "").toLowerCase();
+    const epTitle = (p.title || "").toLowerCase();
+    if (sTitle.includes("demo") || sTitle.includes("open cinema")) return false;
+    if (epTitle.includes("big buck bunny") || epTitle.includes("sintel") || epTitle.includes("elephants dream")) return false;
+    return true;
+  };
+  const playable = recentProgress(items, 12).filter(isRealAnime);
   const watching = list.filter((e) => e.status === "CURRENT" || e.status === "REPEATING").sort((a, b) => b.updatedAt - a.updatedAt);
+
+  // Obtener metadatos de AniList para las series en progreso de reproducción
+  const aniIds = useMemo(
+    () => Array.from(new Set(playable.map((p) => Number(p.seriesId)).filter((id) => Number.isInteger(id) && id > 0))),
+    [playable]
+  );
+  const { data: batchData } = useQuery({
+    queryKey: ["continue-batch", aniIds],
+    queryFn: ({ signal }) => api.batch(aniIds, signal),
+    enabled: aniIds.length > 0,
+    staleTime: 30 * 60_000,
+  });
+  const mediaMap = useMemo(() => {
+    const map = new Map<number, MediaCard>();
+    for (const m of batchData?.media ?? []) map.set(m.id, m);
+    return map;
+  }, [batchData]);
 
   const airing = useAiringStatus(watching);
 
   if (!hydrated || (!playable.length && !watching.length)) return null;
   return (
-    <section aria-labelledby="continue-h" className="container-k relative z-[1] -mt-6 pt-0">
-      <SectionHeader id="continue-h" title="Continue Watching" jp="続きから" />
-      <Rail label="Continue watching" itemClassName="w-[78vw] xs:w-[56vw] sm:w-[40vw] md:w-[30vw] lg:w-[23vw] xl:w-[19vw] 3xl:w-[320px]">
+    <section aria-labelledby="continue-h" className="container-k relative z-[1] mt-12 sm:mt-16 pb-6">
+      <SectionHeader id="continue-h" title="Continuar viendo" jp="続きから" />
+      <Rail label="Continuar viendo" itemClassName="w-[78vw] xs:w-[56vw] sm:w-[40vw] md:w-[30vw] lg:w-[23vw] xl:w-[19vw] 3xl:w-[320px]">
         {[
           ...playable.map((p) => {
-            const series = DEMO_SERIES.find((s) => s.id === p.seriesId);
-            const ep = series?.episodes.find((e) => e.id === p.episodeId);
-            const pct = p.duration ? Math.min(100, (p.position / p.duration) * 100) : 0;
+            const media = mediaMap.get(Number(p.seriesId));
+            const seriesTitle = p.seriesTitle || media?.title.english || media?.title.romaji || "Anime";
+            const epNum = p.episodeNumber || parseInt(p.episodeId, 10) || 1;
+            const epTitle = p.title && !p.title.startsWith("Episodio") && p.title !== `Episode ${epNum}` ? p.title : `Episodio ${epNum}`;
+            const thumb = p.thumbnail || media?.bannerImage || media?.coverImage.extraLarge || media?.coverImage.large || null;
+            const pct = p.duration ? Math.min(100, Math.max(0, (p.position / p.duration) * 100)) : 0;
+
             return (
-              <Link key={`p-${p.seriesId}-${p.episodeId}`} href={`/watch/${p.seriesId}/${p.episodeId}`} className="k-card group block overflow-hidden">
-                <div className="relative aspect-video bg-gradient-to-br from-primary/40 via-secondary/30 to-accent/30">
-                  <span className="k-jp absolute right-3 top-2 text-4xl font-bold text-white/20" lang="ja" aria-hidden>
-                    映
-                  </span>
-                  <PlayCircle className="absolute left-1/2 top-1/2 size-12 -translate-x-1/2 -translate-y-1/2 text-white drop-shadow-lg transition-transform group-hover:scale-110" aria-hidden />
-                  <div className="absolute inset-x-0 bottom-0 h-1 bg-black/40">
-                    <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+              <Link key={`p-${p.seriesId}-${p.episodeId}`} href={`/watch/${p.seriesId}/${p.episodeId}`} prefetch={true} className="k-card group block overflow-hidden">
+                <div className="relative aspect-video bg-elevated overflow-hidden">
+                  {thumb ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={thumb}
+                      alt={seriesTitle}
+                      loading="lazy"
+                      className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-primary/30 to-accent/20">
+                      <span className="k-outline-num text-4xl">{String(epNum).padStart(2, "0")}</span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 grid place-items-center bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="grid size-11 place-items-center rounded-full bg-primary text-black shadow-lg">
+                      <PlayCircle className="size-6 text-black fill-current ml-0.5" aria-hidden />
+                    </div>
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 h-1.5 bg-black/60">
+                    <div className="h-full bg-primary transition-all duration-300" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
                 <div className="p-3">
-                  <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-primary-ink">
-                    {series?.title ?? "Demo"} · Ep {ep?.number ?? p.episodeId}
+                  <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-primary-ink truncate">
+                    {seriesTitle} · Ep {epNum}
                   </p>
-                  <p className="truncate text-sm font-semibold">{ep?.title ?? p.title ?? "Episode"}</p>
-                  <p className="text-xs text-muted">
-                    Resume at {formatDuration(p.position)} of {formatDuration(p.duration)}
+                  <p className="truncate text-sm font-semibold mt-0.5">{epTitle}</p>
+                  <p className="text-xs text-muted mt-0.5">
+                    Reanudar en {formatDuration(p.position)} de {formatDuration(p.duration)}
                   </p>
                 </div>
               </Link>
             );
           }),
           ...watching.slice(0, 10).map((e) => (
-            <Link key={`l-${e.mediaId}`} href={`/anime/${e.mediaId}#availability`} className="k-card group flex h-full gap-3 overflow-hidden p-2.5">
+            <Link key={`l-${e.mediaId}`} href={`/anime/${e.mediaId}#availability`} prefetch={true} className="k-card group flex h-full gap-3 overflow-hidden p-2.5">
               <div className="k-poster relative aspect-[2/3] w-16 shrink-0">
                 <SafeImage src={e.media.cover ?? ""} alt="" fill sizes="64px" className="object-cover" fallbackLabel={e.media.title} />
               </div>
               <div className="min-w-0 py-1">
                 <p className="text-[0.6875rem] font-semibold text-primary-ink">
-                  Next: episode {e.progress + 1}
-                  {e.media.episodes ? ` of ${e.media.episodes}` : ""}
+                  Siguiente: episodio {e.progress + 1}
+                  {e.media.episodes ? ` de ${e.media.episodes}` : ""}
                 </p>
                 <p className="clamp-2 text-sm font-semibold leading-snug">{e.media.title}</p>
                 <AiringLine status={airing.get(e.mediaId)} />
@@ -96,7 +144,7 @@ type Airing = { unwatched: number; nextEpisode: number | null; inDays: number | 
 
 /**
  * New-episode awareness from AniList's real airing data: how many aired
- * episodes are ahead of your progress, and when the next one airs.
+ * episodes are ahead de your progress, and when the next one airs.
  */
 function useAiringStatus(watching: LibraryEntry[]) {
   const ids = watching.map((e) => e.mediaId).slice(0, 50).sort((a, b) => a - b);
@@ -118,7 +166,7 @@ function useAiringStatus(watching: LibraryEntry[]) {
 }
 
 function AiringLine({ status }: { status?: Airing }) {
-  if (!status) return <p className="mt-1 text-xs text-muted">Tracked in your library</p>;
+  if (!status) return <p className="mt-1 text-xs text-muted">Guardado en tu biblioteca</p>;
   if (status.unwatched > 0)
     return (
       <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-fg">
@@ -127,7 +175,7 @@ function AiringLine({ status }: { status?: Airing }) {
       </p>
     );
   if (status.nextEpisode) return <p className="mt-1 text-xs text-muted">Episode {status.nextEpisode} airs {status.inDays === 0 ? "today" : `in ${status.inDays}d`}</p>;
-  return <p className="mt-1 text-xs text-muted">All aired episodes watched</p>;
+  return <p className="mt-1 text-xs text-muted">Al día con todos los episodios emitidos</p>;
 }
 
 /** "Not interested" list: device copy, mirrored to recommendation_preferences for signed-in users. */
@@ -212,16 +260,16 @@ export function RecommendedForYou({ pool }: { pool: MediaCard[] }) {
     <section aria-labelledby="rec-h" className="container-k mt-20">
       <SectionHeader
         id="rec-h"
-        title={enough ? "Recommended For You" : "Start Your Taste Profile"}
+        title={enough ? "Recomendado para ti" : "Comienza tu perfil de gustos"}
         jp="あなたへ"
-        kicker={enough ? `Based on ${profile.top.slice(0, 3).join(", ") || "your library"}` : "Discovery picks"}
+        kicker={enough ? `Basado en ${profile.top.slice(0, 3).join(", ") || "tu biblioteca"}` : "Descubrimiento"}
       />
       {!enough ? (
         <>
           <EmptyState
           icon={<Sparkles className="size-6" />}
           jp="好"
-          title="Personal picks unlock after a couple of titles"
+          title="Personal picks unlock after a couple de titles"
           body={
             <>
               KAZE recommends from what you actually watch — genres you finish, scores you give, and AniList fan recommendations. Add or rate at least two titles and this row becomes
@@ -243,7 +291,7 @@ export function RecommendedForYou({ pool }: { pool: MediaCard[] }) {
           </div>
         </>
       ) : recs.length ? (
-        <Rail label="Recommended for you">
+        <Rail label="Recomendado para ti">
           {recs.map((r) => (
             <div key={r.media.id} className="group/rec relative" title={r.factors.map((f) => `${f.label}: +${f.value}`).join("\n")}>
               <AnimeCard media={r.media} caption={r.reason} layoutScope="rec" />
@@ -278,7 +326,7 @@ export function FavoriteGenres() {
   const genres = personal.length >= 3 ? personal : FALLBACK_GENRES.slice(0, 12);
   return (
     <section aria-labelledby="genres-h" className="container-k mt-20">
-      <SectionHeader id="genres-h" title={personal.length >= 3 ? "Your Favorite Genres" : "Browse by Genre"} jp="ジャンル" kicker={personal.length >= 3 ? "From your library" : undefined} />
+      <SectionHeader id="genres-h" title={personal.length >= 3 ? "Tus géneros favoritos" : "Explorar por género"} jp="ジャンル" kicker={personal.length >= 3 ? "From your library" : undefined} />
       <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
         {genres.map((g, i) => (
           <li key={g}>
@@ -288,7 +336,7 @@ export function FavoriteGenres() {
               style={{ background: `linear-gradient(135deg, var(--k-chart-${(i % 5) + 1}) -40%, var(--k-surface) 70%)` }}
             >
               <span className="font-display text-lg leading-none">{g}</span>
-              {counts[g] ? <span className="mt-1 text-xs text-muted">{counts[g]} in your library</span> : <span className="mt-1 text-xs text-muted">Explore</span>}
+              {counts[g] ? <span className="mt-1 text-xs text-muted">{counts[g]} en tu biblioteca</span> : <span className="mt-1 text-xs text-muted">Explore</span>}
               <ArrowUpRight className="absolute right-3 top-3 size-4 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
             </Link>
           </li>
@@ -313,8 +361,8 @@ export function BecauseYouLoved() {
   if (isError || (!isLoading && !items.length)) return null;
   return (
     <section aria-labelledby="byl-h" className="container-k mt-20">
-      <SectionHeader id="byl-h" kicker="AniList fan recommendations" title={`Because You Loved ${seed.media.title}`} jp="おすすめ" />
-      <Rail label={`Because you loved ${seed.media.title}`}>
+      <SectionHeader id="byl-h" kicker="Recomendaciones de la comunidad" title={`Porque te gustó ${seed.media.title}`} jp="おすすめ" />
+      <Rail label={`Porque te gustó ${seed.media.title}`}>
         {isLoading
           ? Array.from({ length: 6 }, (_, i) => <AnimeCardSkeleton key={i} />)
           : items.map((i) => <AnimeCard key={i.media.id} media={i.media} caption={`${i.rating} fans agree`} layoutScope="byl" />)}
@@ -328,23 +376,23 @@ export function FriendsAreWatching() {
   const status = useAuth((s) => s.status);
   return (
     <section aria-labelledby="friends-h" className="container-k mt-20">
-      <SectionHeader id="friends-h" title="Friends Are Watching" jp="友達" />
+      <SectionHeader id="friends-h" title="Tus amigos están viendo" jp="友達" />
       {status === "signed-in" ? (
         <FriendsActivityRail />
       ) : (
         <EmptyState
           icon={<Users className="size-6" />}
           jp="友"
-          title={status === "unconfigured" ? "Social features need an account backend" : "Anime is better together"}
+          title={status === "unconfigured" ? "Las funciones sociales requieren una cuenta" : "El anime se disfruta mejor juntos"}
           body={
             status === "unconfigured"
               ? "This deployment has no Supabase project configured, so there are no accounts or friends yet. See the README to enable them."
-              : "Sign in and add friends to see what they start, finish and rate — only what they choose to share."
+              : "Inicia sesión y añade amigos para ver lo que empiezan, terminan y califican en tiempo real."
           }
           action={
             status !== "unconfigured" ? (
               <Link href="/register" className="k-btn k-btn-primary k-btn-sm">
-                Create an account
+                Crear una cuenta
               </Link>
             ) : undefined
           }
@@ -362,10 +410,10 @@ export function LibraryNudge() {
       <div className="k-card flex flex-wrap items-center gap-4 p-4 text-sm">
         <Heart className="size-5 text-accent" aria-hidden />
         <p className="flex-1 text-muted">
-          Tap <strong className="text-fg">Add to list</strong> on anything that catches your eye — your library powers Continue Watching, recommendations and your Anime DNA.
+          Pulsa <strong className="text-fg">Añadir a mi lista</strong> en cualquier anime — tu biblioteca impulsa Continuar viendo, las recomendaciones y tu ADN de Anime.
         </p>
-        <Link href="/watch/open-cinema/1" className="k-btn k-btn-ghost k-btn-sm">
-          <Film className="size-4" aria-hidden /> Try the player
+        <Link href="/discover" className="k-btn k-btn-ghost k-btn-sm">
+          <Film className="size-4" aria-hidden /> Explorar catálogo
         </Link>
       </div>
     </div>

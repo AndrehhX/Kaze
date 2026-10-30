@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { IntegrationSettings } from "@/components/settings/panels";
 
-export const metadata: Metadata = { title: "Integrations · Settings" };
+export const metadata: Metadata = { title: "Integraciones · Configuración" };
 
 export default function Page() {
   return (

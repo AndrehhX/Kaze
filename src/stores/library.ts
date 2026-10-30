@@ -78,6 +78,12 @@ export const useLibrary = create<LibraryState>()(
         const next = normalizeEntry({ ...base, ...patch, updatedAt: now }, now);
         const justCompleted = next.status === "COMPLETED" && prev?.status !== "COMPLETED";
         set((s) => ({ entries: { ...s.entries, [id]: next }, lastCompleted: justCompleted ? { mediaId: id, at: now } : s.lastCompleted }));
+        if (typeof window !== "undefined" && get().scope === "guest") {
+          try {
+            const list = Object.values({ ...get().entries, [id]: next });
+            localStorage.setItem("kaze:library:guest", JSON.stringify({ entries: list }));
+          } catch {}
+        }
         const remote = get().remote;
         if (remote) {
           remote.upsertEntry(next).catch(remoteError);
@@ -180,11 +186,16 @@ export const useLibrary = create<LibraryState>()(
       },
 
       attachRemote: (remote, scope) => set({ remote, scope }),
-      replaceAll: (entries, collections) =>
+      replaceAll: (entries, collections) => {
+        if (entries.length === 0 && collections.length === 0 && Object.keys(get().entries).length > 0) {
+          // Preserve local storage entries when remote returns empty
+          return;
+        }
         set({
           entries: Object.fromEntries(entries.map((e) => [e.mediaId, e])),
           collections: Object.fromEntries(collections.map((c) => [c.id, c])),
-        }),
+        });
+      },
       clearCompletedSignal: () => set({ lastCompleted: null }),
     }),
     {
@@ -193,7 +204,20 @@ export const useLibrary = create<LibraryState>()(
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
       partialize: (s) => ({ entries: s.entries, collections: s.collections, scope: s.scope }),
-      onRehydrateStorage: () => () => useLibrary.setState({ hydrated: true }),
+      onRehydrateStorage: () => () => {
+        useLibrary.setState({ hydrated: true });
+        if (typeof window !== "undefined" && Object.keys(useLibrary.getState().entries).length === 0) {
+          try {
+            const raw = localStorage.getItem("kaze:library:guest");
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed.entries?.length) {
+                useLibrary.getState().importEntries(parsed.entries);
+              }
+            }
+          } catch {}
+        }
+      },
     },
   ),
 );

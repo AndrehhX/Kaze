@@ -1,4 +1,5 @@
 "use client";
+import { genreLabel } from "@/lib/anilist/browse-params";
 
 import Link from "next/link";
 import { motion } from "motion/react";
@@ -90,7 +91,7 @@ export function AnimeCard({ media, rank, priority, sizes = "(max-width: 640px) 4
         }
       }}
     >
-      <Link href={href} className="block rounded-[var(--k-radius-card)] outline-none">
+      <Link href={href} prefetch={true} className="block rounded-[var(--k-radius-card)] outline-none">
         <span className="sr-only">{`${title}${year ? `, ${year}` : ""}`}</span>
         <motion.div layoutId={reduced ? undefined : layoutId} className="k-poster aspect-[2/3] w-full" style={{ backgroundColor: media.coverImage.color ?? undefined }}>
           <SafeImage

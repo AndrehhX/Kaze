@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { SimilarityGraph } from "@/components/discover/similarity-graph";
 import { PageHeaderSkeleton } from "@/components/anime/skeletons";
 
-export const metadata: Metadata = { title: "Similarity Explorer" };
+export const metadata: Metadata = { title: "Explorador de similitudes" };
 
 export default function SimilarPage() {
   return (

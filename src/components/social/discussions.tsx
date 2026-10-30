@@ -129,7 +129,7 @@ export function DiscussionList({ mediaId, snapshot, limit }: { mediaId?: number;
         ))}
       {isLoading && <Skeleton className="h-32" />}
       {error && <ErrorPanel title="Couldn't load discussions" message={(error as Error).message} />}
-      {data && !data.length && <EmptyState icon={<MessagesSquare className="size-6" />} jp="話" title="No discussions yet" body="Start the first thread — theories, favourite moments, episode reactions." />}
+      {data && !data.length && <EmptyState icon={<MessagesSquare className="size-6" />} jp="話" title="Aún no hay debates" body="Start the first thread — theories, favourite moments, episode reactions." />}
       {data && data.length > 0 && (
         <ul className="k-card divide-y divide-line">
           {data.map((d) => (
@@ -181,7 +181,7 @@ export function DiscussionThread({ id }: { id: string }) {
   if (!isSupabaseConfigured) return <BackendMissing feature="Community discussions" />;
   if (isLoading) return <Skeleton className="h-64" />;
   if (error) return <ErrorPanel title="Couldn't load this discussion" message={(error as Error).message} />;
-  if (!data) return <EmptyState title="Discussion not found" body="It may have been removed, or you may not have access." action={<Link href="/community/discussions" className="k-btn k-btn-outline k-btn-sm">All discussions</Link>} />;
+  if (!data) return <EmptyState title="Debate no encontrado" body="It may have been removed, or you may not have access." action={<Link href="/community/discussions" className="k-btn k-btn-outline k-btn-sm">All discussions</Link>} />;
   const name = data.author?.display_name || data.author?.username || "Member";
   const remove = async () => {
     const { error } = await getSupabaseBrowser()!.from("discussions").delete().eq("id", id);

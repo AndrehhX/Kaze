@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CommunityTabs, ReviewsPage } from "@/components/social/community";
 
-export const metadata: Metadata = { title: "Reviews" };
+export const metadata: Metadata = { title: "Reseñas" };
 
 export default function Page() {
   return (

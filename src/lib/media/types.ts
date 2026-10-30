@@ -50,13 +50,16 @@ export type Entitlement =
 
 export type PlaybackGrant = {
   sessionId: string;
-  series: Pick<CatalogSeries, "id" | "title" | "titleJp" | "license" | "demo" | "color" | "anilistId">;
+  series: Pick<CatalogSeries, "id" | "title" | "titleJp" | "license" | "demo" | "color" | "anilistId" | "banner" | "cover">;
   episode: Omit<CatalogEpisode, "asset">;
   asset: MediaAsset;
   next: { id: string; number: number; title: string } | null;
   prev: { id: string; number: number; title: string } | null;
   episodes: { id: string; number: number; title: string; thumbnail: string | null; duration: number }[];
   expiresAt: number;
+  audioLanguage?: "es-419" | "es-ES" | "ja";
+  serverName?: string;
+  isDubbedAvailable?: boolean;
 };
 
 /** Replaceable provider contract; a licensed CDN/DRM provider implements the same interface. */

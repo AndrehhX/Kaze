@@ -30,7 +30,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { toast } from "sonner";
 import type { PlaybackGrant, TimingMarker } from "@/lib/media/types";
 import { useSettings } from "@/stores/settings";
-import { useProgress } from "@/stores/progress";
+import { useProgress, isEffectivelyComplete } from "@/stores/progress";
+import { useLibrary } from "@/stores/library";
+import type { MediaSnapshot } from "@/lib/library/types";
 import { clamp, cn, formatDuration } from "@/lib/utils";
 import { useKazeMotion } from "@/lib/motion";
 import { useHls } from "./use-hls";
@@ -106,10 +108,69 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
   const persistNow = useCallback(
     (flush = false) => {
       if (!persist || !video || !Number.isFinite(video.duration) || video.duration <= 0) return;
-      saveProgress({ seriesId: grant.series.id, episodeId: grant.episode.id, position: video.currentTime, duration: video.duration, title: grant.episode.title }, { flush });
+      const epNum = grant.episode.number || parseInt(grant.episode.id, 10) || 1;
+      const thumb =
+        grant.episode.thumbnail ||
+        grant.episodes.find((e) => e.id === grant.episode.id)?.thumbnail ||
+        grant.series.banner ||
+        grant.series.cover ||
+        null;
+      saveProgress(
+        {
+          seriesId: grant.series.id,
+          episodeId: grant.episode.id,
+          position: video.currentTime,
+          duration: video.duration,
+          title: grant.episode.title,
+          seriesTitle: grant.series.title,
+          thumbnail: thumb,
+          episodeNumber: epNum,
+          isDemo: Boolean(grant.series.demo),
+        },
+        { flush }
+      );
       lastSaved.current = Date.now();
+
+      // Persistencia automática en biblioteca como en Orunei
+      const mediaId = Number(grant.series.id);
+      if (Number.isInteger(mediaId) && mediaId > 0 && !grant.series.demo && epNum) {
+        const lib = useLibrary.getState();
+        const existing = lib.entries[mediaId];
+        const isNearEnd = isEffectivelyComplete(video.currentTime, video.duration) || video.ended;
+        const targetProgress = isNearEnd ? Math.max(existing?.progress ?? 0, epNum) : (existing?.progress ?? 0);
+        const totalEps = (grant.series as any).episodes ?? null;
+        const isFinished = Boolean(totalEps && targetProgress >= totalEps);
+        const nextStatus = isFinished ? "COMPLETED" : (existing?.status === "COMPLETED" ? "COMPLETED" : "CURRENT");
+
+        if (!existing || targetProgress > existing.progress || (isNearEnd && existing.status !== nextStatus)) {
+          const snapshot: MediaSnapshot = {
+            title: grant.series.title ?? existing?.media?.title ?? "Anime",
+            titleNative: (grant.series as any).titleJp ?? null,
+            cover: grant.series.cover ?? existing?.media?.cover ?? null,
+            banner: grant.series.banner ?? existing?.media?.banner ?? null,
+            color: (grant.series as any).color ?? null,
+            episodes: totalEps ?? existing?.media?.episodes ?? null,
+            format: "TV",
+            year: null,
+            genres: [],
+            averageScore: null,
+            studio: null,
+            duration: null,
+          };
+          lib.upsert(
+            {
+              id: mediaId,
+              snapshot,
+            },
+            {
+              progress: targetProgress,
+              status: nextStatus,
+            }
+          );
+        }
+      }
     },
-    [persist, video, saveProgress, grant.series.id, grant.episode.id, grant.episode.title],
+    [persist, video, saveProgress, grant],
   );
 
   useEffect(() => {
@@ -679,23 +740,32 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
               </span>
               <span className="flex-1" />
               {onNavigateEpisode && (
-                <CtrlButton label="Episodes" onClick={() => setShowEpisodes((s) => !s)} pressed={showEpisodes} className="@max-sm:hidden">
+                <CtrlButton label="Episodios" onClick={() => setShowEpisodes((s) => !s)} pressed={showEpisodes} className="@max-sm:hidden">
                   <ListVideo className="size-5" />
                 </CtrlButton>
               )}
-              <CtrlButton label={selectedSub ? "Subtitles on (C)" : "Subtitles off (C)"} onClick={() => setMenu(menu === "subs" ? null : "subs")} pressed={Boolean(selectedSub)}>
+              <CtrlButton
+                label="Calidad de video"
+                onClick={() => setMenu(menu === "quality" ? null : "quality")}
+                pressed={menu === "quality"}
+              >
+                <span className="text-[10px] font-black tracking-tight border border-current rounded px-1 py-0.5 leading-none">
+                  {hs.levels.find((l) => l.index === hs.currentLevel)?.label || "1080p"}
+                </span>
+              </CtrlButton>
+              <CtrlButton label={selectedSub ? "Subtítulos activados (C)" : "Subtítulos desactivados (C)"} onClick={() => setMenu(menu === "subs" ? null : "subs")} pressed={Boolean(selectedSub || menu === "subs")}>
                 <Captions className="size-5" />
               </CtrlButton>
-              <CtrlButton label="Settings" onClick={() => setMenu(menu ? null : "root")} pressed={Boolean(menu && menu !== "subs")}>
-                <Settings2 className={cn("size-5 transition-transform", menu && menu !== "subs" && "rotate-45")} />
+              <CtrlButton label="Configuración" onClick={() => setMenu(menu ? null : "root")} pressed={Boolean(menu && menu !== "subs" && menu !== "quality")}>
+                <Settings2 className={cn("size-5 transition-transform", menu && menu !== "subs" && menu !== "quality" && "rotate-45")} />
               </CtrlButton>
               <CtrlButton label="Picture-in-picture (I)" onClick={togglePip} pressed={pip} className="@max-xl:hidden">
                 <PictureInPicture2 className="size-5" />
               </CtrlButton>
-              <CtrlButton label={prefs.theater ? "Exit theater mode (T)" : "Theater mode (T)"} onClick={() => setPrefs({ theater: !prefs.theater })} pressed={prefs.theater} className="max-lg:hidden @max-lg:hidden">
+              <CtrlButton label={prefs.theater ? "Salir de modo teatro (T)" : "Modo teatro (T)"} onClick={() => setPrefs({ theater: !prefs.theater })} pressed={prefs.theater} className="max-lg:hidden @max-lg:hidden">
                 <RectangleHorizontal className="size-5" />
               </CtrlButton>
-              <CtrlButton label={fullscreen ? "Exit fullscreen (F)" : "Fullscreen (F)"} onClick={toggleFullscreen}>
+              <CtrlButton label={fullscreen ? "Salir de pantalla completa (F)" : "Pantalla completa (F)"} onClick={toggleFullscreen}>
                 {fullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
               </CtrlButton>
             </div>
@@ -717,55 +787,86 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
             >
               {menu === "root" && (
                 <>
-                  <MenuRow icon={<Gauge className="size-4" />} label="Speed" value={`${prefs.rate}×`} onClick={() => setMenu("speed")} />
-                  <MenuRow icon={<Settings2 className="size-4" />} label="Quality" value={hs.autoLevel ? `Auto${hs.levels.find((l) => l.index === hs.currentLevel) ? ` (${hs.levels.find((l) => l.index === hs.currentLevel)!.label})` : ""}` : (hs.levels.find((l) => l.index === hs.currentLevel)?.label ?? "—")} onClick={() => setMenu("quality")} disabled={hs.levels.length < 2} />
-                  <MenuRow icon={<Volume2 className="size-4" />} label="Audio" value={hs.audioTracks.find((a) => a.index === hs.audioTrack)?.label ?? "Default"} onClick={() => setMenu("audio")} disabled={hs.audioTracks.length < 2} />
-                  <MenuRow icon={<Captions className="size-4" />} label="Caption style" value="" onClick={() => setMenu("caption-style")} />
-                  <ToggleRow label="Autoplay next episode" on={prefs.autoNext} onChange={(v) => setPrefs({ autoNext: v })} />
-                  <ToggleRow label="Auto-skip intros" on={prefs.autoSkipIntro} onChange={(v) => setPrefs({ autoSkipIntro: v })} />
-                  <ToggleRow label="Auto-skip credits" on={prefs.autoSkipOutro} onChange={(v) => setPrefs({ autoSkipOutro: v })} />
-                  <ToggleRow label="Ambient mode" icon={<Sparkles className="size-4" />} on={prefs.ambient} onChange={(v) => setPrefs({ ambient: v })} />
-                  <ToggleRow label="Stats for nerds" icon={<Activity className="size-4" />} on={prefs.showStats} onChange={(v) => setPrefs({ showStats: v })} />
+                  <MenuRow icon={<Gauge className="size-4" />} label="Velocidad" value={`${prefs.rate}×`} onClick={() => setMenu("speed")} />
+                  <MenuRow
+                    icon={<Settings2 className="size-4" />}
+                    label="Calidad"
+                    value={
+                      hs.levels.length > 1
+                        ? hs.autoLevel
+                          ? `Auto${hs.levels.find((l) => l.index === hs.currentLevel) ? ` (${hs.levels.find((l) => l.index === hs.currentLevel)!.label})` : ""}`
+                          : (hs.levels.find((l) => l.index === hs.currentLevel)?.label ?? "1080p")
+                        : "1080p (Full HD)"
+                    }
+                    onClick={() => setMenu("quality")}
+                    disabled={false}
+                  />
+                  <MenuRow icon={<Volume2 className="size-4" />} label="Pista de audio" value={hs.audioTracks.find((a) => a.index === hs.audioTrack)?.label ?? "Predeterminado"} onClick={() => setMenu("audio")} disabled={hs.audioTracks.length < 2} />
+                  <MenuRow icon={<Captions className="size-4" />} label="Estilo de subtítulos" value="" onClick={() => setMenu("caption-style")} />
+                  <ToggleRow label="Reproducir siguiente episodio" on={prefs.autoNext} onChange={(v) => setPrefs({ autoNext: v })} />
+                  <ToggleRow label="Omitir intros automáticamente" on={prefs.autoSkipIntro} onChange={(v) => setPrefs({ autoSkipIntro: v })} />
+                  <ToggleRow label="Omitir créditos automáticamente" on={prefs.autoSkipOutro} onChange={(v) => setPrefs({ autoSkipOutro: v })} />
+                  <ToggleRow label="Modo ambiental" icon={<Sparkles className="size-4" />} on={prefs.ambient} onChange={(v) => setPrefs({ ambient: v })} />
+                  <ToggleRow label="Estadísticas de reproducción" icon={<Activity className="size-4" />} on={prefs.showStats} onChange={(v) => setPrefs({ showStats: v })} />
                 </>
               )}
               {menu === "speed" && (
-                <SubMenu title="Playback speed" back={() => setMenu("root")}>
+                <SubMenu title="Velocidad" back={() => setMenu("root")}>
                   {SPEEDS.map((s) => (
                     <Choice key={s} label={s === 1 ? "Normal" : `${s}×`} on={prefs.rate === s} onClick={() => video && (video.playbackRate = s)} />
                   ))}
                 </SubMenu>
               )}
               {menu === "quality" && (
-                <SubMenu title="Quality" back={() => setMenu("root")}>
-                  <Choice label="Auto" on={hs.autoLevel} onClick={() => setLevel(-1)} />
-                  {[...hs.levels].sort((a, b) => b.height - a.height).map((l) => (
-                    <Choice key={l.index} label={`${l.label}`} hint={`${Math.round(l.bitrate / 1000)} kbps`} on={!hs.autoLevel && hs.currentLevel === l.index} onClick={() => setLevel(l.index)} />
-                  ))}
+                <SubMenu title="Calidad de video" back={() => setMenu("root")}>
+                  {hs.levels.length > 1 ? (
+                    <>
+                      <Choice label="Automático" hint="Ajuste dinámico" on={hs.autoLevel} onClick={() => setLevel(-1)} />
+                      {[...hs.levels].sort((a, b) => b.height - a.height).map((l) => (
+                        <Choice key={l.index} label={`${l.label}`} hint={`${Math.round(l.bitrate / 1000)} kbps`} on={!hs.autoLevel && hs.currentLevel === l.index} onClick={() => setLevel(l.index)} />
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      <Choice label="1080p (Full HD)" hint="Máxima resolución" on={true} onClick={() => {}} />
+                      <Choice label="Automático (1080p)" hint="Recomendado" on={false} onClick={() => {}} />
+                      <p className="px-3 py-2 text-xs text-white/60">
+                        Reproduciendo en resolución máxima original Full HD (1080p).
+                      </p>
+                    </>
+                  )}
                 </SubMenu>
               )}
               {menu === "audio" && (
-                <SubMenu title="Audio track" back={() => setMenu("root")}>
+                <SubMenu title="Pista de audio" back={() => setMenu("root")}>
                   {hs.audioTracks.map((a) => (
                     <Choice key={a.index} label={a.label} hint={a.lang} on={hs.audioTrack === a.index} onClick={() => setAudio(a.index)} />
                   ))}
                 </SubMenu>
               )}
               {menu === "subs" && (
-                <SubMenu title="Subtitles">
-                  <Choice label="Off" on={!subId} onClick={() => (setSubId(null), setPrefs({ subtitleLang: null }))} />
+                <SubMenu title="Subtítulos" back={() => setMenu("root")}>
+                  <Choice label="Desactivados" on={!subId} onClick={() => (setSubId(null), setPrefs({ subtitleLang: null }))} />
                   {hs.subtitleTracks.map((t) => (
                     <Choice key={t.id} label={t.label} hint={t.lang} on={subId === t.id} onClick={() => (setSubId(t.id), setPrefs({ subtitleLang: t.lang || null }))} />
                   ))}
-                  {!hs.subtitleTracks.length && <p className="px-3 py-2 text-xs text-white/60">This stream has no subtitle tracks.</p>}
+                  {!hs.subtitleTracks.length && (
+                    <div className="px-3 py-2 text-xs text-white/70">
+                      <p className="font-semibold text-white">Subtítulos en español integrados</p>
+                      <p className="mt-1 text-white/60">
+                        Los subtítulos en español se encuentran incrustados directamente en el video (Hardsub).
+                      </p>
+                    </div>
+                  )}
                   {subId && (
                     <div className="mt-1 border-t border-white/10 px-3 py-2">
-                      <p className="text-xs text-white/60">Subtitle timing</p>
+                      <p className="text-xs text-white/60">Sincronización de subtítulos</p>
                       <div className="mt-1.5 flex items-center gap-2">
-                        <button className="k-btn k-btn-sm bg-white/10 text-white" onClick={() => setSubDelay((d) => Math.round((d - 0.25) * 100) / 100)} aria-label="Show subtitles earlier">
+                        <button className="k-btn k-btn-sm bg-white/10 text-white" onClick={() => setSubDelay((d) => Math.round((d - 0.25) * 100) / 100)} aria-label="Mostrar subtítulos antes">
                           −0.25s
                         </button>
                         <span className="flex-1 text-center font-mono text-xs tabular-nums">{subDelay > 0 ? "+" : ""}{subDelay.toFixed(2)}s</span>
-                        <button className="k-btn k-btn-sm bg-white/10 text-white" onClick={() => setSubDelay((d) => Math.round((d + 0.25) * 100) / 100)} aria-label="Show subtitles later">
+                        <button className="k-btn k-btn-sm bg-white/10 text-white" onClick={() => setSubDelay((d) => Math.round((d + 0.25) * 100) / 100)} aria-label="Mostrar subtítulos después">
                           +0.25s
                         </button>
                       </div>
@@ -774,20 +875,20 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
                 </SubMenu>
               )}
               {menu === "caption-style" && (
-                <SubMenu title="Caption style" back={() => setMenu("root")}>
-                  <p className="px-3 pt-1 text-xs text-white/60">Size</p>
+                <SubMenu title="Estilo de subtítulos" back={() => setMenu("root")}>
+                  <p className="px-3 pt-1 text-xs text-white/60">Tamaño de fuente</p>
                   <div className="flex gap-1 px-2 py-1.5">
                     {(["s", "m", "l", "xl"] as const).map((s) => (
-                      <button key={s} className={cn("flex-1 rounded py-1.5 text-xs uppercase", prefs.subtitleStyle.size === s ? "bg-white text-black" : "bg-white/10")} onClick={() => setPrefs({ subtitleStyle: { ...prefs.subtitleStyle, size: s } })} aria-pressed={prefs.subtitleStyle.size === s}>
+                      <button key={s} className={cn("flex-1 rounded py-1.5 text-xs uppercase font-bold", prefs.subtitleStyle.size === s ? "bg-white text-black" : "bg-white/10")} onClick={() => setPrefs({ subtitleStyle: { ...prefs.subtitleStyle, size: s } })} aria-pressed={prefs.subtitleStyle.size === s}>
                         {s}
                       </button>
                     ))}
                   </div>
-                  <p className="px-3 pt-1 text-xs text-white/60">Colour</p>
+                  <p className="px-3 pt-1 text-xs text-white/60">Color del texto</p>
                   <div className="flex gap-1 px-2 py-1.5">
                     {(["white", "yellow", "cyan"] as const).map((c) => (
-                      <button key={c} className={cn("flex-1 rounded py-1.5 text-xs capitalize", prefs.subtitleStyle.color === c ? "ring-2 ring-white" : "")} style={{ color: CAPTION_COLORS[c], background: "rgb(255 255 255 / 0.1)" }} onClick={() => setPrefs({ subtitleStyle: { ...prefs.subtitleStyle, color: c } })} aria-pressed={prefs.subtitleStyle.color === c}>
-                        {c}
+                      <button key={c} className={cn("flex-1 rounded py-1.5 text-xs capitalize font-medium", prefs.subtitleStyle.color === c ? "ring-2 ring-white" : "")} style={{ color: CAPTION_COLORS[c], background: "rgb(255 255 255 / 0.1)" }} onClick={() => setPrefs({ subtitleStyle: { ...prefs.subtitleStyle, color: c } })} aria-pressed={prefs.subtitleStyle.color === c}>
+                        {c === "white" ? "Blanco" : c === "yellow" ? "Amarillo" : "Cian"}
                       </button>
                     ))}
                   </div>

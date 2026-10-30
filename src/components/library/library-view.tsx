@@ -114,15 +114,15 @@ export function LibraryView() {
     if (file.size > 5_000_000) return toast.error("That file is too large (5 MB max)");
     try {
       const parsed = exportSchema.safeParse(JSON.parse(await file.text()));
-      if (!parsed.success) return toast.error("That isn't a KAZE library export", { description: parsed.error.issues[0]?.message });
+      if (!parsed.success) return toast.error("El archivo no es una exportación válida de KAZE", { description: parsed.error.issues[0]?.message });
       const n = importEntries(parsed.data.entries.map((e) => ({ ...e })));
-      toast.success(`Imported ${n} entr${n === 1 ? "y" : "ies"}`, { description: "Newer local edits were kept." });
+      toast.success(`Se importaron ${n} título${n === 1 ? "" : "s"}`, { description: "Se mantuvieron las ediciones locales más recientes." });
     } catch {
-      toast.error("Couldn't read that file");
+      toast.error("No se pudo leer el archivo");
     }
   };
 
-  const tabs: { value: Tab; label: string; jp: string }[] = [...LIBRARY_STATUSES.map((s) => ({ value: s.value, label: s.label, jp: s.jp })), { value: "FAVORITES", label: "Favorites", jp: "推し" }];
+  const tabs: { value: Tab; label: string; jp: string }[] = [...LIBRARY_STATUSES.map((s) => ({ value: s.value, label: s.label, jp: s.jp })), { value: "FAVORITES", label: "Favoritos", jp: "推し" }];
 
   if (!hydrated) return <Skeleton className="container-k mt-10 h-96" />;
 
@@ -130,17 +130,17 @@ export function LibraryView() {
     <div className="container-k pt-8">
       <header className="grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
         <div>
-          <p className="k-label text-primary-ink">Your shelves</p>
-          <h1 className="font-display text-title mt-2">My Library</h1>
+          <p className="k-label text-primary-ink">Tu colección</p>
+          <h1 className="font-display text-title mt-2">Mi Biblioteca</h1>
           <p className="mt-2 flex items-center gap-2 text-sm text-muted">
             {authStatus === "signed-in" && remote ? (
-              <>{syncing ? "Syncing with your account…" : "Synced to your KAZE account"}</>
+              <>{syncing ? "Sincronizando con tu cuenta…" : "Sincronizado con tu cuenta de KAZE"}</>
             ) : (
               <>
-                <CloudOff className="size-4" aria-hidden /> Saved on this device.{" "}
+                <CloudOff className="size-4" aria-hidden /> Guardado en este dispositivo.{" "}
                 {authStatus === "signed-out" && (
                   <Link href="/register" className="font-semibold text-primary-ink">
-                    Create an account to sync
+                    Crea una cuenta para sincronizar
                   </Link>
                 )}
               </>
@@ -149,22 +149,22 @@ export function LibraryView() {
         </div>
         <dl className="grid grid-cols-3 gap-6 text-right max-md:text-left">
           <div>
-            <dt className="k-label text-muted">Titles</dt>
+            <dt className="k-label text-muted">Títulos</dt>
             <dd className="font-display text-2xl">{all.length}</dd>
           </div>
           <div>
-            <dt className="k-label text-muted">Episodes</dt>
+            <dt className="k-label text-muted">Episodios</dt>
             <dd className="font-display text-2xl">{formatNumber(stats.episodes)}</dd>
           </div>
           <div>
-            <dt className="k-label text-muted">Days watched</dt>
+            <dt className="k-label text-muted">Días vistos</dt>
             <dd className="font-display text-2xl">{stats.days.toFixed(1)}</dd>
           </div>
         </dl>
       </header>
 
       {/* Status shelves — also drop targets for drag-and-drop */}
-      <nav aria-label="Library sections" className="scrollbar-none -mx-[var(--k-gutter)] mt-8 flex gap-2 overflow-x-auto px-[var(--k-gutter)] pb-2">
+      <nav aria-label="Secciones de la biblioteca" className="scrollbar-none -mx-[var(--k-gutter)] mt-8 flex gap-2 overflow-x-auto px-[var(--k-gutter)] pb-2">
         {tabs.map((t) => (
           <button
             key={t.value}
@@ -202,7 +202,7 @@ export function LibraryView() {
         ))}
         <Link href="/library/collections" className="k-card flex min-w-36 shrink-0 flex-col items-start gap-0.5 px-4 py-3">
           <span className="flex w-full items-center justify-between gap-3 text-sm font-semibold">
-            Collections <FolderOpen className="size-4 text-primary-ink" aria-hidden />
+            Colecciones <FolderOpen className="size-4 text-primary-ink" aria-hidden />
           </span>
           <span className="text-[0.6875rem] text-muted">{Object.keys(collections).length} custom</span>
         </Link>
@@ -213,49 +213,49 @@ export function LibraryView() {
         <div className="relative min-w-48 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
           <label htmlFor="lib-q" className="sr-only">Filter by title</label>
-          <input id="lib-q" className="k-input !min-h-10 !pl-9 text-sm" placeholder="Filter by title" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input id="lib-q" className="k-input !min-h-10 !pl-9 text-sm" placeholder="Filtrar por título…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <label htmlFor="lib-genre" className="sr-only">Genre</label>
         <select id="lib-genre" className="k-input !min-h-10 w-auto text-sm" value={genre} onChange={(e) => setGenre(e.target.value)}>
-          <option value="">All genres</option>
+          <option value="">Todos los géneros</option>
           {genres.map((g) => (
             <option key={g}>{g}</option>
           ))}
         </select>
         <label htmlFor="lib-sort" className="sr-only">Sort</label>
         <select id="lib-sort" className="k-input !min-h-10 w-auto text-sm" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-          <option value="updated">Recently updated</option>
-          <option value="added">Recently added</option>
-          <option value="title">Title</option>
-          <option value="score">Your score</option>
-          <option value="progress">Progress</option>
+          <option value="updated">Actualizado recientemente</option>
+          <option value="added">Añadido recientemente</option>
+          <option value="title">Título</option>
+          <option value="score">Tu nota</option>
+          <option value="progress">Progreso</option>
         </select>
         <button className="k-btn k-btn-ghost k-btn-sm" aria-pressed={selecting} onClick={() => (setSelecting((s) => !s), setSelected(new Set()))}>
-          <CheckSquare className="size-4" aria-hidden /> Select
+          <CheckSquare className="size-4" aria-hidden /> Seleccionar
         </button>
         <div className="flex rounded-[var(--k-radius-btn)] bg-[var(--k-btn-ghost)] p-1" role="group" aria-label="Layout">
-          <button className={cn("k-btn k-btn-icon k-btn-sm", view === "grid" && "bg-surface shadow")} aria-pressed={view === "grid"} aria-label="Grid" onClick={() => setView("grid")}>
+          <button className={cn("k-btn k-btn-icon k-btn-sm", view === "grid" && "bg-surface shadow")} aria-pressed={view === "grid"} aria-label="Cuadrícula" onClick={() => setView("grid")}>
             <LayoutGrid className="size-4" />
           </button>
-          <button className={cn("k-btn k-btn-icon k-btn-sm", view === "list" && "bg-surface shadow")} aria-pressed={view === "list"} aria-label="List" onClick={() => setView("list")}>
+          <button className={cn("k-btn k-btn-icon k-btn-sm", view === "list" && "bg-surface shadow")} aria-pressed={view === "list"} aria-label="Lista" onClick={() => setView("list")}>
             <List className="size-4" />
           </button>
         </div>
         <button className="k-btn k-btn-ghost k-btn-sm" onClick={exportJson} disabled={!all.length}>
-          <Download className="size-4" aria-hidden /> Export
+          <Download className="size-4" aria-hidden /> Exportar
         </button>
         <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => fileRef.current?.click()}>
-          <Upload className="size-4" aria-hidden /> Import
+          <Upload className="size-4" aria-hidden /> Importar
         </button>
         <input ref={fileRef} type="file" accept="application/json,.json" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0]).finally(() => (e.target.value = ""))} />
       </div>
-      <p className="mt-2 text-xs text-muted max-md:hidden">Tip: drag a poster onto a shelf above to move it. AniList import/sync lives in Settings → Integrations.</p>
+      <p className="mt-2 text-xs text-muted max-md:hidden">Consejo: arrastra un póster a una estantería superior para moverlo. La importación/sincronización con AniList está en Configuración → Integraciones.</p>
 
       {/* Bulk bar */}
       <AnimatePresence>
         {selecting && selected.size > 0 && (
           <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }} className="k-panel fixed inset-x-3 bottom-20 z-40 mx-auto flex max-w-3xl flex-wrap items-center gap-2 !bg-surface p-3 lg:bottom-6">
-            <span className="px-2 text-sm font-semibold">{selected.size} selected</span>
+            <span className="px-2 text-sm font-semibold">{selected.size} seleccionados</span>
             <label htmlFor="bulk-status" className="sr-only">Move to</label>
             <select id="bulk-status" className="k-input !min-h-9 w-auto text-sm" defaultValue="" onChange={(e) => {
               if (!e.target.value) return;
@@ -264,7 +264,7 @@ export function LibraryView() {
               setSelected(new Set());
               e.target.value = "";
             }}>
-              <option value="">Move to…</option>
+              <option value="">Mover a…</option>
               {LIBRARY_STATUSES.map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
@@ -278,19 +278,19 @@ export function LibraryView() {
                 toast.success(`Added to ${c.name}`);
                 e.target.value = "";
               }}>
-                <option value="">Add to collection…</option>
+                <option value="">Añadir a colección…</option>
                 {Object.values(collections).map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             )}
             <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => bulkUpdate([...selected], { favorite: true })}>
-              <Heart className="size-4" aria-hidden /> Favorite
+              <Heart className="size-4" aria-hidden /> Favorito
             </button>
             <button className="k-btn k-btn-ghost k-btn-sm text-danger" onClick={() => setConfirm(true)}>
-              <Trash2 className="size-4" aria-hidden /> Remove
+              <Trash2 className="size-4" aria-hidden /> Eliminar
             </button>
-            <button className="k-btn k-btn-ghost k-btn-icon k-btn-sm ml-auto" aria-label="Clear selection" onClick={() => setSelected(new Set())}>
+            <button className="k-btn k-btn-ghost k-btn-icon k-btn-sm ml-auto" aria-label="Limpiar selección" onClick={() => setSelected(new Set())}>
               <X className="size-4" />
             </button>
           </motion.div>
@@ -299,9 +299,9 @@ export function LibraryView() {
       <ConfirmDialog
         open={confirm}
         onOpenChange={setConfirm}
-        title={`Remove ${selected.size} title${selected.size === 1 ? "" : "s"}?`}
-        body="They'll be removed from your library, including progress, scores and private notes."
-        confirmLabel="Remove"
+        title={`¿Eliminar ${selected.size} título${selected.size === 1 ? "" : "s"}?`}
+        body="Se eliminarán de tu biblioteca, incluyendo progreso, notas y puntuaciones."
+        confirmLabel="Eliminar"
         destructive
         onConfirm={() => {
           bulkRemove([...selected]);
@@ -315,13 +315,13 @@ export function LibraryView() {
         {list.length === 0 ? (
           <EmptyState
             jp={tab === "FAVORITES" ? "推" : statusMeta(tab as LibraryStatus).jp.slice(0, 1)}
-            title={all.length === 0 ? "Your library is empty" : q || genre ? "No titles match these filters" : `Nothing in ${tab === "FAVORITES" ? "Favorites" : statusMeta(tab as LibraryStatus).label} yet`}
-            body={all.length === 0 ? "Add anime from anywhere in KAZE with the “Add to list” button, or import your AniList list." : undefined}
+            title={all.length === 0 ? "Tu biblioteca está vacía" : q || genre ? "Ningún título coincide con estos filtros" : `Aún no hay nada en ${tab === "FAVORITES" ? "Favoritos" : statusMeta(tab as LibraryStatus).label}`}
+            body={all.length === 0 ? "Añade animes desde cualquier parte de KAZE con el botón “Añadir a mi lista”, o importa tu catálogo desde AniList." : undefined}
             action={
               all.length === 0 ? (
                 <>
-                  <Link href="/discover" className="k-btn k-btn-primary k-btn-sm">Discover anime</Link>
-                  <Link href="/settings/integrations" className="k-btn k-btn-outline k-btn-sm">Import from AniList</Link>
+                  <Link href="/discover" className="k-btn k-btn-primary k-btn-sm">Descubrir anime</Link>
+                  <Link href="/settings/integrations" className="k-btn k-btn-outline k-btn-sm">Importar desde AniList</Link>
                 </>
               ) : undefined
             }

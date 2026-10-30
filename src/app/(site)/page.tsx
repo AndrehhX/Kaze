@@ -37,13 +37,13 @@ async function HomeContent() {
       <HeroCarousel items={hero} kickerPrefix={seasonLabel} trendingIds={d.trending.map((t) => t.id)} />
       <ContinueWatching />
       <LibraryNudge />
-      <RailSection id="trending-h" title="Trending Now" jp="急上昇" kicker="Right now on AniList" media={d.trending} ranked href="/discover?sort=TRENDING_DESC" />
+      <RailSection id="trending-h" title="Tendencias del momento" jp="急上昇" kicker="Ahora mismo en AniList" media={d.trending} ranked href="/discover?sort=TRENDING_DESC" />
       <SeasonBento media={d.season} season={d.seasonInfo.season} year={d.seasonInfo.year} />
       <RecommendedForYou pool={pool} />
       <RecentlyReleased items={d.recent} />
       <TopRatedEditorial media={d.top} />
       <HiddenGemsSection media={d.gems} />
-      <OpenCinemaBanner />
+
       <UpcomingSection media={d.upcoming} />
       <FavoriteGenres />
       <FriendsAreWatching />

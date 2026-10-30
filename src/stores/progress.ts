@@ -12,6 +12,10 @@ export type WatchProgress = {
   completed: boolean;
   updatedAt: number;
   title: string | null;
+  seriesTitle?: string | null;
+  thumbnail?: string | null;
+  episodeNumber?: number;
+  isDemo?: boolean;
 };
 
 const key = (s: string, e: string) => `${s}::${e}`;

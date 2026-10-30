@@ -67,11 +67,11 @@ export function SeasonBento({ media, season, year }: { media: MediaHero[]; seaso
       <SectionHeader
         id="season-h"
         kicker={`${s?.label ?? season} ${year}`}
-        title="Popular This Season"
+        title="Popular esta temporada"
         jp={`${s?.jp ?? ""}アニメ`}
         action={
           <Link href="/seasonal" className="k-btn k-btn-ghost k-btn-sm">
-            Seasonal chart <ArrowUpRight className="size-3.5" aria-hidden />
+            Gráfico de temporada <ArrowUpRight className="size-3.5" aria-hidden />
           </Link>
         }
       />
@@ -85,7 +85,7 @@ export function SeasonBento({ media, season, year }: { media: MediaHero[]; seaso
           <SafeImage src={lead.bannerImage ?? lead.coverImage.extraLarge ?? ""} alt="" fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover transition-transform duration-[1.2s] group-hover:scale-105" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-7">
-            <p className="k-label text-white/70">No. 1 this season</p>
+            <p className="k-label text-white/70">Nº 1 de esta temporada</p>
             <h3 className="font-display mt-2 text-title max-w-[18ch]">{displayTitle(lead)}</h3>
             <p className="clamp-2 mt-3 max-w-lg text-sm text-white/80">{cleanDescription(lead.description)}</p>
             <div className="mt-3 flex items-center gap-3 text-xs text-white/80">
@@ -108,7 +108,7 @@ export function RecentlyReleased({ items }: { items: AiringItem[] }) {
   if (!items.length) return null;
   return (
     <section aria-labelledby="recent-h" className="container-k mt-20">
-      <SectionHeader id="recent-h" kicker="Last 72 hours" title="Recently Released" jp="最新話" />
+      <SectionHeader id="recent-h" kicker="Últimas 72 horas" title="Episodios recientes" jp="最新話" />
       <Rail label="Recently released episodes" itemClassName="w-[78vw] xs:w-[60vw] sm:w-[44vw] md:w-[32vw] lg:w-[25vw] xl:w-[21vw] 3xl:w-[340px]">
         {items.map((a) => (
           <Link key={a.id} href={`/anime/${a.media.id}/episodes`} className="k-card group flex h-full gap-3 overflow-hidden p-2.5 transition-shadow hover:shadow-[var(--k-hover-glow)]">
@@ -117,12 +117,12 @@ export function RecentlyReleased({ items }: { items: AiringItem[] }) {
             </div>
             <div className="min-w-0 py-1">
               <p className="text-[0.6875rem] font-semibold text-primary-ink">
-                Episode {a.episode}
+                Episodio {a.episode}
                 {a.media.episodes ? ` / ${a.media.episodes}` : ""}
               </p>
               <p className="clamp-2 mt-0.5 text-sm font-semibold leading-snug group-hover:text-primary-ink">{displayTitle(a.media)}</p>
               <p className="mt-1 text-xs text-muted" suppressHydrationWarning>
-                {now ? `Aired ${relativeTime(a.airingAt * 1000, now)}` : "Aired recently"}
+                {now ? `Aired ${relativeTime(a.airingAt * 1000, now)}` : "Emitido recientemente"}
               </p>
             </div>
           </Link>
@@ -139,12 +139,12 @@ export function TopRatedEditorial({ media }: { media: MediaCard[] }) {
     <section aria-labelledby="top-h" className="container-k mt-20">
       <SectionHeader
         id="top-h"
-        kicker="All-time"
-        title="Highest Rated"
+        kicker="Histórico"
+        title="Mejor valorados"
         jp="殿堂"
         action={
           <Link href="/discover?sort=SCORE_DESC" className="k-btn k-btn-ghost k-btn-sm">
-            Full ranking <ArrowUpRight className="size-3.5" aria-hidden />
+            Ranking completo <ArrowUpRight className="size-3.5" aria-hidden />
           </Link>
         }
       />
@@ -188,16 +188,16 @@ export function UpcomingSection({ media }: { media: MediaCard[] }) {
     if (m.season && m.seasonYear) return `${m.season[0]}${m.season.slice(1).toLowerCase()} ${m.seasonYear}`;
     return year ? String(year) : "TBA";
   };
-  return <RailSection id="upcoming-h" title="Upcoming Anime" jp="放送予定" kicker="On the horizon" media={media} href="/discover?status=NOT_YET_RELEASED&sort=POPULARITY_DESC" captions={when} />;
+  return <RailSection id="upcoming-h" title="Próximos estrenos" jp="放送予定" kicker="En el horizonte" media={media} href="/discover?status=NOT_YET_RELEASED&sort=POPULARITY_DESC" captions={when} />;
 }
 
 export function HiddenGemsSection({ media }: { media: MediaCard[] }) {
   return (
     <RailSection
       id="gems-h"
-      title="Hidden Gems"
+      title="Joyas ocultas"
       jp="隠れた名作"
-      kicker="Scored 77%+ · under 45k members"
+      kicker="Nota 77%+ · menos de 45k miembros"
       media={media}
       href="/discover?sort=SCORE_DESC&score=77&popMax=45000"
       captions={(m) => (m.popularity ? `${formatNumber(m.popularity)} members` : undefined)}
@@ -212,7 +212,7 @@ export function CalendarHint() {
         <CalendarClock className="size-6 text-primary-ink" aria-hidden />
         <div className="flex-1">
           <p className="font-display text-lg">This season&apos;s full chart</p>
-          <p className="text-sm text-muted">Every new show, sortable by popularity, score and air day.</p>
+          <p className="text-sm text-muted">Todos los estrenos, ordenables por popularidad, nota y día de emisión.</p>
         </div>
         <ArrowUpRight className="size-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" aria-hidden />
       </Link>
@@ -262,9 +262,9 @@ export function CommunityFavorites({ media }: { media: MediaCard[] }) {
   return (
     <RailSection
       id="fav-h"
-      title="Community Favorites"
+      title="Favoritos de la comunidad"
       jp="みんなの推し"
-      kicker="Most favourited by AniList members"
+      kicker="Los más guardados en AniList"
       media={media}
       href="/discover?sort=FAVOURITES_DESC"
       captions={(m) => (m.favourites ? `♥ ${formatNumber(m.favourites)}` : undefined)}
@@ -275,7 +275,7 @@ export function CommunityFavorites({ media }: { media: MediaCard[] }) {
 export function StatCredit() {
   return (
     <p className="container-k mt-6 text-[0.6875rem] text-muted">
-      Catalog data from <a className="underline" href="https://anilist.co" target="_blank" rel="noreferrer">AniList</a>, cached and refreshed hourly.
+      Datos del catálogo obtenidos de <a className="underline" href="https://anilist.co" target="_blank" rel="noreferrer">AniList</a>, en caché y actualizados cada hora.
     </p>
   );
 }

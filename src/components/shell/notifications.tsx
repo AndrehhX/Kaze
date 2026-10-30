@@ -20,71 +20,89 @@ export type Notification = {
   actor: { username: string; display_name: string; avatar_url: string | null } | null;
 };
 
-const useNotifs = create<{ items: Notification[]; set: (i: Notification[]) => void }>((set) => ({ items: [], set: (items) => set({ items }) }));
+const useNotifs = create<{ items: Notification[]; set: (i: Notification[]) => void }>((set) => ({
+  items: [],
+  set: (items) => set({ items }),
+}));
 
 function describe(n: Notification): { text: string; href: string } {
-  const who = n.actor?.display_name || n.actor?.username || "Someone";
+  const who = n.actor?.display_name || n.actor?.username || "Alguien";
   switch (n.kind) {
     case "friend_request":
-      return { text: `${who} sent you a friend request`, href: "/friends/requests" };
+      return { text: `${who} te envió una solicitud de amistad`, href: "/friends/requests" };
     case "friend_accepted":
-      return { text: `${who} accepted your friend request`, href: n.actor ? `/profile/${n.actor.username}` : "/friends" };
+      return { text: `${who} aceptó tu solicitud de amistad`, href: n.actor ? `/profile/${n.actor.username}` : "/friends" };
     case "review_like":
-      return { text: `${who} liked your review`, href: `/community/reviews#${n.payload.review_id}` };
+      return { text: `A ${who} le gustó tu reseña`, href: `/community/reviews#${n.payload.review_id}` };
     case "comment":
-      return { text: `${who} commented on your ${n.payload.target_type}`, href: n.payload.target_type === "discussion" ? `/community/discussions/${n.payload.target_id}` : `/community/reviews#${n.payload.target_id}` };
+      return { text: `${who} comentó en tu ${n.payload.target_type === "discussion" ? "debate" : "reseña"}`, href: n.payload.target_type === "discussion" ? `/community/discussions/${n.payload.target_id}` : `/community/reviews#${n.payload.target_id}` };
     case "reply":
-      return { text: `${who} replied to your comment`, href: n.payload.target_type === "discussion" ? `/community/discussions/${n.payload.target_id}` : `/community/reviews#${n.payload.target_id}` };
+      return { text: `${who} respondió a tu comentario`, href: n.payload.target_type === "discussion" ? `/community/discussions/${n.payload.target_id}` : `/community/reviews#${n.payload.target_id}` };
     case "watch_party_invite":
-      return { text: `${who} invited you to “${n.payload.title ?? "a watch party"}”`, href: `/watch-parties/${n.payload.room_id}` };
+      return { text: `${who} te invitó a “${n.payload.title ?? "una sala de cine"}”`, href: `/watch-parties/${n.payload.room_id}` };
     case "achievement":
-      return { text: `Achievement unlocked: ${n.payload.name ?? ""}`, href: "/profile" };
+      return { text: `Logro desbloqueado: ${n.payload.name ?? ""}`, href: "/profile" };
     default:
-      return { text: n.payload.message ?? "Update", href: "/" };
+      return { text: n.payload.message ?? "Actualización", href: "/" };
   }
 }
 
 const SELECT = "id, kind, payload, read_at, created_at, actor:profiles!notifications_actor_id_fkey(username, display_name, avatar_url)";
 
-/** Loads notifications and subscribes to new ones over Supabase Realtime. */
-export function useNotificationFeed() {
-  const userId = useAuth((s) => s.user?.id);
-  const { items, set } = useNotifs();
+/** Carga notificaciones y se suscribe a nuevas mediante Supabase Realtime de forma segura. */
+export function useNotificationFeed(userId?: string | null) {
+  const items = useNotifs((s) => s.items);
+
   useEffect(() => {
     const db = getSupabaseBrowser();
-    if (!db || !userId) {
-      set([]);
-      return;
-    }
+    if (!db || !userId) return;
+
     let alive = true;
     const load = async () => {
-      const { data } = await db.from("notifications").select(SELECT).eq("user_id", userId).order("created_at", { ascending: false }).limit(30);
-      if (alive && data) set(data as unknown as Notification[]);
+      try {
+        const { data, error } = await db
+          .from("notifications")
+          .select(SELECT)
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(30);
+        if (alive && data && !error) {
+          const newItems = data as unknown as Notification[];
+          const current = useNotifs.getState().items;
+          if (current.length === 0 && newItems.length === 0) return;
+          useNotifs.setState({ items: newItems });
+        }
+      } catch {
+        // Ignorar errores de tabla no existente o RLS
+      }
     };
     load();
+
     const ch = db
       .channel(`notifications:${userId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, async (payload) => {
-        const { data } = await db.from("notifications").select(SELECT).eq("id", (payload.new as { id: string }).id).maybeSingle();
-        if (!alive || !data) return;
-        const n = data as unknown as Notification;
-        useNotifs.setState((s) => ({ items: [n, ...s.items.filter((x) => x.id !== n.id)].slice(0, 50) }));
-        toast(describe(n).text);
+        try {
+          const { data } = await db.from("notifications").select(SELECT).eq("id", (payload.new as { id: string }).id).maybeSingle();
+          if (!alive || !data) return;
+          const n = data as unknown as Notification;
+          useNotifs.setState((s) => ({ items: [n, ...s.items.filter((x) => x.id !== n.id)].slice(0, 50) }));
+          toast(describe(n).text);
+        } catch {}
       })
       .subscribe();
+
     return () => {
       alive = false;
       db.removeChannel(ch);
     };
-  }, [userId, set]);
+  }, [userId]);
+
   return items;
 }
 
-export function NotificationBell() {
-  const status = useAuth((s) => s.status);
-  const items = useNotificationFeed();
+function NotificationBellContent({ userId }: { userId: string }) {
+  const items = useNotificationFeed(userId);
   const now = useNow();
-  if (status !== "signed-in") return null;
   const unread = items.filter((n) => !n.read_at).length;
 
   const markAll = async () => {
@@ -94,13 +112,13 @@ export function NotificationBell() {
     const at = new Date().toISOString();
     useNotifs.setState((s) => ({ items: s.items.map((n) => (ids.includes(n.id) ? { ...n, read_at: at } : n)) }));
     const { error } = await db.from("notifications").update({ read_at: at }).in("id", ids);
-    if (error) toast.error("Couldn't mark notifications as read");
+    if (error) toast.error("No se pudieron marcar como leídas");
   };
 
   return (
-    <DM.Root onOpenChange={(o) => !o && unread && markAll()}>
+    <DM.Root onOpenChange={(o) => { if (!o && unread > 0) void markAll(); }}>
       <DM.Trigger asChild>
-        <button type="button" className="k-btn k-btn-ghost k-btn-icon k-btn-sm relative" aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}>
+        <button type="button" className="k-btn k-btn-ghost k-btn-icon k-btn-sm relative" aria-label={unread ? `Notificaciones, ${unread} sin leer` : "Notificaciones"}>
           <Bell className="size-[18px]" aria-hidden />
           {unread > 0 && (
             <span className="absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-accent px-1 text-[0.625rem] font-bold leading-4 text-black">{unread > 9 ? "9+" : unread}</span>
@@ -110,13 +128,13 @@ export function NotificationBell() {
       <DM.Portal>
         <DM.Content align="end" sideOffset={10} className="k-panel z-[90] w-[min(92vw,380px)] !bg-surface p-2">
           <div className="flex items-center justify-between px-2 pb-2 pt-1">
-            <span className="font-display text-base">Notifications</span>
+            <span className="font-display text-base">Notificaciones</span>
             <button className="k-btn k-btn-ghost k-btn-sm !min-h-8 text-xs" onClick={markAll} disabled={!unread}>
-              <CheckCheck className="size-3.5" /> Mark read
+              <CheckCheck className="size-3.5" /> Marcar leídas
             </button>
           </div>
           <div className="max-h-[60dvh] overflow-y-auto">
-            {items.length === 0 && <p className="px-3 py-8 text-center text-sm text-muted">You&apos;re all caught up. Friend requests, replies and invites land here.</p>}
+            {items.length === 0 && <p className="px-3 py-8 text-center text-sm text-muted">Estás al día. Las solicitudes, respuestas e invitaciones aparecerán aquí.</p>}
             {items.map((n) => {
               const d = describe(n);
               return (
@@ -139,4 +157,11 @@ export function NotificationBell() {
       </DM.Portal>
     </DM.Root>
   );
+}
+
+export function NotificationBell() {
+  const status = useAuth((s) => s.status);
+  const userId = useAuth((s) => s.user?.id);
+  if (status !== "signed-in" || !userId) return null;
+  return <NotificationBellContent userId={userId} />;
 }

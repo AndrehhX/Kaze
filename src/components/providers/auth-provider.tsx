@@ -10,6 +10,7 @@ import { useProgress } from "@/stores/progress";
 import { useSettings, type MotionPref, type PlayerPrefs } from "@/stores/settings";
 import { isThemeId } from "@/lib/themes";
 import type { LibraryEntry } from "@/lib/library/types";
+import { readGuestProfile } from "@/lib/profile/guest";
 
 const GUEST_BACKUP_KEY = "kaze:library:guest";
 
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let cancelled = false;
 
-    async function activate(userId: string, email: string | null, emailConfirmed: boolean) {
+    async function activate(userId: string, email: string | null, emailConfirmed: boolean, metadata?: Record<string, any> | null) {
       if (currentUserId.current === userId) return;
       currentUserId.current = userId;
       const db = getSupabaseBrowser()!;
@@ -56,20 +57,79 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setAuth({ status: "signed-in", user: { id: userId, email, emailConfirmed } });
       useLibrary.setState({ syncing: true });
+
+      // 1. Cargar o aprovisionar el perfil de forma aislada e infalible
+      let profileData: Profile | null = null;
       try {
-        const [profile, entries, collections, progress, settings] = await Promise.all([
-          db.from("profiles").select("*").eq("id", userId).maybeSingle(),
+        const { data, error } = await db.from("profiles").select("*").eq("id", userId).maybeSingle();
+        if (!error && data) {
+          profileData = {
+            ...(data as Profile),
+            favorite_genres: Array.isArray(data.favorite_genres) ? data.favorite_genres : [],
+            favorite_characters: Array.isArray(data.favorite_characters) ? data.favorite_characters : [],
+            favorite_anime: Array.isArray(data.favorite_anime) ? data.favorite_anime : [],
+          };
+        }
+      } catch (err) {
+        console.warn("[kaze] could not fetch remote profile", err);
+      }
+
+      if (!profileData) {
+        const metaUsername = metadata?.username || metadata?.preferred_username || metadata?.user_name;
+        const metaDisplayName = metadata?.display_name || metadata?.full_name || metadata?.name || metaUsername;
+        const metaAvatar = metadata?.avatar_url || metadata?.picture || metadata?.avatar || null;
+        const baseName = (email ? email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "") : "user") || "user";
+
+        profileData = {
+          id: userId,
+          username: (metaUsername || baseName).slice(0, 24),
+          display_name: (metaDisplayName || baseName).slice(0, 48),
+          bio: "",
+          avatar_url: metaAvatar,
+          banner_url: null,
+          profile_theme: "midnight",
+          favorite_genres: [],
+          favorite_anime: [],
+          favorite_characters: [],
+          visibility: "public",
+          show_watch_history: true,
+          show_favorites: true,
+          show_activity: true,
+          show_lists: true,
+          show_online_status: true,
+          created_at: new Date().toISOString(),
+        };
+        try {
+          await db.from("profiles").upsert(profileData, { onConflict: "id" });
+        } catch {}
+      }
+
+      if (cancelled) return;
+      setAuth({ profile: profileData });
+
+      // 2. Sincronizar datos secundarios sin bloquear al usuario
+      try {
+        const [entries, collections, progress, settings] = await Promise.all([
           remote.loadLibrary(),
           remote.loadCollections(),
           remote.loadProgress(),
           remote.loadSettings(),
         ]);
         if (cancelled) return;
-        setAuth({ profile: (profile.data as Profile | null) ?? null });
-        useLibrary.getState().replaceAll(entries, collections);
+
+        if (entries.length > 0 || collections.length > 0) {
+          useLibrary.getState().replaceAll(entries, collections);
+        } else {
+          const localEntries = Object.values(useLibrary.getState().entries);
+          if (localEntries.length > 0) {
+            remote.upsertEntries(localEntries).catch(() => {});
+          }
+        }
         useLibrary.getState().attachRemote(remote, userId);
         useProgress.getState().setRemote(remote);
-        useProgress.getState().mergeRemote(progress);
+        if (progress.length > 0) {
+          useProgress.getState().mergeRemote(progress);
+        }
         if (settings) {
           useSettings.getState().applyRemote({
             theme: isThemeId(settings.theme) ? settings.theme : undefined,
@@ -82,22 +142,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         const guest = readGuestBackup().entries.filter((g) => !entries.some((e) => e.mediaId === g.mediaId));
         if (guest.length) {
-          toast(`${guest.length} title${guest.length > 1 ? "s" : ""} saved on this device`, {
-            description: "Add them to your account library?",
+          toast(`${guest.length} título${guest.length > 1 ? "s" : ""} guardado${guest.length > 1 ? "s" : ""} en este dispositivo`, {
+            description: "¿Importar a tu biblioteca en la nube?",
             duration: 15000,
             action: {
-              label: "Import",
+              label: "Importar",
               onClick: () => {
                 const n = useLibrary.getState().importEntries(guest);
                 localStorage.removeItem(GUEST_BACKUP_KEY);
-                toast.success(`Imported ${n} title${n === 1 ? "" : "s"}`);
+                toast.success(`Importado${n === 1 ? "" : "s"} ${n} título${n === 1 ? "" : "s"}`);
               },
             },
           });
         }
       } catch (err) {
-        console.warn("[kaze] failed to load account data", err);
-        toast.error("Couldn't load your account data", { description: "Showing what's saved on this device." });
+        console.warn("[kaze] remote sync partial fallback", err);
       } finally {
         useLibrary.setState({ syncing: false });
       }
@@ -105,28 +164,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     function deactivate() {
       if (currentUserId.current === null && useAuth.getState().status === "signed-out") return;
-      const wasSignedIn = currentUserId.current !== null;
       currentUserId.current = null;
       setAuth({ status: "signed-out", user: null, profile: null });
       useProgress.getState().setRemote(null);
-      if (wasSignedIn || useLibrary.getState().scope !== "guest") {
-        // Do not leave account data on a shared device after sign-out.
-        useLibrary.getState().attachRemote(null, "guest");
-        useLibrary.getState().replaceAll(readGuestBackup().entries, []);
-        useProgress.setState({ items: {} });
-      }
+      useLibrary.getState().attachRemote(null, "guest");
+      // Preservar siempre la biblioteca e historial local del usuario en este dispositivo
     }
 
     supabase.auth.getUser().then(({ data }) => {
       if (cancelled) return;
-      if (data.user) activate(data.user.id, data.user.email ?? null, Boolean(data.user.email_confirmed_at));
+      if (data.user) activate(data.user.id, data.user.email ?? null, Boolean(data.user.email_confirmed_at), data.user.user_metadata);
       else deactivate();
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT" || !session?.user) deactivate();
       else if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "USER_UPDATED") {
-        activate(session.user.id, session.user.email ?? null, Boolean(session.user.email_confirmed_at));
+        activate(session.user.id, session.user.email ?? null, Boolean(session.user.email_confirmed_at), session.user.user_metadata);
       }
     });
 
@@ -175,6 +229,17 @@ export async function refreshProfile() {
   const supabase = getSupabaseBrowser();
   const id = useAuth.getState().user?.id;
   if (!supabase || !id) return;
-  const { data } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
-  useAuth.getState().set({ profile: (data as Profile | null) ?? null });
+  try {
+    const { data } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
+    if (data) {
+      useAuth.getState().set({
+        profile: {
+          ...(data as Profile),
+          favorite_genres: Array.isArray(data.favorite_genres) ? data.favorite_genres : [],
+          favorite_characters: Array.isArray(data.favorite_characters) ? data.favorite_characters : [],
+          favorite_anime: Array.isArray(data.favorite_anime) ? data.favorite_anime : [],
+        },
+      });
+    }
+  } catch {}
 }

@@ -3,7 +3,11 @@ import { createPlaybackGrant } from "@/lib/media/provider";
 import { getRequestUser } from "@/lib/supabase/server";
 import { json, limitOrNull } from "@/lib/api-response";
 
-const body = z.object({ seriesId: z.string().min(1).max(64), episodeId: z.string().min(1).max(64) });
+const body = z.object({
+  seriesId: z.string().min(1).max(64),
+  episodeId: z.string().min(1).max(64),
+  preferredAudio: z.enum(["latino", "castellano", "sub"]).optional(),
+});
 
 /**
  * Issues a playback grant after an entitlement check. Metadata never implies
@@ -16,7 +20,12 @@ export async function POST(req: Request) {
   if (!parsed.success) return json({ error: "Invalid request" }, { status: 400 });
 
   const { supabase, user } = await getRequestUser();
-  const result = await createPlaybackGrant(parsed.data.seriesId, parsed.data.episodeId, user?.id ?? null);
+  const result = await createPlaybackGrant(
+    parsed.data.seriesId,
+    parsed.data.episodeId,
+    user?.id ?? null,
+    parsed.data.preferredAudio
+  );
   if (!result.ok) return json({ error: "Playback not available", reason: result.entitlement.reason }, { status: result.status });
 
   if (supabase && user) {

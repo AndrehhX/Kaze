@@ -248,7 +248,7 @@ export function ReviewList({ mediaId, sort = "recent", showMedia, limit }: { med
   if (!isSupabaseConfigured) return <BackendMissing feature="Community reviews" />;
   if (isLoading) return <Skeleton className="h-40" />;
   if (error) return <ErrorPanel title="Couldn't load reviews" message={(error as Error).message} />;
-  if (!data?.length) return <EmptyState icon={<PenLine className="size-6" />} jp="評" title="No KAZE reviews yet" body="Be the first to write one — reviews here come only from real KAZE members." />;
+  if (!data?.length) return <EmptyState icon={<PenLine className="size-6" />} jp="評" title="Aún no hay reseñas en KAZE" body="Sé el primero en escribir una reseña — aquí solo verás opiniones de miembros de la comunidad." />;
   return (
     <div className="grid gap-4">
       {data.map((r) => (

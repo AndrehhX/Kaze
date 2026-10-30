@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PrivacySettings } from "@/components/settings/panels";
 
-export const metadata: Metadata = { title: "Privacy · Settings" };
+export const metadata: Metadata = { title: "Privacidad · Configuración" };
 
 export default function Page() {
   return (
