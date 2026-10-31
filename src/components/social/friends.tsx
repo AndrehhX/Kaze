@@ -50,7 +50,7 @@ function useSocialMutations() {
         const { error } = await db().from("friendships").insert({
           requester_id: me,
           addressee_id: target,
-          status: "pendientes",
+          status: "pending",
         });
         if (error) throw error;
       },
