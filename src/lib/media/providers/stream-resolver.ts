@@ -687,8 +687,44 @@ async function resolveFromLatanime(
   return null;
 }
 
+const jkSlugCache = new Map<string, string>();
+
+async function searchJKanimeSlugs(title: string, romaji = ''): Promise<string[]> {
+  const queries = Array.from(
+    new Set([
+      romaji ? cleanSearchTitle(romaji) : null,
+      cleanSearchTitle(title),
+    ])
+  ).filter(Boolean) as string[];
+
+  const candidates = new Set<string>();
+  for (const q of queries) {
+    if (!q) continue;
+    try {
+      const url = `https://jkanime.net/buscar/${encodeURIComponent(q)}/`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': USER_AGENT },
+        signal: AbortSignal.timeout(3500),
+      });
+      if (!res.ok) continue;
+      const html = await res.text();
+      const regex = /href="https:\/\/jkanime\.net\/([a-zA-Z0-9_-]+)\/"/g;
+      let m: RegExpExecArray | null;
+      while ((m = regex.exec(html)) !== null) {
+        const slug = m[1];
+        if (!['buscar', 'horario', 'top', 'programacion', 'emision', 'directorio', 'pedidos'].includes(slug)) {
+          candidates.add(slug);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return Array.from(candidates);
+}
+
 /**
- * Proveedor 2: JKanime (HLS VOD de alta velocidad en Japonés Subtitulado).
+ * Proveedor 2: JKanime (HLS VOD de alta velocidad en Japonés Subtitulado - 100% Sin Marcas).
  */
 async function resolveFromJKanime(
   malId: string | number | null,
@@ -696,40 +732,63 @@ async function resolveFromJKanime(
   episode: number,
   romajiTitle = ''
 ): Promise<ResolvedStream | null> {
-  const slugsToTry = generateProviderSlugs(malId, animeTitle, romajiTitle);
+  const cacheKey = `${malId || ''}:${animeTitle}:${romajiTitle || ''}`;
+  const directSlugs = generateProviderSlugs(malId, animeTitle, romajiTitle);
+  const cached = jkSlugCache.get(cacheKey);
+  const slugsToTry = cached ? [cached, ...directSlugs.filter((s) => s !== cached)] : [...directSlugs];
 
-  for (const slug of slugsToTry) {
+  const trySlug = async (slug: string): Promise<ResolvedStream | null> => {
     const epUrl = `https://jkanime.net/${slug}/${episode}/`;
     try {
       const res = await fetch(epUrl, {
         headers: { 'User-Agent': USER_AGENT },
         signal: AbortSignal.timeout(3500),
       });
-      if (!res.ok) continue;
+      if (!res.ok) return null;
 
       const html = await res.text();
       const iframeMatch =
-        html.match(/src="(https:\/\/jkanime\.net\/jkplayer\/um\?e=[^"]+)"/i) ||
-        html.match(/src="(https:\/\/jkanime\.net\/jkplayer\/umv\?e=[^"]+)"/i);
-      if (!iframeMatch) continue;
+        html.match(/https:\/\/jkanime\.net\/jkplayer\/(?:um|umv)\?e=[^"'\s]+/i) ||
+        html.match(/src="(https:\/\/jkanime\.net\/jkplayer\/[a-zA-Z0-9_\-?=&]+)"/i);
+      if (!iframeMatch) return null;
 
-      const embedRes = await fetch(iframeMatch[1], {
+      const embedUrl = iframeMatch[1] || iframeMatch[0];
+      const embedRes = await fetch(embedUrl, {
         headers: { 'User-Agent': USER_AGENT, Referer: epUrl },
         signal: AbortSignal.timeout(3500),
       });
-      if (!embedRes.ok) continue;
+      if (!embedRes.ok) return null;
 
       const embedHtml = await embedRes.text();
-      const m3u8Match = embedHtml.match(/(https?:\/\/[^"'\s]+\.m3u8[^"'\s]*)/i);
-      if (m3u8Match?.[1]) {
+      let m3u8Url: string | null = null;
+      const directMatch = embedHtml.match(/(https?:\/\/[^"'\s]+\.m3u8[^"'\s]*)/i);
+      if (directMatch?.[1]) {
+        m3u8Url = directMatch[1];
+      } else {
+        const atobMatch = embedHtml.match(/atob\(["']([A-Za-z0-9+/=]+)["']\)/);
+        if (atobMatch?.[1]) {
+          try {
+            const decoded = Buffer.from(atobMatch[1], 'base64').toString('utf8');
+            if (decoded.includes('.m3u8')) {
+              m3u8Url = decoded;
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      if (m3u8Url) {
+        jkSlugCache.set(cacheKey, slug);
         return {
           serverName: 'Stream Ultra HD (Sub Español)',
           audioLanguage: 'ja',
           quality: '1080p',
+          serverType: 'fast',
           asset: {
             id: `jk-hls-${episode}`,
             kind: 'hls',
-            src: toClientProxyUrl(m3u8Match[1], 'https://jkanime.net/'),
+            src: toClientProxyUrl(m3u8Url, 'https://jkanime.net/'),
             subtitles: [],
             markers: [],
             duration: 1440,
@@ -739,79 +798,30 @@ async function resolveFromJKanime(
     } catch {
       // ignore
     }
-  }
-  return null;
-}
-
-/**
- * Proveedor 3: TioAnime (Sub Español HD / Japonés con subtítulos).
- */
-async function resolveFromTioAnime(
-  malId: string | number | null,
-  animeTitle: string,
-  episode: number,
-  romajiTitle = ''
-): Promise<ResolvedStream | null> {
-  const slugsToTry = generateProviderSlugs(malId, animeTitle, romajiTitle);
+    return null;
+  };
 
   for (const slug of slugsToTry) {
-    const epUrl = `https://tioanime.com/ver/${slug}-${episode}`;
-    try {
-      const res = await fetch(epUrl, {
-        headers: { 'User-Agent': USER_AGENT, Referer: 'https://tioanime.com/' },
-        signal: AbortSignal.timeout(4000),
-      });
-      if (!res.ok) continue;
+    const stream = await trySlug(slug);
+    if (stream) return stream;
+  }
 
-      const html = await res.text();
-      const videoMatch = html.match(/var\s+videos\s*=\s*(\[[\s\S]*?\]);/);
-      if (!videoMatch) continue;
-
-      const list: [string, string, number, number][] = JSON.parse(videoMatch[1]);
-      for (const item of list) {
-        const serverName = (item[0] || '').toLowerCase();
-        let embed = item[1] || '';
-
-        if (serverName.includes('yourupload')) {
-          const direct = await extractYourUpload(embed);
-          if (direct) {
-            return {
-              serverName: 'YourUpload (Sub Español)',
-              audioLanguage: 'ja',
-              quality: '1080p',
-              asset: {
-                id: `tio-yu-${episode}`,
-                kind: 'mp4',
-                src: toClientProxyUrl(direct, 'https://www.yourupload.com/'),
-                subtitles: [],
-                markers: [],
-                duration: 1440,
-              },
-            };
-          }
-        } else if (serverName.includes('mp4upload')) {
-          const direct = await extractMP4Upload(embed);
-          if (direct) {
-            return {
-              serverName: 'MP4Upload (Sub Español)',
-              audioLanguage: 'ja',
-              quality: '1080p',
-              asset: {
-                id: `tio-mp4-${episode}`,
-                kind: 'mp4',
-                src: toClientProxyUrl(direct, 'https://www.mp4upload.com/'),
-                subtitles: [],
-                markers: [],
-                duration: 1440,
-              },
-            };
-          }
-        }
+  // Búsqueda dinámica en JKanime si fallaron los slugs directos
+  const candidates = await searchJKanimeSlugs(animeTitle, romajiTitle);
+  if (candidates.length > 0) {
+    const bestSlug = matchBestSlug(candidates, animeTitle, romajiTitle);
+    if (bestSlug && !slugsToTry.includes(bestSlug)) {
+      const stream = await trySlug(bestSlug);
+      if (stream) return stream;
+    }
+    for (const cand of candidates) {
+      if (cand !== bestSlug && !slugsToTry.includes(cand)) {
+        const stream = await trySlug(cand);
+        if (stream) return stream;
       }
-    } catch {
-      // ignore and continue
     }
   }
+
   return null;
 }
 
@@ -915,18 +925,17 @@ export async function resolvePlayableStream(
   const wantClean = opts.preferredServer === 'clean';
   const forceH264 = opts.codecPreference === 'h264';
 
-  // Si se solicita específicamente H.264 (adaptación para dispositivos Apple sin soporte AV1):
+  // Si se solicita específicamente H.264 (adaptación para iPadOS / Apple sin AV1):
+  // REGLA ABSOLUTA: Solo fuentes H.264 HLS limpias sin marcas (JKanime HLS nativo).
   if (forceH264) {
     if (opts.preferredAudio === 'sub') {
       streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
-      if (!streamResult) {
-        streamResult = await resolveFromTioAnime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
-      }
-      if (!streamResult) {
-        streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
-      }
     } else if (isDubbed) {
       streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, opts.preferredAudio === 'castellano' ? 'castellano' : 'latino');
+    }
+    // Fallback garantizado a JKanime HLS limpio sin marcas si aún no hay stream
+    if (!streamResult) {
+      streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
     }
   }
 
@@ -943,9 +952,6 @@ export async function resolvePlayableStream(
   // 3. Si se solicitó explícitamente SUB y no se encontró en AnimeAV1:
   if (!streamResult && opts.preferredAudio === 'sub') {
     streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
-    if (!streamResult) {
-      streamResult = await resolveFromTioAnime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
-    }
     if (!streamResult) {
       streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
     }
@@ -967,12 +973,9 @@ export async function resolvePlayableStream(
     streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, opts.preferredAudio === 'castellano' ? 'castellano' : 'latino');
   }
 
-  // 5. Fallback a Sub Español (JKanime -> TioAnime -> AnimeFLV)
+  // 5. Fallback a Sub Español (JKanime -> AnimeFLV) - CERO MARCAS
   if (!streamResult) {
     streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
-  }
-  if (!streamResult) {
-    streamResult = await resolveFromTioAnime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
   }
   if (!streamResult) {
     streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);

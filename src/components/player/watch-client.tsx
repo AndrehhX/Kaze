@@ -82,6 +82,7 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
 
   const handleAdaptToH264 = useCallback(() => {
     setCodecPreference("h264");
+    setPreferredAudio("sub");
   }, []);
 
   useEffect(() => {

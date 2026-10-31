@@ -32,6 +32,7 @@ export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryK
   useEffect(() => {
     if (!video) return;
     let destroyed = false;
+    let removeListeners = () => {};
     const sidecar: SubTrack[] = asset.subtitles.map((s, i) => ({ id: `side-${i}`, label: s.label, lang: s.lang, source: "sidecar" }));
     setState((s) => ({ ...s, fatal: null, levels: [], audioTracks: [], subtitleTracks: sidecar }));
 
@@ -52,11 +53,12 @@ export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryK
           video.src = asset.src;
           setState((s) => ({ ...s, engine: "native" }));
           const onNativeErr = () => {
-            if (video.error?.code === 3 && onCodecError) {
+            if ((video.error?.code === 3 || video.error?.code === 4) && onCodecError) {
               onCodecError();
             }
           };
           video.addEventListener("error", onNativeErr, { once: true });
+          removeListeners = () => video.removeEventListener("error", onNativeErr);
         } else {
           setState((s) => ({ ...s, fatal: "This browser can't play HLS streams." }));
         }
@@ -71,6 +73,17 @@ export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryK
         renderTextTracksNatively: true,
       });
       hlsRef.current = hls;
+
+      const onVideoDecodeErr = () => {
+        if ((video.error?.code === 3 || video.error?.code === 4) && onCodecError) {
+          hls.destroy();
+          hlsRef.current = null;
+          onCodecError();
+        }
+      };
+      video.addEventListener("error", onVideoDecodeErr);
+      removeListeners = () => video.removeEventListener("error", onVideoDecodeErr);
+
       hls.attachMedia(video);
       hls.on(HlsCtor.Events.MEDIA_ATTACHED, () => hls.loadSource(asset.src));
       hls.on(HlsCtor.Events.MANIFEST_PARSED, (_e, data) => {
@@ -96,9 +109,11 @@ export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryK
         const isCodecError =
           data.details === "bufferAddCodecError" ||
           detailsStr.includes("codec") ||
-          (data.type === HlsCtor.ErrorTypes.MEDIA_ERROR && video.error?.code === 3);
+          detailsStr.includes("incompatible") ||
+          (data.type === HlsCtor.ErrorTypes.MEDIA_ERROR && (video.error?.code === 3 || video.error?.code === 4));
 
         if (isCodecError && onCodecError) {
+          video.removeEventListener("error", onVideoDecodeErr);
           hls.destroy();
           hlsRef.current = null;
           onCodecError();
@@ -123,6 +138,7 @@ export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryK
 
     return () => {
       destroyed = true;
+      removeListeners();
       hlsRef.current?.destroy();
       hlsRef.current = null;
     };
