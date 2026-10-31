@@ -158,7 +158,7 @@ export function RegisterForm() {
       setBusy(false);
       return setErrors({ username: "That username is taken" });
     }
-    const { error } = await db.auth.signUp({
+    const { data: signUpData, error } = await db.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
@@ -168,6 +168,10 @@ export function RegisterForm() {
     });
     setBusy(false);
     if (error) return setErrors({ form: authMessage(error.message) });
+    if (signUpData?.session) {
+      window.location.href = "/";
+      return;
+    }
     setDone(true);
   };
 

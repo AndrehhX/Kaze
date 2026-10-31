@@ -77,15 +77,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!profileData) {
         const metaUsername = metadata?.username || metadata?.preferred_username || metadata?.user_name;
         const metaDisplayName = metadata?.display_name || metadata?.full_name || metadata?.name || metaUsername;
-        const metaAvatar = metadata?.avatar_url || metadata?.picture || metadata?.avatar || null;
+        const metaAvatar = metadata?.avatar_url || metadata?.picture || metadata?.avatar || "";
         const baseName = (email ? email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "") : "user") || "user";
+
+        // Payloads compatibles tanto con la tabla legacy como con las nuevas columnas
+        const dbPayload: Record<string, unknown> = {
+          id: userId,
+          username: (metaUsername || baseName).slice(0, 24),
+          display_name: (metaDisplayName || baseName).slice(0, 48),
+          bio: "",
+          avatar_url: metaAvatar || "",
+          banner_url: "",
+          status: "",
+          accent: "#6d5cff",
+          profile_visibility: "public",
+        };
+
+        try {
+          const { error: upsertErr } = await db.from("profiles").upsert(dbPayload, { onConflict: "id" });
+          if (upsertErr) {
+            console.warn("[kaze] profile upsert error:", upsertErr);
+          }
+        } catch (err) {
+          console.warn("[kaze] profile upsert exception:", err);
+        }
 
         profileData = {
           id: userId,
           username: (metaUsername || baseName).slice(0, 24),
           display_name: (metaDisplayName || baseName).slice(0, 48),
           bio: "",
-          avatar_url: metaAvatar,
+          avatar_url: metaAvatar || null,
           banner_url: null,
           profile_theme: "midnight",
           favorite_genres: [],
@@ -99,9 +121,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           show_online_status: true,
           created_at: new Date().toISOString(),
         };
-        try {
-          await db.from("profiles").upsert(profileData, { onConflict: "id" });
-        } catch {}
       }
 
       if (cancelled) return;
