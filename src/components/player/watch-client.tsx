@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { LayoutGroup, motion } from "motion/react";
 import { Captions, Keyboard, Popcorn, Server, Sparkles, Volume2 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { PlaybackGrant } from "@/lib/media/types";
 import { Player } from "./player";
 import { useSettings } from "@/stores/settings";
