@@ -176,10 +176,13 @@ export function ProfileHoverCard({
 }
 
 /**
- * Gestor de almacenamiento local y estadísticas para comentarios de anime
+ * Gestor de almacenamiento local y estadísticas para comentarios de anime (por capítulo)
  */
-function getStorageKey(animeId: string) {
-  return `kaze:anime_comments_${animeId}`;
+function getStorageKey(animeId: string, episodeId?: string): string {
+  if (episodeId) {
+    return `kaze:anime_comments_${animeId}_ep_${episodeId}`;
+  }
+  return `kaze:anime_comments_${animeId}_general`;
 }
 
 const STATS_KEY = "kaze:user_comment_stats";
@@ -219,7 +222,6 @@ export function AnimeComments({
   const [guestProfile] = useGuestProfile();
 
   const [comments, setComments] = useState<AnimeCommentItem[]>([]);
-  const [filterEpisode, setFilterEpisode] = useState<boolean>(true);
   const [bodyText, setBodyText] = useState("");
   const [hasSpoilers, setHasSpoilers] = useState(false);
   const [revealedSpoilers, setRevealedSpoilers] = useState<Record<string, boolean>>({});
@@ -245,16 +247,28 @@ export function AnimeComments({
         bio: guestProfile.bio,
       };
 
-  // Cargar comentarios
+  // Cargar comentarios estrictamente por episodio sin mockups
   useEffect(() => {
     const loadComments = () => {
       try {
-        const raw = localStorage.getItem(getStorageKey(seriesId));
+        const key = getStorageKey(seriesId, episodeId);
+        const raw = localStorage.getItem(key);
         if (raw) {
           const parsed = JSON.parse(raw);
+          // Filtrar cualquier comentario mock up o de seed antiguo
+          const realComments = Array.isArray(parsed)
+            ? parsed.filter(
+                (c: AnimeCommentItem) =>
+                  c.id !== "seed-1" &&
+                  c.id !== "seed-2" &&
+                  c.author?.username !== "AkiraOtaku" &&
+                  c.author?.username !== "MakotoShiro"
+              )
+            : [];
+
           const statsMap = getUserStatsMap();
           // Sincronizar estadísticas dinámicas de los autores
-          const withLiveStats = parsed.map((c: AnimeCommentItem) => {
+          const withLiveStats = realComments.map((c: AnimeCommentItem) => {
             const authorStats = statsMap[c.author.username];
             if (authorStats) {
               return {
@@ -269,58 +283,37 @@ export function AnimeComments({
             return c;
           });
           setComments(withLiveStats);
-        } else {
-          // Comentarios iniciales de muestra si la sección está vacía
-          const initial: AnimeCommentItem[] = [
-            {
-              id: "seed-1",
-              anime_id: seriesId,
-              episode_id: episodeId || "1",
-              user_id: "user-kaze-1",
-              author: {
-                id: "user-kaze-1",
-                username: "AkiraOtaku",
-                display_name: "Akira",
-                avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
-                banner_url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
-                bio: "Amante del anime clásico y de temporada. Viendo todo lo bueno.",
-                likesReceived: 42,
-                globalComments: 18,
-              },
-              body: "¡La calidad de animación y el ritmo de este episodio son una locura! Totalmente recomendado verlo en 1080p.",
-              has_spoilers: false,
-              like_count: 5,
-              created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-            },
-            {
-              id: "seed-2",
-              anime_id: seriesId,
-              episode_id: episodeId || "1",
-              user_id: "user-kaze-2",
-              author: {
-                id: "user-kaze-2",
-                username: "MakotoShiro",
-                display_name: "Makoto",
-                avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80",
-                banner_url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=600&auto=format&fit=crop&q=80",
-                bio: "Dev y crítico casual. La banda sonora es de 10.",
-                likesReceived: 89,
-                globalComments: 34,
-              },
-              body: "El doblaje latino quedó fantástico, especialmente la adaptación de los diálogos cómicos.",
-              has_spoilers: false,
-              like_count: 8,
-              created_at: new Date(Date.now() - 3600000 * 5).toISOString(),
-            },
-          ];
-          setComments(initial);
-          localStorage.setItem(getStorageKey(seriesId), JSON.stringify(initial));
 
-          // Registrar estadísticas iniciales
-          updateUserStats("AkiraOtaku", () => ({ likesReceived: 42, globalComments: 18 }));
-          updateUserStats("MakotoShiro", () => ({ likesReceived: 89, globalComments: 34 }));
+          // Si había semillas antiguas guardadas en esta clave, limpiarlas
+          if (realComments.length !== parsed.length) {
+            localStorage.setItem(key, JSON.stringify(realComments));
+          }
+        } else {
+          // Sección limpia de inicio: cero mock ups
+          setComments([]);
         }
-      } catch {}
+
+        // Limpiar mockups de la clave general legacy si existía
+        const legacyKey = `kaze:anime_comments_${seriesId}`;
+        const legacyRaw = localStorage.getItem(legacyKey);
+        if (legacyRaw) {
+          try {
+            const legacyParsed = JSON.parse(legacyRaw);
+            const onlySeeds = Array.isArray(legacyParsed) && legacyParsed.every(
+              (c: any) =>
+                c.id === "seed-1" ||
+                c.id === "seed-2" ||
+                c.author?.username === "AkiraOtaku" ||
+                c.author?.username === "MakotoShiro"
+            );
+            if (onlySeeds) {
+              localStorage.removeItem(legacyKey);
+            }
+          } catch {}
+        }
+      } catch {
+        setComments([]);
+      }
     };
 
     // Cargar likes locales del usuario
@@ -382,7 +375,7 @@ export function AnimeComments({
     const nextList = [newComment, ...comments];
     setComments(nextList);
     try {
-      localStorage.setItem(getStorageKey(seriesId), JSON.stringify(nextList));
+      localStorage.setItem(getStorageKey(seriesId, episodeId), JSON.stringify(nextList));
     } catch {}
 
     // Intento de guardado en Supabase si está disponible
@@ -393,7 +386,7 @@ export function AnimeComments({
           .insert({
             user_id: authUser.id,
             target_type: "discussion",
-            target_id: seriesId,
+            target_id: `${seriesId}:${episodeId || "1"}`,
             body: cleanText,
             has_spoilers: hasSpoilers,
           })
@@ -439,7 +432,7 @@ export function AnimeComments({
 
     setComments(updated);
     try {
-      localStorage.setItem(getStorageKey(seriesId), JSON.stringify(updated));
+      localStorage.setItem(getStorageKey(seriesId, episodeId), JSON.stringify(updated));
     } catch {}
   };
 
@@ -456,7 +449,7 @@ export function AnimeComments({
     const nextList = comments.filter((c) => c.id !== commentId);
     setComments(nextList);
     try {
-      localStorage.setItem(getStorageKey(seriesId), JSON.stringify(nextList));
+      localStorage.setItem(getStorageKey(seriesId, episodeId), JSON.stringify(nextList));
     } catch {}
 
     // Descontar comentario global
@@ -468,11 +461,6 @@ export function AnimeComments({
     toast.success("Comentario eliminado");
   };
 
-  // Filtrado según episodio o anime completo
-  const visibleComments = filterEpisode && episodeId
-    ? comments.filter((c) => !c.episode_id || c.episode_id === episodeId)
-    : comments;
-
   return (
     <section className="mt-8 rounded-3xl border border-line bg-surface/75 p-4 sm:p-6 backdrop-blur-md shadow-sm">
       {/* Cabecera de la sección de comentarios */}
@@ -483,42 +471,19 @@ export function AnimeComments({
           </span>
           <div>
             <h3 className="text-base font-bold text-fg">
-              Comentarios de la Comunidad
+              {episodeId ? `Comentarios del Episodio ${episodeId}` : "Comentarios de la Comunidad"}
             </h3>
             <p className="text-xs text-muted">
               {animeTitle ? `${animeTitle} · ` : ""}
-              {visibleComments.length} {visibleComments.length === 1 ? "opinión" : "opiniones"}
+              {comments.length} {comments.length === 1 ? "opinión" : "opiniones"}
             </p>
           </div>
         </div>
 
-        {/* Filtro: Este episodio vs Todo el anime */}
         {episodeId && (
-          <div className="inline-flex rounded-xl bg-elevated p-1 border border-line text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => setFilterEpisode(true)}
-              className={cn(
-                "px-3 py-1 rounded-lg transition-all",
-                filterEpisode
-                  ? "bg-primary text-black shadow-sm"
-                  : "text-muted hover:text-fg"
-              )}
-            >
-              Episodio {episodeId}
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterEpisode(false)}
-              className={cn(
-                "px-3 py-1 rounded-lg transition-all",
-                !filterEpisode
-                  ? "bg-primary text-black shadow-sm"
-                  : "text-muted hover:text-fg"
-              )}
-            >
-              Todo el anime
-            </button>
+          <div className="inline-flex items-center gap-1.5 rounded-xl bg-elevated/80 px-3 py-1.5 border border-line text-xs font-semibold text-muted">
+            <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+            <span>Capítulo {episodeId}</span>
           </div>
         )}
       </div>
@@ -553,7 +518,11 @@ export function AnimeComments({
             <textarea
               value={bodyText}
               onChange={(e) => setBodyText(e.target.value)}
-              placeholder={`¿Qué te pareció ${episodeId ? `el episodio ${episodeId}` : "este anime"}? Escribe tu comentario...`}
+              placeholder={
+                episodeId
+                  ? `¿Qué te pareció el episodio ${episodeId}? Escribe tu comentario...`
+                  : "¿Qué te pareció este anime? Escribe tu comentario..."
+              }
               rows={3}
               maxLength={2000}
               className="k-input w-full resize-none text-sm rounded-2xl bg-elevated/70 border-line/80 focus:border-primary p-3"
@@ -588,14 +557,14 @@ export function AnimeComments({
 
       {/* Lista de comentarios */}
       <div className="mt-6 space-y-4">
-        {visibleComments.length === 0 ? (
+        {comments.length === 0 ? (
           <div className="py-8 text-center text-muted">
             <MessageSquare className="size-8 mx-auto mb-2 opacity-40" />
             <p className="text-sm font-medium">Aún no hay comentarios en este episodio.</p>
             <p className="text-xs text-muted/80">¡Sé el primero en compartir tu opinión!</p>
           </div>
         ) : (
-          visibleComments.map((c) => {
+          comments.map((c) => {
             const isLiked = Boolean(likedComments[c.id]);
             const isMyComment =
               c.user_id === activeUser.id || c.author.username === activeUser.username;

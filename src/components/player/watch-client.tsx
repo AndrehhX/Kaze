@@ -62,11 +62,29 @@ const SHORTCUTS: [string, string][] = [
   ["0–9", "Saltar a 0–90%"],
 ];
 
+/**
+ * Detecta si el cliente es iPadOS o iOS (Safari Apple sin decodificador AV1 por hardware).
+ * En estos dispositivos, AV1 genera un bloqueo de 15 segundos antes de que el navegador lance error.
+ * Al solicitar H.264 directamente, el reproductor carga de forma instantánea (<0.5s).
+ * En PC (Windows, Linux) y Android se mantiene inalterado AnimeAV1 1080p Ultra Rápido.
+ */
+function isAppleOrNonAV1(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = window.navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isIPadOS = window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
+  return isIOS || isIPadOS;
+}
+
 export function WatchClient({ seriesId, episodeId }: { seriesId: string; episodeId: string }) {
   const router = useRouter();
-  const [preferredAudio, setPreferredAudio] = useState<"latino" | "sub">("latino");
+  const [preferredAudio, setPreferredAudio] = useState<"latino" | "sub">(() =>
+    isAppleOrNonAV1() ? "sub" : "latino"
+  );
   const [preferredServer, setPreferredServer] = useState<"fast" | "clean">("fast");
-  const [codecPreference, setCodecPreference] = useState<"av1" | "h264">("av1");
+  const [codecPreference, setCodecPreference] = useState<"av1" | "h264">(() =>
+    isAppleOrNonAV1() ? "h264" : "av1"
+  );
   const { data: grant, isLoading, error, refetch } = usePlaybackGrant(
     seriesId,
     episodeId,
@@ -83,6 +101,13 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
   const handleAdaptToH264 = useCallback(() => {
     setCodecPreference("h264");
     setPreferredAudio("sub");
+  }, []);
+
+  useEffect(() => {
+    if (isAppleOrNonAV1()) {
+      setCodecPreference("h264");
+      setPreferredAudio("sub");
+    }
   }, []);
 
   useEffect(() => {

@@ -1069,22 +1069,18 @@ export async function resolvePlayableStream(
   const forceH264 = opts.codecPreference === 'h264';
 
   // Si se solicita específicamente H.264 (adaptación para iPadOS / Apple sin AV1):
-  // REGLA ABSOLUTA: Solo fuentes H.264 limpias sin marcas (JKanime / MonosChinos).
+  // REGLA ABSOLUTA: Solo fuentes H.264 limpias sin marcas (MonosChinos / JKanime).
+  // MonosChinos (YourUpload / MP4Upload) se consulta PRIMERO por su respuesta en ~200ms sin bloqueos de Cloudflare en Vercel.
   if (forceH264) {
-    if (opts.preferredAudio === 'sub') {
+    streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+    if (!streamResult) {
       streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
-      if (!streamResult) {
-        streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
-      }
-    } else if (isDubbed) {
+    }
+    if (!streamResult && isDubbed && opts.preferredAudio !== 'sub') {
       streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, opts.preferredAudio === 'castellano' ? 'castellano' : 'latino');
     }
-    // Fallback garantizado a fuentes H.264 limpias sin marcas si aún no hay stream
     if (!streamResult) {
-      streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
-    }
-    if (!streamResult) {
-      streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+      streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
     }
   }
 
@@ -1100,9 +1096,9 @@ export async function resolvePlayableStream(
 
   // 3. Si se solicitó explícitamente SUB y no se encontró en AnimeAV1:
   if (!streamResult && opts.preferredAudio === 'sub') {
-    streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+    streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
     if (!streamResult) {
-      streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+      streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
     }
     if (!streamResult) {
       streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
@@ -1125,9 +1121,12 @@ export async function resolvePlayableStream(
     streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, opts.preferredAudio === 'castellano' ? 'castellano' : 'latino');
   }
 
-  // 5. Fallback a Sub Español (JKanime -> MonosChinos -> AnimeFLV) - CERO MARCAS
+  // 5. Fallback a Sub Español (MonosChinos -> JKanime -> AnimeFLV) - CERO MARCAS
   if (!streamResult) {
-    streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+    streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+    if (!streamResult) {
+      streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+    }
   }
   if (!streamResult) {
     streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
