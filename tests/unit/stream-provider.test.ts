@@ -31,7 +31,7 @@ describe('Stream Security Policy & SSRF Protection', () => {
 segment1.ts
 https://bunnycdn.com/segment2.ts`;
 
-    const rewritten = rewriteM3U8(sampleM3U8, 'https://bunnycdn.com/hls/playlist.m3u8');
+    const rewritten = rewriteM3U8(sampleM3U8, 'https://bunnycdn.com/hls/playlist.m3u8', '', '', '/api/stream/proxy');
     expect(rewritten).toContain('URI="/api/stream/proxy?url=https%3A%2F%2Fbunnycdn.com%2Fhls%2Fkey.php');
     expect(rewritten).toContain('/api/stream/proxy?url=https%3A%2F%2Fbunnycdn.com%2Fhls%2Fsegment1.ts');
     expect(rewritten).toContain('/api/stream/proxy?url=https%3A%2F%2Fbunnycdn.com%2Fsegment2.ts');
