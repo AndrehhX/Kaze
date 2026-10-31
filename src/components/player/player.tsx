@@ -240,7 +240,7 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
       if (grant.next && prefs.autoNext && onNavigateEpisode && !locked) setNextCountdown(8);
     };
     const onError = () => {
-      if (video.error?.code === 3 && onAdaptCodec && !isAdaptedCodec) {
+      if ((video.error?.code === 3 || video.error?.code === 4) && onAdaptCodec && !isAdaptedCodec) {
         setIsAdapting(true);
         onAdaptCodec();
         return;

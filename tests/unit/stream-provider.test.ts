@@ -116,3 +116,30 @@ describe('Algorithm with Time Decay', () => {
     expect(profile.weights['Cyberpunk']).toBeGreaterThan(profile.weights['Mecha']);
   });
 });
+
+
+describe('Stream Resolver Season Matching', () => {
+  it('detecta correctamente temporadas y partes', async () => {
+    const { parseSeasonInfo } = await import('@/lib/media/providers/stream-resolver');
+    expect(parseSeasonInfo('Re:Zero kara Hajimeru Isekai Seikatsu 2nd Season').season).toBe(2);
+    expect(parseSeasonInfo('Re:Zero kara Hajimeru Isekai Seikatsu 2nd Season Part 2').season).toBe(2);
+    expect(parseSeasonInfo('Re:Zero kara Hajimeru Isekai Seikatsu 2nd Season Part 2').part).toBe(2);
+    expect(parseSeasonInfo('Shingeki no Kyojin: The Final Season').season).toBe(4);
+    expect(parseSeasonInfo('Jujutsu Kaisen Season 2').season).toBe(2);
+    expect(parseSeasonInfo('Kimetsu no Yaiba: Mugen Ressha-hen Movie').isMovieOrOva).toBe(true);
+  });
+
+  it('asigna el mejor slug para la temporada solicitada', async () => {
+    const { matchBestSlug } = await import('@/lib/media/providers/stream-resolver');
+    const candidates = [
+      'rezero-kara-hajimeru-isekai-seikatsu-s3',
+      'rezero-kara-hajimeru-isekai-seikatsu-2nd-season',
+      're-zero-kara-hajimeru-isekai-seikatsu',
+    ];
+    const bestS1 = matchBestSlug(candidates, 'Re:Zero kara Hajimeru Isekai Seikatsu', 'Re:Zero kara Hajimeru Isekai Seikatsu');
+    expect(bestS1).toBe('re-zero-kara-hajimeru-isekai-seikatsu');
+
+    const bestS2 = matchBestSlug(candidates, 'Re:Zero kara Hajimeru Isekai Seikatsu 2nd Season', 'Re:Zero kara Hajimeru Isekai Seikatsu 2nd Season');
+    expect(bestS2).toBe('rezero-kara-hajimeru-isekai-seikatsu-2nd-season');
+  });
+});

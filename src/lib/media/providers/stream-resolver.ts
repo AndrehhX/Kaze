@@ -115,7 +115,7 @@ function scoreSlug(slug: string, queryTokens: string[], seasonInfo: SeasonInfo):
   const { season, part } = seasonInfo;
 
   if (season === 1) {
-    if (/(?:2nd|3rd|4th|5th|6th)-season|season-[2-9]|\bii\b|\biii\b|\biv\b|final-season/i.test(slugLower)) {
+    if (/(?:2nd|3rd|4th|5th|6th)-season|season-[2-9]|-s[2-9]\b|\bii\b|\biii\b|\biv\b|final-season/i.test(slugLower)) {
       score -= 80;
     } else {
       score += 40;
@@ -825,8 +825,151 @@ async function resolveFromJKanime(
   return null;
 }
 
+const mcSlugCache = new Map<string, string>();
+
+async function searchMonosChinosSlugs(title: string, romaji = ''): Promise<string[]> {
+  const queries = Array.from(
+    new Set([
+      romaji ? cleanSearchTitle(romaji) : null,
+      cleanSearchTitle(title),
+    ])
+  ).filter(Boolean) as string[];
+
+  const candidates = new Set<string>();
+  for (const q of queries) {
+    if (!q) continue;
+    try {
+      const url = `https://monoschinos.st/buscar?q=${encodeURIComponent(q)}`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': USER_AGENT },
+        signal: AbortSignal.timeout(3500),
+      });
+      if (!res.ok) continue;
+      const html = await res.text();
+      const matches = Array.from(html.matchAll(/href="https:\/\/monoschinos\.st\/anime\/([^"]+)"/g)).map((m) => m[1]);
+      for (const m of matches) {
+        candidates.add(m.replace(/-sub-espanol$/, ''));
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return Array.from(candidates);
+}
+
 /**
- * Proveedor 3: AnimeFLV (Sub Español HD).
+ * Proveedor 3: MonosChinos (H.264 MP4 Directo Ultra HD en Japonés Subtitulado - 100% Sin Marcas).
+ */
+async function resolveFromMonosChinos(
+  malId: string | number | null,
+  animeTitle: string,
+  episode: number,
+  romajiTitle = ''
+): Promise<ResolvedStream | null> {
+  const cacheKey = `${malId || ''}:${animeTitle}:${romajiTitle || ''}`;
+  const directSlugs = generateProviderSlugs(malId, animeTitle, romajiTitle);
+  const cached = mcSlugCache.get(cacheKey);
+  const slugsToTry = cached ? [cached, ...directSlugs.filter((s) => s !== cached)] : [...directSlugs];
+
+  const trySlug = async (slug: string): Promise<ResolvedStream | null> => {
+    const cleanSlug = slug.replace(/-sub-espanol$/, '');
+    const epUrl = `https://monoschinos.st/ver/${cleanSlug}-episodio-${episode}`;
+    try {
+      const res = await fetch(epUrl, {
+        headers: { 'User-Agent': USER_AGENT },
+        signal: AbortSignal.timeout(3500),
+      });
+      if (!res.ok) return null;
+
+      const html = await res.text();
+      const playerMatches = Array.from(html.matchAll(/data-player="([^"]+)"/g)).map((m) => m[1]);
+      const rawServers: string[] = [];
+      for (const b64 of playerMatches) {
+        try {
+          const decoded = Buffer.from(b64, 'base64').toString('utf8');
+          if (decoded && decoded.startsWith('http')) rawServers.push(decoded);
+        } catch {
+          // ignore decode errors
+        }
+      }
+
+      // 1. Prioridad YourUpload (Verificado 100% limpio sin marcas de agua)
+      const yu = rawServers.find((s) => s.includes('yourupload'));
+      if (yu) {
+        const direct = await extractYourUpload(yu);
+        if (direct) {
+          mcSlugCache.set(cacheKey, cleanSlug);
+          return {
+            serverName: '1080p HD Limpio (Sub Español)',
+            serverType: 'clean',
+            audioLanguage: 'ja',
+            quality: '1080p',
+            asset: {
+              id: `monos-yu-${episode}`,
+              kind: 'mp4',
+              src: toClientProxyUrl(direct, 'https://www.yourupload.com/'),
+              subtitles: [],
+              markers: [],
+              duration: 1440,
+            },
+          };
+        }
+      }
+
+      // 2. MP4Upload (Verificado limpio H.264)
+      const mp4u = rawServers.find((s) => s.includes('mp4upload'));
+      if (mp4u) {
+        const direct = await extractMP4Upload(mp4u);
+        if (direct) {
+          mcSlugCache.set(cacheKey, cleanSlug);
+          return {
+            serverName: 'MP4Upload (Sub Español)',
+            serverType: 'clean',
+            audioLanguage: 'ja',
+            quality: '1080p',
+            asset: {
+              id: `monos-mp4-${episode}`,
+              kind: 'mp4',
+              src: toClientProxyUrl(direct, 'https://www.mp4upload.com/'),
+              subtitles: [],
+              markers: [],
+              duration: 1440,
+            },
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  };
+
+  for (const slug of slugsToTry) {
+    const stream = await trySlug(slug);
+    if (stream) return stream;
+  }
+
+  // Búsqueda dinámica en MonosChinos si fallaron los slugs directos
+  const candidates = await searchMonosChinosSlugs(animeTitle, romajiTitle);
+  if (candidates.length > 0) {
+    const bestSlug = matchBestSlug(candidates, animeTitle, romajiTitle);
+    if (bestSlug && !slugsToTry.includes(bestSlug)) {
+      const stream = await trySlug(bestSlug);
+      if (stream) return stream;
+    }
+    for (const cand of candidates) {
+      if (cand !== bestSlug && !slugsToTry.includes(cand)) {
+        const stream = await trySlug(cand);
+        if (stream) return stream;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Proveedor 4: AnimeFLV (Sub Español HD).
  */
 async function resolveFromAnimeFLV(
   animeTitle: string,
@@ -926,16 +1069,22 @@ export async function resolvePlayableStream(
   const forceH264 = opts.codecPreference === 'h264';
 
   // Si se solicita específicamente H.264 (adaptación para iPadOS / Apple sin AV1):
-  // REGLA ABSOLUTA: Solo fuentes H.264 HLS limpias sin marcas (JKanime HLS nativo).
+  // REGLA ABSOLUTA: Solo fuentes H.264 limpias sin marcas (JKanime / MonosChinos).
   if (forceH264) {
     if (opts.preferredAudio === 'sub') {
       streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+      if (!streamResult) {
+        streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+      }
     } else if (isDubbed) {
       streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, opts.preferredAudio === 'castellano' ? 'castellano' : 'latino');
     }
-    // Fallback garantizado a JKanime HLS limpio sin marcas si aún no hay stream
+    // Fallback garantizado a fuentes H.264 limpias sin marcas si aún no hay stream
     if (!streamResult) {
       streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+    }
+    if (!streamResult) {
+      streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
     }
   }
 
@@ -952,6 +1101,9 @@ export async function resolvePlayableStream(
   // 3. Si se solicitó explícitamente SUB y no se encontró en AnimeAV1:
   if (!streamResult && opts.preferredAudio === 'sub') {
     streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+    if (!streamResult) {
+      streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+    }
     if (!streamResult) {
       streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
     }
@@ -973,9 +1125,12 @@ export async function resolvePlayableStream(
     streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, opts.preferredAudio === 'castellano' ? 'castellano' : 'latino');
   }
 
-  // 5. Fallback a Sub Español (JKanime -> AnimeFLV) - CERO MARCAS
+  // 5. Fallback a Sub Español (JKanime -> MonosChinos -> AnimeFLV) - CERO MARCAS
   if (!streamResult) {
     streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+  }
+  if (!streamResult) {
+    streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
   }
   if (!streamResult) {
     streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
