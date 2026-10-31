@@ -15,7 +15,8 @@ function toClientProxyUrl(targetUrl: string, referer = '', origin = ''): string 
   const p = new URLSearchParams({ url: targetUrl });
   if (referer) p.set('referer', referer);
   if (origin) p.set('origin', origin);
-  return `${PROXY_BASE}?${p.toString()}`;
+  const basePath = targetUrl.includes('.m3u8') ? `${PROXY_BASE}/stream.m3u8` : PROXY_BASE;
+  return `${basePath}?${p.toString()}`;
 }
 
 export interface StreamResolutionOptions {
@@ -26,6 +27,7 @@ export interface StreamResolutionOptions {
   episodeNumber: number;
   preferredAudio?: 'latino' | 'castellano' | 'sub';
   preferredServer?: 'fast' | 'clean';
+  codecPreference?: 'av1' | 'h264';
 }
 
 export interface ResolvedStream {
@@ -911,14 +913,30 @@ export async function resolvePlayableStream(
 
   let streamResult: ResolvedStream | null = null;
   const wantClean = opts.preferredServer === 'clean';
+  const forceH264 = opts.codecPreference === 'h264';
+
+  // Si se solicita específicamente H.264 (adaptación para dispositivos Apple sin soporte AV1):
+  if (forceH264) {
+    if (opts.preferredAudio === 'sub') {
+      streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+      if (!streamResult) {
+        streamResult = await resolveFromTioAnime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+      }
+      if (!streamResult) {
+        streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
+      }
+    } else if (isDubbed) {
+      streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, opts.preferredAudio === 'castellano' ? 'castellano' : 'latino');
+    }
+  }
 
   // Si se pide servidor limpio y es audio con doblaje, priorizar OkRu de Latanime (sin marcas)
-  if (wantClean && isDubbed && (opts.preferredAudio === 'latino' || opts.preferredAudio === 'castellano')) {
+  if (!streamResult && wantClean && isDubbed && (opts.preferredAudio === 'latino' || opts.preferredAudio === 'castellano')) {
     streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, opts.preferredAudio === 'castellano' ? 'castellano' : 'latino');
   }
 
-  // Prioridad habitual o fallback: AnimeAV1 HLS Ultra HD (Sub Español y Audio Latino nativos)
-  if (!streamResult) {
+  // Prioridad habitual incondicional: AnimeAV1 HLS Ultra HD (Sub Español y Audio Latino nativos)
+  if (!streamResult && !forceH264) {
     streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji);
   }
 

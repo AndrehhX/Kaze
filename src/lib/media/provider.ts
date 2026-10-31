@@ -40,7 +40,8 @@ export async function createPlaybackGrant(
   episodeId: string,
   userId: string | null,
   preferredAudio?: "latino" | "castellano" | "sub",
-  preferredServer?: "fast" | "clean"
+  preferredServer?: "fast" | "clean",
+  codecPreference?: "av1" | "h264"
 ): Promise<GrantResult> {
   const found = await resolveSeries(seriesId);
   if (!found) return { ok: false, entitlement: { allowed: false, reason: "not-licensed" }, status: 404 };
@@ -69,6 +70,7 @@ export async function createPlaybackGrant(
       episodeNumber: Number(episodeId) || 1,
       preferredAudio,
       preferredServer,
+      codecPreference,
     });
     if (resolved) {
       playAsset = resolved.asset;

@@ -25,7 +25,7 @@ export type HlsState = {
  * Attaches an authorized HLS/MP4 asset to a <video>. Uses hls.js where MSE is
  * available, native HLS on Safari/iOS, and plain src for progressive files.
  */
-export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryKey: number) {
+export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryKey: number, onCodecError?: () => void) {
   const hlsRef = useRef<Hls | null>(null);
   const [state, setState] = useState<HlsState>({ levels: [], currentLevel: -1, autoLevel: true, audioTracks: [], audioTrack: 0, subtitleTracks: [], fatal: null, engine: null });
 
@@ -51,6 +51,12 @@ export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryK
         if (video.canPlayType("application/vnd.apple.mpegurl")) {
           video.src = asset.src;
           setState((s) => ({ ...s, engine: "native" }));
+          const onNativeErr = () => {
+            if (video.error?.code === 3 && onCodecError) {
+              onCodecError();
+            }
+          };
+          video.addEventListener("error", onNativeErr, { once: true });
         } else {
           setState((s) => ({ ...s, fatal: "This browser can't play HLS streams." }));
         }
@@ -86,6 +92,19 @@ export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryK
       );
       let mediaRecoveries = 0;
       hls.on(HlsCtor.Events.ERROR, (_e, data) => {
+        const detailsStr = String(data.details || "").toLowerCase();
+        const isCodecError =
+          data.details === "bufferAddCodecError" ||
+          detailsStr.includes("codec") ||
+          (data.type === HlsCtor.ErrorTypes.MEDIA_ERROR && video.error?.code === 3);
+
+        if (isCodecError && onCodecError) {
+          hls.destroy();
+          hlsRef.current = null;
+          onCodecError();
+          return;
+        }
+
         if (!data.fatal) return;
         if (data.type === HlsCtor.ErrorTypes.MEDIA_ERROR && mediaRecoveries < 2) {
           mediaRecoveries++;

@@ -20,12 +20,13 @@ export async function requestGrant(
   seriesId: string,
   episodeId: string,
   preferredAudio?: "latino" | "sub",
-  preferredServer?: "fast" | "clean"
+  preferredServer?: "fast" | "clean",
+  codecPreference?: "av1" | "h264"
 ): Promise<PlaybackGrant> {
   const res = await fetch("/api/playback/session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ seriesId, episodeId, preferredAudio, preferredServer }),
+    body: JSON.stringify({ seriesId, episodeId, preferredAudio, preferredServer, codecPreference }),
   });
   const body = await res.json().catch(() => null);
   if (!res.ok) throw Object.assign(new Error(body?.error ?? "Reproducción no disponible"), { status: res.status, reason: body?.reason });
@@ -36,11 +37,12 @@ export function usePlaybackGrant(
   seriesId: string,
   episodeId: string,
   preferredAudio?: "latino" | "sub",
-  preferredServer?: "fast" | "clean"
+  preferredServer?: "fast" | "clean",
+  codecPreference?: "av1" | "h264"
 ) {
   return useQuery({
-    queryKey: ["grant", seriesId, episodeId, preferredAudio, preferredServer],
-    queryFn: () => requestGrant(seriesId, episodeId, preferredAudio, preferredServer),
+    queryKey: ["grant", seriesId, episodeId, preferredAudio, preferredServer, codecPreference],
+    queryFn: () => requestGrant(seriesId, episodeId, preferredAudio, preferredServer, codecPreference),
     staleTime: 60 * 60_000,
     retry: 1,
   });
@@ -64,17 +66,23 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
   const router = useRouter();
   const [preferredAudio, setPreferredAudio] = useState<"latino" | "sub">("latino");
   const [preferredServer, setPreferredServer] = useState<"fast" | "clean">("fast");
+  const [codecPreference, setCodecPreference] = useState<"av1" | "h264">("av1");
   const { data: grant, isLoading, error, refetch } = usePlaybackGrant(
     seriesId,
     episodeId,
     preferredAudio,
-    preferredServer
+    preferredServer,
+    codecPreference
   );
   const theater = useSettings((s) => s.player.theater);
   const items = useProgress((s) => s.items);
   const { m, reduced } = useKazeMotion();
   const [help, setHelp] = useState(false);
   const activeEpRef = useRef<HTMLLIElement | null>(null);
+
+  const handleAdaptToH264 = useCallback(() => {
+    setCodecPreference("h264");
+  }, []);
 
   useEffect(() => {
     if (activeEpRef.current) {
@@ -103,7 +111,13 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
             {isLoading || !grant ? (
               <Skeleton className="aspect-video w-full !rounded-[var(--k-radius-panel)]" />
             ) : (
-              <Player key={`${grant.episode.id}-${preferredAudio}-${preferredServer}`} grant={grant} onNavigateEpisode={go} />
+              <Player
+                key={`${grant.episode.id}-${preferredAudio}-${preferredServer}-${codecPreference}`}
+                grant={grant}
+                onNavigateEpisode={go}
+                onAdaptCodec={handleAdaptToH264}
+                isAdaptedCodec={codecPreference === "h264"}
+              />
             )}
             {grant && (
               <div className={cn("mt-5", theater && "container-k")}>

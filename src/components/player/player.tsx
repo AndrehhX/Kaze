@@ -53,18 +53,29 @@ type Props = {
   autoPlay?: boolean;
   /** Persist watch progress (disabled for watch-party guests is not needed; always on). */
   persist?: boolean;
+  onAdaptCodec?: () => void;
+  isAdaptedCodec?: boolean;
 };
 
 type Menu = null | "root" | "quality" | "speed" | "subs" | "audio" | "caption-style";
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
-export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = true, persist = true }: Props) {
+export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = true, persist = true, onAdaptCodec, isAdaptedCodec }: Props) {
   const asset = grant.asset;
   const wrapRef = useRef<HTMLDivElement>(null);
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const ambientRef = useRef<HTMLCanvasElement>(null);
   const [retryKey, setRetryKey] = useState(0);
-  const { state: hs, setLevel, setAudio, setHlsSubtitle, hls } = useHls(video, asset, retryKey);
+  const [isAdapting, setIsAdapting] = useState(false);
+
+  const handleCodecError = useCallback(() => {
+    if (onAdaptCodec && !isAdaptedCodec) {
+      setIsAdapting(true);
+      onAdaptCodec();
+    }
+  }, [onAdaptCodec, isAdaptedCodec]);
+
+  const { state: hs, setLevel, setAudio, setHlsSubtitle, hls } = useHls(video, asset, retryKey, handleCodecError);
   const prefs = useSettings((s) => s.player);
   const setPrefs = useSettings((s) => s.setPlayer);
   const saveProgress = useProgress((s) => s.save);
@@ -219,13 +230,21 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
       persistNow(true);
     };
     const onWaiting = () => setWaiting(true);
-    const onPlaying = () => setWaiting(false);
+    const onPlaying = () => {
+      setWaiting(false);
+      setIsAdapting(false);
+    };
     const onEnded = () => {
       setPlaying(false);
       persistNow(true);
       if (grant.next && prefs.autoNext && onNavigateEpisode && !locked) setNextCountdown(8);
     };
     const onError = () => {
+      if (video.error?.code === 3 && onAdaptCodec && !isAdaptedCodec) {
+        setIsAdapting(true);
+        onAdaptCodec();
+        return;
+      }
       if (video.error && !hls.current) setMediaError("This video couldn't be played.");
     };
     const onVolume = () => setPrefs({ volume: video.volume, muted: video.muted });
@@ -584,8 +603,35 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
           )}
         </AnimatePresence>
 
+        {/* Notificación elegante y sobria de adaptación para iOS / iPadOS */}
+        <AnimatePresence>
+          {isAdapting && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/90 p-6 text-center backdrop-blur-md"
+            >
+              <div className="relative mb-4 flex size-14 items-center justify-center rounded-2xl border border-line bg-surface/80 shadow-2xl">
+                <Sparkles className="size-6 text-primary animate-pulse" />
+              </div>
+              <h3 className="font-display text-lg font-semibold tracking-tight text-fg">
+                Optimizando para tu dispositivo
+              </h3>
+              <p className="mt-1.5 max-w-sm text-xs text-muted leading-relaxed">
+                Configurando códec H.264 de alta fidelidad para el hardware de Apple.
+              </p>
+              <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-line/60 bg-elevated/80 px-3.5 py-1.5 text-[0.6875rem] font-mono text-muted">
+                <Loader2 className="size-3.5 animate-spin text-primary" />
+                <span>Conectando stream nativo...</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Fatal error */}
-        {fatal && (
+        {fatal && !isAdapting && (
           <div role="alert" className="absolute inset-0 z-[20] grid place-items-center bg-black/80 p-6 text-center text-white">
             <div>
               <p className="font-display text-xl">Playback stopped</p>
