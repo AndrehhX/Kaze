@@ -75,7 +75,13 @@ function RoomInner({ roomId }: { roomId: string }) {
   const isHost = room?.host_id === me;
 
   const profiles = new Map(participants.map((p) => [p.user_id, p.profile]));
-  const nameOf = (id: string) => (id === me ? "You" : profiles.get(id)?.display_name || profiles.get(id)?.username || "Guest");
+  const nameOf = (id: string) => {
+    if (id === me) return myProfile?.display_name || myProfile?.username || "Tú";
+    const prof = profiles.get(id);
+    if (prof?.display_name || prof?.username) return prof.display_name || prof.username;
+    if (room && id === room.host_id) return "Host";
+    return "Usuario";
+  };
 
   // ── Clock sync with the database server ────────────────────────────
   const syncClock = useCallback(async () => {
@@ -146,12 +152,13 @@ function RoomInner({ roomId }: { roomId: string }) {
     (async () => {
       try {
       const { data: r } = await db.from("watch_party_rooms").select("host_id").eq("id", roomId).maybeSingle();
-      if (r && r.host_id === me) {
-        await db.from("watch_party_participants").update({ left_at: null }).eq("room_id", roomId).eq("user_id", me);
-      } else if (r) {
-        const { error } = await db.from("watch_party_participants").insert({ room_id: roomId, user_id: me, role: "guest" });
-        if (error && /duplicate/i.test(error.message)) await db.from("watch_party_participants").update({ left_at: null }).eq("room_id", roomId).eq("user_id", me);
-        else if (error) console.warn("[kaze] join failed", error.message);
+      if (r) {
+        await db.from("watch_party_participants").upsert({
+          room_id: roomId,
+          user_id: me,
+          role: r.host_id === me ? "host" : "guest",
+          left_at: null,
+        }, { onConflict: "room_id,user_id" });
       }
       } catch {}
       if (!alive) return;
@@ -232,7 +239,8 @@ function RoomInner({ roomId }: { roomId: string }) {
     return () => clearInterval(t);
   }, [isHost, control]);
 
-  const { data: grant, error: grantError } = usePlaybackGrant(room?.series_id ?? "", room?.episode_id ?? "");
+  const [preferredAudio, setPreferredAudio] = useState<"latino" | "sub">("latino");
+  const { data: grant, error: grantError } = usePlaybackGrant(room?.series_id ?? "", room?.episode_id ?? "", preferredAudio);
 
   function spawnReaction(emoji: string) {
     const id = Date.now() + Math.random();
@@ -322,6 +330,40 @@ function RoomInner({ roomId }: { roomId: string }) {
             </AnimatePresence>
           </div>
         </div>
+
+        {/* Selector de Audio (SUB vs DUB) en Sala de Cine */}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface/80 px-4 py-2.5 border border-line">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted">Audio / Idioma:</span>
+            <div className="flex gap-1.5 rounded-lg bg-elevated p-1">
+              <button
+                type="button"
+                onClick={() => setPreferredAudio("latino")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all",
+                  preferredAudio === "latino" ? "bg-primary text-black shadow-sm" : "text-muted hover:text-fg"
+                )}
+              >
+                <span>🇲🇽</span>
+                <span>Español Latino (DUB)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreferredAudio("sub")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all",
+                  preferredAudio === "sub" ? "bg-primary text-black shadow-sm" : "text-muted hover:text-fg"
+                )}
+              >
+                <span>🇯🇵</span>
+                <span>Japonés (SUB)</span>
+              </button>
+            </div>
+          </div>
+          <span className="text-xs text-muted">
+            {preferredAudio === "sub" ? "Subtítulos en español integrados" : "Doblaje al español latino"}
+          </span>
+        </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <h1 className="font-display text-section mr-auto">{room.title}</h1>
           <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold", conn === "live" ? "text-success" : "text-danger")} role="status">
@@ -410,7 +452,7 @@ function RoomInner({ roomId }: { roomId: string }) {
         </section>
       </aside>
 
-      {invite && <InviteDialog roomId={roomId} onClose={() => setInvite(false)} />}
+      {invite && <InviteDialog roomId={roomId} roomTitle={room?.title} onClose={() => setInvite(false)} />}
       <ConfirmDialog
         open={confirmEnd}
         onOpenChange={setConfirmEnd}
@@ -464,7 +506,7 @@ function ChatLog({ messages, me, nameOf }: { messages: Msg[]; me: string; nameOf
   );
 }
 
-function InviteDialog({ roomId, onClose }: { roomId: string; onClose: () => void }) {
+function InviteDialog({ roomId, roomTitle, onClose }: { roomId: string; roomTitle?: string; onClose: () => void }) {
   const me = useAuth((s) => s.user!.id);
   const db = getSupabaseBrowser()!;
   const friends = useQuery({ queryKey: ["friends", me], queryFn: () => listFriends(db, me) });
@@ -486,6 +528,18 @@ function InviteDialog({ roomId, onClose }: { roomId: string; onClose: () => void
                   const { error } = await db.from("watch_party_invites").insert({ room_id: roomId, user_id: f.id, invited_by: me });
                   if (error && !/duplicate/i.test(error.message)) return toast.error(friendlyDbError(error));
                   setSent((s) => new Set(s).add(f.id));
+
+                  // Generar notificación en tiempo real para el amigo
+                  await db.from("notifications").insert({
+                    user_id: f.id,
+                    actor_id: me,
+                    kind: "watch_party_invite",
+                    payload: {
+                      room_id: roomId,
+                      title: roomTitle || "Watch Party",
+                    },
+                  }).then(() => {}, () => {});
+                  toast.success(`Invitación enviada a ${f.display_name || f.username}`);
                 }}
               >
                 {sent.has(f.id) ? "Invitado" : "Invitar"}

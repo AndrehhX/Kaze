@@ -143,11 +143,12 @@ function Inner() {
         if (db) {
           const { data, error } = await db
             .from("watch_party_rooms")
-            .select("id, title, series_id, episode_id, host_id, is_playing, created_at, ended_at, host:profiles(username, display_name)")
+            .select("id, title, series_id, episode_id, host_id, is_playing, created_at, ended_at, host:profiles!watch_party_rooms_host_id_fkey(username, display_name)")
             .is("ended_at", null)
             .order("created_at", { ascending: false })
             .limit(30);
           if (!error && data) remoteRooms = data as unknown as RoomRow[];
+          if (error) console.warn("[kaze] remote rooms fetch error:", error);
         }
       } catch {}
 
@@ -195,7 +196,7 @@ function Inner() {
     try {
       const db = getSupabaseBrowser();
       if (db) {
-        await db.from("watch_party_rooms").insert({
+        const { error: roomErr } = await db.from("watch_party_rooms").insert({
           id: roomId,
           host_id: me,
           title: roomPayload.title,
@@ -203,6 +204,14 @@ function Inner() {
           episode_id: roomPayload.episode_id,
           invite_only: inviteOnly,
         });
+        if (roomErr) console.warn("[kaze] room insert error:", roomErr);
+
+        await db.from("watch_party_participants").upsert({
+          room_id: roomId,
+          user_id: me,
+          role: "host",
+          left_at: null,
+        }, { onConflict: "room_id,user_id" });
       }
     } catch {}
 

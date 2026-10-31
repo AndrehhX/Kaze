@@ -130,7 +130,21 @@ export function ProfileSettingsPanel() {
       try {
         const db = getSupabaseBrowser();
         if (db && authProfile.id) {
-          await db.from("profiles").update(patch).eq("id", authProfile.id);
+          let { error: updateErr } = await db.from("profiles").update(patch).eq("id", authProfile.id);
+          if (updateErr && /avatar_frame|custom_accent/i.test(updateErr.message)) {
+            // Reintentar sin columnas opcionales si no están aún en la BD
+            const safePatch: Record<string, unknown> = { ...patch };
+            delete safePatch.avatar_frame;
+            delete safePatch.custom_accent;
+            const res = await db.from("profiles").update(safePatch).eq("id", authProfile.id);
+            updateErr = res.error;
+          }
+          if (updateErr) {
+            console.error("[kaze] profile update remote error", updateErr);
+            toast.error(friendlyDbError(updateErr));
+            setBusy(null);
+            return;
+          }
         }
         await refreshProfile();
       } catch (err) {
