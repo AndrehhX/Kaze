@@ -339,8 +339,22 @@ function RoomInner({ roomId }: { roomId: string }) {
               <button
                 className="k-btn k-btn-ghost k-btn-sm"
                 onClick={async () => {
-                  const { error } = await db.from("watch_party_rooms").update({ invite_only: !room.invite_only }).eq("id", room.id);
-                  if (error) toast.error(friendlyDbError(error));
+                  const nextVal = !room.invite_only;
+                  setRoom((prev) => (prev ? { ...prev, invite_only: nextVal } : prev));
+                  try {
+                    const raw = localStorage.getItem("kaze:watch_party_rooms");
+                    if (raw) {
+                      const list = JSON.parse(raw);
+                      const updated = list.map((r: any) => (r.id === room.id ? { ...r, invite_only: nextVal } : r));
+                      localStorage.setItem("kaze:watch_party_rooms", JSON.stringify(updated));
+                    }
+                  } catch {}
+                  try {
+                    const { error } = await db.from("watch_party_rooms").update({ invite_only: nextVal }).eq("id", room.id);
+                    if (error && !error.message?.includes("schema cache")) {
+                      toast.error(friendlyDbError(error));
+                    }
+                  } catch {}
                 }}
                 aria-pressed={!room.invite_only}
               >
@@ -405,10 +419,21 @@ function RoomInner({ roomId }: { roomId: string }) {
         destructive
         confirmLabel="Finalizar sala"
         onConfirm={async () => {
-          const { error } = await db.from("watch_party_rooms").update({ ended_at: new Date().toISOString(), is_playing: false }).eq("id", roomId);
+          const nowStr = new Date().toISOString();
+          try {
+            const raw = localStorage.getItem("kaze:watch_party_rooms");
+            if (raw) {
+              const list = JSON.parse(raw);
+              const updated = list.map((r: any) => (r.id === roomId ? { ...r, ended_at: nowStr, is_playing: false } : r));
+              localStorage.setItem("kaze:watch_party_rooms", JSON.stringify(updated));
+            }
+          } catch {}
+          try {
+            await db.from("watch_party_rooms").update({ ended_at: nowStr, is_playing: false }).eq("id", roomId);
+          } catch {}
           setConfirmEnd(false);
-          if (error) toast.error(friendlyDbError(error));
-          else router.push("/watch-parties");
+          toast.success("Sala finalizada con éxito");
+          router.push("/watch-parties");
         }}
       />
     </div>

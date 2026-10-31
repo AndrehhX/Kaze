@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { LayoutGroup, motion } from "motion/react";
 import { Captions, Keyboard, Popcorn, Server, Sparkles, Volume2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { PlaybackGrant } from "@/lib/media/types";
 import { Player } from "./player";
 import { useSettings } from "@/stores/settings";
@@ -14,6 +14,7 @@ import { useKazeMotion } from "@/lib/motion";
 import { DemoBadge, ErrorPanel, Skeleton } from "@/components/ui/primitives";
 import { cn, formatDuration } from "@/lib/utils";
 import { Dialog } from "@/components/ui/dialog";
+import { AnimeComments } from "@/components/social/anime-comments";
 
 export async function requestGrant(
   seriesId: string,
@@ -73,6 +74,13 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
   const items = useProgress((s) => s.items);
   const { m, reduced } = useKazeMotion();
   const [help, setHelp] = useState(false);
+  const activeEpRef = useRef<HTMLLIElement | null>(null);
+
+  useEffect(() => {
+    if (activeEpRef.current) {
+      activeEpRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [episodeId, grant]);
 
   if (error)
     return (
@@ -231,27 +239,51 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
                     {grant.series.license.name}
                   </a>
                 </p>
+
+                {/* Sección de Comentarios con HoverCard de Perfil */}
+                <AnimeComments
+                  seriesId={seriesId}
+                  episodeId={grant.episode.id}
+                  animeTitle={grant.series.title}
+                />
               </div>
             )}
           </motion.div>
 
           {!theater && (
-            <motion.aside initial={reduced ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={m.spring} className="min-w-0">
-              <div className="k-card p-4">
-                <p className="k-label text-muted">{grant?.series.title ?? "Episodios"}</p>
-                <p className="k-jp text-xs text-muted" lang="ja">
-                  {grant?.series.titleJp}
-                </p>
-                <ol className="mt-3 space-y-1.5">
+            <motion.aside
+              initial={reduced ? false : { opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={m.spring}
+              className="min-w-0 lg:sticky lg:top-20 lg:self-start"
+            >
+              <div className="k-card flex flex-col p-4 max-h-[calc(100vh-6.5rem)]">
+                <div className="shrink-0 pb-3 border-b border-line/60">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="k-label text-muted truncate">{grant?.series.title ?? "Episodios"}</p>
+                    <span className="text-[0.6875rem] font-mono text-muted bg-elevated px-2 py-0.5 rounded-full border border-line shrink-0">
+                      {(grant?.episodes ?? []).length} eps
+                    </span>
+                  </div>
+                  {grant?.series.titleJp && (
+                    <p className="k-jp text-xs text-muted truncate mt-0.5" lang="ja">
+                      {grant.series.titleJp}
+                    </p>
+                  )}
+                </div>
+                <ol className="mt-3 space-y-1.5 overflow-y-auto pr-1 flex-1 max-h-[580px] scrollbar-thin">
                   {(grant?.episodes ?? []).map((ep) => {
                     const p = items[`${seriesId}::${ep.id}`];
                     const active = ep.id === episodeId;
                     return (
-                      <li key={ep.id}>
+                      <li key={ep.id} ref={active ? activeEpRef : undefined}>
                         <Link
                           href={`/watch/${seriesId}/${ep.id}`}
                           aria-current={active ? "page" : undefined}
-                          className={cn("flex items-center gap-3 rounded-[min(var(--k-radius-btn),12px)] p-2 transition-colors hover:bg-[var(--k-btn-ghost)]", active && "bg-primary/15")}
+                          className={cn(
+                            "flex items-center gap-3 rounded-[min(var(--k-radius-btn),12px)] p-2 transition-colors hover:bg-[var(--k-btn-ghost)]",
+                            active && "bg-primary/15 ring-1 ring-primary/40"
+                          )}
                         >
                           {ep.thumbnail ? (
                             // eslint-disable-next-line @next/next/no-img-element
