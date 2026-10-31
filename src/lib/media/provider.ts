@@ -65,6 +65,7 @@ export async function createPlaybackGrant(
     const resolved = await resolvePlayableStream({
       anilistId: series.anilistId,
       title: series.title,
+      titleRomaji: series.titleRomaji,
       episodeNumber: Number(episodeId) || 1,
       preferredAudio,
       preferredServer,

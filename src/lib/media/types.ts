@@ -31,6 +31,7 @@ export type CatalogEpisode = {
 export type CatalogSeries = {
   id: string;
   title: string;
+  titleRomaji?: string;
   titleJp: string;
   description: string;
   banner: string | null;

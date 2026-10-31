@@ -56,6 +56,7 @@ export class AnimeStreamingProvider implements MediaProvider {
       return {
         id: String(media.id),
         title,
+        titleRomaji: media.title.romaji || "",
         titleJp: media.title.native || "",
         description: media.description || "",
         banner: media.bannerImage || null,

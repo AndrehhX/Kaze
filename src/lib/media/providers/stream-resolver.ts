@@ -22,6 +22,7 @@ export interface StreamResolutionOptions {
   anilistId: number;
   malId?: number | null;
   title: string;
+  titleRomaji?: string;
   episodeNumber: number;
   preferredAudio?: 'latino' | 'castellano' | 'sub';
   preferredServer?: 'fast' | 'clean';
@@ -36,8 +37,50 @@ export interface ResolvedStream {
   availableServers?: ServerOption[];
 }
 
+export interface SeasonInfo {
+  season: number;
+  part: number;
+  isMovieOrOva: boolean;
+}
+
 /**
- * Normaliza títulos de anime para búsqueda en proveedores de streaming.
+ * Detecta la temporada y parte a partir del título en inglés o romaji.
+ */
+export function parseSeasonInfo(title = ''): SeasonInfo {
+  const norm = title.toLowerCase();
+
+  let season = 1;
+  let part = 1;
+  const isMovieOrOva = /movie|pelicula|ova|special|gekijouban/i.test(norm);
+
+  const partMatch = norm.match(/part(?:e)?\s*(\d+)/i) || norm.match(/cour\s*(\d+)/i);
+  if (partMatch) {
+    part = Number.parseInt(partMatch[1], 10) || 1;
+  }
+
+  const seasonMatch =
+    norm.match(/season\s*(\d+)/i) ||
+    norm.match(/temporada\s*(\d+)/i) ||
+    norm.match(/(\d+)(?:st|nd|rd|th)\s*season/i) ||
+    norm.match(/\bs(\d+)\b/i);
+
+  if (seasonMatch) {
+    season = Number.parseInt(seasonMatch[1], 10) || 1;
+  } else if (/\b(final\s+season|the\s+final\s+season)\b/i.test(norm)) {
+    season = 4;
+  } else if (/\biv\b/i.test(norm)) {
+    season = 4;
+  } else if (/\biii\b/i.test(norm)) {
+    season = 3;
+  } else if (/\bii\b/i.test(norm)) {
+    season = 2;
+  }
+
+  return { season, part, isMovieOrOva };
+}
+
+/**
+ * Normaliza títulos de anime para búsqueda en proveedores de streaming manteniendo temporadas.
  */
 function cleanSearchTitle(title: string): string {
   return String(title || '')
@@ -46,12 +89,153 @@ function cleanSearchTitle(title: string): string {
     .toLowerCase()
     .replace(/\(.*?\)/g, '')
     .replace(/\[.*?\]/g, '')
-    .replace(/season\s+\d+/gi, '')
-    .replace(/s\d+/gi, '')
-    .replace(/part\s+\d+/gi, '')
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function scoreSlug(slug: string, queryTokens: string[], seasonInfo: SeasonInfo): number {
+  let score = 0;
+  const slugLower = slug.toLowerCase();
+
+  if (!seasonInfo.isMovieOrOva) {
+    if (/(?:break-time|petit|chibi|spin-off|mini|ova|special|movie|gekijouban|lost-girls|kuinaki-sentaku|hyouketsu-no-kizuna|memory-snow)/i.test(slugLower)) {
+      score -= 100;
+    }
+  }
+
+  for (const token of queryTokens) {
+    if (token.length > 2 && slugLower.includes(token)) {
+      score += 15;
+    }
+  }
+
+  const { season, part } = seasonInfo;
+
+  if (season === 1) {
+    if (/(?:2nd|3rd|4th|5th|6th)-season|season-[2-9]|\bii\b|\biii\b|\biv\b|final-season/i.test(slugLower)) {
+      score -= 80;
+    } else {
+      score += 40;
+    }
+  } else {
+    const seasonRegexMap: Record<number, RegExp> = {
+      2: /(?:2nd-season|season-2\b|-s2\b|-ii\b)/i,
+      3: /(?:3rd-season|season-3\b|-s3\b|-iii\b)/i,
+      4: /(?:4th-season|season-4\b|-s4\b|-iv\b|the-final-season|final-season)/i,
+      5: /(?:5th-season|season-5\b|-s5\b|-v\b)/i,
+    };
+
+    const targetRegex = seasonRegexMap[season];
+    if (targetRegex && targetRegex.test(slugLower)) {
+      score += 60;
+    } else {
+      score -= 50;
+    }
+
+    if (part > 1) {
+      if (new RegExp(`part-${part}`, 'i').test(slugLower)) {
+        score += 30;
+      }
+    } else {
+      if (/part-[2-9]/i.test(slugLower)) {
+        score -= 40;
+      }
+    }
+  }
+
+  return score;
+}
+
+export function matchBestSlug(candidates: string[], title: string, romajiTitle = ''): string | null {
+  if (!candidates || candidates.length === 0) return null;
+
+  const targetTitle = romajiTitle || title || '';
+  const seasonInfo = parseSeasonInfo(targetTitle);
+
+  const tokens = Array.from(new Set(
+    `${title} ${romajiTitle}`
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((t) => t.length > 2 && !['season', 'the', 'part', 'and', 'for', 'with', 'from', 'world', 'life'].includes(t))
+  ));
+
+  const scored = candidates.map((slug) => ({
+    slug,
+    score: scoreSlug(slug, tokens, seasonInfo),
+  }));
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0]?.slug || candidates[0];
+}
+
+function generateProviderSlugs(
+  malId: string | number | null,
+  animeTitle: string,
+  romajiTitle = ''
+): string[] {
+  const malKey = malId ? String(malId) : '';
+  const verified = malKey ? VERIFIED_LATINO_DUB_MAP[malKey]?.slug : null;
+
+  const targetTitle = romajiTitle || animeTitle || '';
+  const seasonInfo = parseSeasonInfo(targetTitle);
+  const cleanRomaji = romajiTitle ? cleanSearchTitle(romajiTitle).replace(/\s+/g, '-') : '';
+  const cleanTitle = cleanSearchTitle(animeTitle).replace(/\s+/g, '-');
+  const baseRomaji = cleanRomaji
+    .replace(/(?:-2nd-season|-3rd-season|-4th-season|-5th-season|-season-\d+|-s\d+|-part-\d+)/gi, '')
+    .trim();
+  const baseTitle = cleanTitle
+    .replace(/(?:-2nd-season|-3rd-season|-4th-season|-5th-season|-season-\d+|-s\d+|-part-\d+)/gi, '')
+    .trim();
+
+  const rawList: (string | null | undefined)[] = [verified ? `${verified}-tv` : null, verified];
+
+  if (seasonInfo.season > 1) {
+    const s = seasonInfo.season;
+    const ord = s === 2 ? '2nd' : s === 3 ? '3rd' : `${s}th`;
+    if (baseRomaji) {
+      if (seasonInfo.part > 1) {
+        rawList.push(`${baseRomaji}-${ord}-season-part-${seasonInfo.part}`);
+        rawList.push(`${baseRomaji}-season-${s}-part-${seasonInfo.part}`);
+      }
+      rawList.push(`${baseRomaji}-${ord}-season`);
+      rawList.push(`${baseRomaji}-season-${s}`);
+      rawList.push(`${baseRomaji}-${s}`);
+      rawList.push(cleanRomaji);
+    }
+    if (baseTitle) {
+      if (seasonInfo.part > 1) {
+        rawList.push(`${baseTitle}-season-${s}-part-${seasonInfo.part}`);
+      }
+      rawList.push(`${baseTitle}-season-${s}`);
+      rawList.push(`${baseTitle}-${ord}-season`);
+      rawList.push(cleanTitle);
+    }
+  } else {
+    // Season 1
+    if (cleanRomaji) {
+      rawList.push(`${cleanRomaji}-tv`);
+      rawList.push(cleanRomaji);
+      rawList.push(baseRomaji);
+    }
+    if (cleanTitle) {
+      rawList.push(`${cleanTitle}-tv`);
+      rawList.push(cleanTitle);
+      rawList.push(baseTitle);
+    }
+  }
+
+  const result: string[] = [];
+  for (const item of rawList) {
+    if (!item) continue;
+    result.push(item);
+    if (item.includes('re-zero')) {
+      result.push(item.replace(/re-zero/g, 'rezero'));
+    }
+  }
+
+  return Array.from(new Set(result));
 }
 
 /**
@@ -111,33 +295,55 @@ const VERIFIED_ANIMEAV1_SLUGS: Record<string, string> = {
 
 const av1SlugCache = new Map<string, string>();
 
-async function resolveAnimeAV1Slug(animeTitle: string): Promise<string | null> {
-  const clean = cleanSearchTitle(animeTitle);
-  for (const [key, slug] of Object.entries(VERIFIED_ANIMEAV1_SLUGS)) {
-    if (clean.includes(key) || key.includes(clean)) return slug;
-  }
-  if (av1SlugCache.has(clean)) return av1SlugCache.get(clean)!;
+async function resolveAnimeAV1Slug(animeTitle: string, romajiTitle = ''): Promise<string | null> {
+  const cacheKey = `${animeTitle}:${romajiTitle || ''}`;
+  if (av1SlugCache.has(cacheKey)) return av1SlugCache.get(cacheKey)!;
 
-  const directSlug = clean.replace(/\s+/g, '-');
-  try {
-    const res = await fetch(`https://animeav1.com/catalogo?search=${encodeURIComponent(clean)}`, {
-      headers: { 'User-Agent': USER_AGENT },
-      signal: AbortSignal.timeout(4000),
-    });
-    if (res.ok) {
-      const html = await res.text();
-      const match = html.match(/\/media\/([a-zA-Z0-9_\-]+)/);
-      if (match?.[1]) {
-        av1SlugCache.set(clean, match[1]);
-        return match[1];
+  const targetTitle = romajiTitle || animeTitle || '';
+  const seasonInfo = parseSeasonInfo(targetTitle);
+
+  // Si es temporada 1, verificar lista fija
+  if (seasonInfo.season === 1) {
+    const clean = cleanSearchTitle(animeTitle);
+    for (const [key, slug] of Object.entries(VERIFIED_ANIMEAV1_SLUGS)) {
+      if (clean === key) {
+        av1SlugCache.set(cacheKey, slug);
+        return slug;
       }
     }
-  } catch {
-    // fallback
   }
 
-  av1SlugCache.set(clean, directSlug);
-  return directSlug;
+  const queries = Array.from(new Set([
+    romajiTitle ? cleanSearchTitle(romajiTitle) : null,
+    cleanSearchTitle(animeTitle),
+  ])).filter(Boolean) as string[];
+
+  for (const q of queries) {
+    try {
+      const res = await fetch(`https://animeav1.com/catalogo?search=${encodeURIComponent(q)}`, {
+        headers: { 'User-Agent': USER_AGENT },
+        signal: AbortSignal.timeout(4000),
+      });
+      if (res.ok) {
+        const html = await res.text();
+        const allMatches = Array.from(html.matchAll(/\/media\/([a-zA-Z0-9_\-]+)/g)).map((m) => m[1]);
+        const unique = Array.from(new Set(allMatches));
+        if (unique.length > 0) {
+          const best = matchBestSlug(unique, animeTitle, romajiTitle);
+          if (best) {
+            av1SlugCache.set(cacheKey, best);
+            return best;
+          }
+        }
+      }
+    } catch {
+      // try next query
+    }
+  }
+
+  const fallbackSlug = (romajiTitle ? cleanSearchTitle(romajiTitle) : cleanSearchTitle(animeTitle)).replace(/\s+/g, '-');
+  av1SlugCache.set(cacheKey, fallbackSlug);
+  return fallbackSlug;
 }
 
 /**
@@ -146,9 +352,10 @@ async function resolveAnimeAV1Slug(animeTitle: string): Promise<string | null> {
 async function resolveFromAnimeAV1(
   animeTitle: string,
   episode: number,
-  preferredAudio: 'sub' | 'latino' | 'castellano' = 'sub'
+  preferredAudio: 'sub' | 'latino' | 'castellano' = 'sub',
+  romajiTitle = ''
 ): Promise<ResolvedStream | null> {
-  const slug = await resolveAnimeAV1Slug(animeTitle);
+  const slug = await resolveAnimeAV1Slug(animeTitle, romajiTitle);
   if (!slug) return null;
 
   const epUrl = `https://animeav1.com/media/${slug}/${episode}`;
@@ -484,18 +691,10 @@ async function resolveFromLatanime(
 async function resolveFromJKanime(
   malId: string | number | null,
   animeTitle: string,
-  episode: number
+  episode: number,
+  romajiTitle = ''
 ): Promise<ResolvedStream | null> {
-  const malKey = malId ? String(malId) : '';
-  const verified = malKey ? VERIFIED_LATINO_DUB_MAP[malKey]?.slug : null;
-  const clean = cleanSearchTitle(animeTitle).replace(/\s+/g, '-');
-  const slugsToTry = Array.from(new Set([
-    verified ? `${verified}-tv` : null,
-    verified,
-    `${clean}-tv`,
-    clean,
-    clean.replace(/-tv$/, ''),
-  ])).filter(Boolean) as string[];
+  const slugsToTry = generateProviderSlugs(malId, animeTitle, romajiTitle);
 
   for (const slug of slugsToTry) {
     const epUrl = `https://jkanime.net/${slug}/${episode}/`;
@@ -548,18 +747,10 @@ async function resolveFromJKanime(
 async function resolveFromTioAnime(
   malId: string | number | null,
   animeTitle: string,
-  episode: number
+  episode: number,
+  romajiTitle = ''
 ): Promise<ResolvedStream | null> {
-  const malKey = malId ? String(malId) : '';
-  const verified = malKey ? VERIFIED_LATINO_DUB_MAP[malKey]?.slug : null;
-  const clean = cleanSearchTitle(animeTitle).replace(/\s+/g, '-');
-  const slugsToTry = Array.from(new Set([
-    verified ? `${verified}-tv` : null,
-    verified,
-    `${clean}-tv`,
-    clean,
-    clean.replace(/-tv$/, ''),
-  ])).filter(Boolean) as string[];
+  const slugsToTry = generateProviderSlugs(malId, animeTitle, romajiTitle);
 
   for (const slug of slugsToTry) {
     const epUrl = `https://tioanime.com/ver/${slug}-${episode}`;
@@ -628,19 +819,12 @@ async function resolveFromTioAnime(
 async function resolveFromAnimeFLV(
   animeTitle: string,
   episode: number,
-  malId?: string | number | null
+  malId?: string | number | null,
+  romajiTitle = ''
 ): Promise<ResolvedStream | null> {
   if (!isProviderAvailable('animeflv')) return null;
 
-  const malKey = malId ? String(malId) : '';
-  const verified = malKey ? VERIFIED_LATINO_DUB_MAP[malKey]?.slug : null;
-  const clean = cleanSearchTitle(animeTitle).replace(/\s+/g, '-');
-  const slugsToTry = Array.from(new Set([
-    verified ? `${verified}-tv` : null,
-    verified,
-    `${clean}-tv`,
-    clean,
-  ])).filter(Boolean) as string[];
+  const slugsToTry = generateProviderSlugs(malId ?? null, animeTitle, romajiTitle);
 
   for (const slug of slugsToTry) {
     const epUrl = `https://www3.animeflv.net/ver/${slug}-${episode}`;
@@ -735,17 +919,17 @@ export async function resolvePlayableStream(
 
   // Prioridad habitual o fallback: AnimeAV1 HLS Ultra HD (Sub Español y Audio Latino nativos)
   if (!streamResult) {
-    streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio);
+    streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji);
   }
 
   // 3. Si se solicitó explícitamente SUB y no se encontró en AnimeAV1:
   if (!streamResult && opts.preferredAudio === 'sub') {
-    streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber);
+    streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
     if (!streamResult) {
-      streamResult = await resolveFromTioAnime(malId, opts.title, opts.episodeNumber);
+      streamResult = await resolveFromTioAnime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
     }
     if (!streamResult) {
-      streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId);
+      streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
     }
     // REGLA ESTRICTA: Si el usuario solicitó SUB, NUNCA caer a doblaje en español.
     if (streamResult) {
@@ -767,13 +951,13 @@ export async function resolvePlayableStream(
 
   // 5. Fallback a Sub Español (JKanime -> TioAnime -> AnimeFLV)
   if (!streamResult) {
-    streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber);
+    streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
   }
   if (!streamResult) {
-    streamResult = await resolveFromTioAnime(malId, opts.title, opts.episodeNumber);
+    streamResult = await resolveFromTioAnime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
   }
   if (!streamResult) {
-    streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId);
+    streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
   }
 
   // 6. Fallback final a DUB si aún no hay stream y el anime cuenta con doblaje
