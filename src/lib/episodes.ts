@@ -46,21 +46,43 @@ export function parseEpisodeTitle(title?: string | null): string | null {
  */
 export function buildEpisodes(
   m: Pick<MediaDetail, "episodes" | "nextAiringEpisode" | "streamingEpisodes" | "airingSchedule" | "duration" | "status"> & {
+    title?: { english?: string | null; romaji?: string | null } | null;
+    relations?: { edges?: { relationType: string; node?: { type?: string } }[] } | null;
     bannerImage?: string | null;
     coverImage?: { extraLarge?: string | null; large?: string | null } | null;
   },
   nowSec: number
 ): EpisodeRow[] {
+  const title = m.title?.english || m.title?.romaji || "";
+  const romaji = m.title?.romaji || "";
+  const combined = `${title} ${romaji}`.toLowerCase();
+  const hasPrequel = m.relations?.edges?.some((e) => e.relationType === "PREQUEL" && e.node?.type === "ANIME");
+  const isSequel = Boolean(hasPrequel) || /(?:season\s*[2-9]|temporada\s*[2-9]|[2-9](?:st|nd|rd|th)\s*season|\bs[2-9]\b|\b(?:ii|iii|iv|v)\b|yuukaku|stone wars|new world|ultra romantic|aragoto|after story|\s+[2-9]$)/i.test(combined);
+
+  const firstTitle = (m.streamingEpisodes?.[0]?.title || "").toLowerCase();
+  const isContaminated = isSequel && (
+    firstTitle.includes("ryomen sukuna") ||
+    firstTitle.includes("cruelty") ||
+    firstTitle.includes("to you, 2,000 years") ||
+    firstTitle.includes("operation strix") ||
+    firstTitle.includes("i will make you invite") ||
+    firstTitle.includes("battle without a quirk") ||
+    firstTitle.includes("the result of the battle") ||
+    (parseEpisodeNumber(m.streamingEpisodes?.[0]?.title) ?? 1) > 50
+  );
+
   const streaming = new Map<number, { title: string | null; thumbnail: string | null; url: string | null; site: string | null }>();
-  for (const s of m.streamingEpisodes ?? []) {
-    const num = parseEpisodeNumber(s.title, s.url);
-    if (num != null) {
-      streaming.set(num, {
-        title: parseEpisodeTitle(s.title),
-        thumbnail: s.thumbnail || null,
-        url: s.url,
-        site: s.site,
-      });
+  if (!isContaminated) {
+    for (const s of m.streamingEpisodes ?? []) {
+      const num = parseEpisodeNumber(s.title, s.url);
+      if (num != null) {
+        streaming.set(num, {
+          title: parseEpisodeTitle(s.title),
+          thumbnail: s.thumbnail || null,
+          url: s.url,
+          site: s.site,
+        });
+      }
     }
   }
   const schedule = new Map<number, number>();

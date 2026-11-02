@@ -119,6 +119,7 @@ export async function createPlaybackGrant(
       isDubbedAvailable,
       availableServers,
       currentServer,
+      nextSeason: series.nextSeason || null,
     },
   };
 }

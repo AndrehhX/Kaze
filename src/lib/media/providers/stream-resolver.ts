@@ -48,34 +48,68 @@ export interface SeasonInfo {
 /**
  * Detecta la temporada y parte a partir del título en inglés o romaji.
  */
-export function parseSeasonInfo(title = ''): SeasonInfo {
-  const norm = title.toLowerCase();
+export function parseSeasonInfo(title = '', romajiTitle = ''): SeasonInfo {
+  const combined = `${title} ${romajiTitle}`.toLowerCase();
 
   let season = 1;
   let part = 1;
-  const isMovieOrOva = /movie|pelicula|ova|special|gekijouban/i.test(norm);
+  const isMovieOrOva = /movie|pelicula|ova|special|gekijouban/i.test(combined);
 
-  const partMatch = norm.match(/part(?:e)?\s*(\d+)/i) || norm.match(/cour\s*(\d+)/i);
+  const partMatch = combined.match(/part(?:e)?\s*(\d+)/i) || combined.match(/cour\s*(\d+)/i);
   if (partMatch) {
     part = Number.parseInt(partMatch[1], 10) || 1;
   }
 
-  const seasonMatch =
-    norm.match(/season\s*(\d+)/i) ||
-    norm.match(/temporada\s*(\d+)/i) ||
-    norm.match(/(\d+)(?:st|nd|rd|th)\s*season/i) ||
-    norm.match(/\bs(\d+)\b/i);
-
-  if (seasonMatch) {
-    season = Number.parseInt(seasonMatch[1], 10) || 1;
-  } else if (/\b(final\s+season|the\s+final\s+season)\b/i.test(norm)) {
-    season = 4;
-  } else if (/\biv\b/i.test(norm)) {
-    season = 4;
-  } else if (/\biii\b/i.test(norm)) {
-    season = 3;
-  } else if (/\bii\b/i.test(norm)) {
+  // 1. Franchise-specific Arc / Subtitle detection
+  if (/yuukaku-hen|entertainment district/i.test(combined)) {
     season = 2;
+  } else if (/katanakaji|swordsmith village/i.test(combined)) {
+    season = 3;
+  } else if (/hashira geiko|hashira training/i.test(combined)) {
+    season = 4;
+  } else if (/stone wars/i.test(combined)) {
+    season = 2;
+  } else if (/new world/i.test(combined) && /dr\.?\s*stone/i.test(combined)) {
+    season = 3;
+  } else if (/science future/i.test(combined) && /dr\.?\s*stone/i.test(combined)) {
+    season = 4;
+  } else if (/ultra romantic/i.test(combined)) {
+    season = 3;
+  } else if (/love is war\s*\?|kokurasetai\s*\?/i.test(combined)) {
+    season = 2;
+  } else if (/aragoto/i.test(combined)) {
+    season = 2;
+  } else if (/after story/i.test(combined)) {
+    season = 2;
+  } else if (/final\s+season|the\s+final\s+season|kanketsu-hen/i.test(combined)) {
+    season = 4;
+  }
+
+  // 2. Explicit Season and ordinal numbers
+  if (season === 1) {
+    const seasonMatch =
+      combined.match(/season\s*(\d+)/i) ||
+      combined.match(/temporada\s*(\d+)/i) ||
+      combined.match(/(\d+)(?:st|nd|rd|th)\s*season/i) ||
+      combined.match(/\bs(\d+)\b/i);
+
+    if (seasonMatch) {
+      season = Number.parseInt(seasonMatch[1], 10) || 1;
+    } else if (/\biv\b/i.test(combined) || /\b4th\b/i.test(combined)) {
+      season = 4;
+    } else if (/\biii\b/i.test(combined) || /\b3rd\b/i.test(combined)) {
+      season = 3;
+    } else if (/\bii\b/i.test(combined) || /\b2nd\b/i.test(combined)) {
+      season = 2;
+    } else {
+      const trailingDigit =
+        title.match(/\s+([2-9])(?:\s*:\s*.*)?$/) ||
+        romajiTitle.match(/\s+([2-9])(?:\s*:\s*.*)?$/) ||
+        combined.match(/\b([2-9])\b/);
+      if (trailingDigit) {
+        season = Number.parseInt(trailingDigit[1], 10) || 1;
+      }
+    }
   }
 
   return { season, part, isMovieOrOva };
@@ -152,8 +186,7 @@ function scoreSlug(slug: string, queryTokens: string[], seasonInfo: SeasonInfo):
 export function matchBestSlug(candidates: string[], title: string, romajiTitle = ''): string | null {
   if (!candidates || candidates.length === 0) return null;
 
-  const targetTitle = romajiTitle || title || '';
-  const seasonInfo = parseSeasonInfo(targetTitle);
+  const seasonInfo = parseSeasonInfo(title, romajiTitle);
 
   const tokens = Array.from(new Set(
     `${title} ${romajiTitle}`
@@ -180,8 +213,7 @@ function generateProviderSlugs(
   const malKey = malId ? String(malId) : '';
   const verified = malKey ? VERIFIED_LATINO_DUB_MAP[malKey]?.slug : null;
 
-  const targetTitle = romajiTitle || animeTitle || '';
-  const seasonInfo = parseSeasonInfo(targetTitle);
+  const seasonInfo = parseSeasonInfo(animeTitle, romajiTitle);
   const cleanRomaji = romajiTitle ? cleanSearchTitle(romajiTitle).replace(/\s+/g, '-') : '';
   const cleanTitle = cleanSearchTitle(animeTitle).replace(/\s+/g, '-');
   const baseRomaji = cleanRomaji
@@ -301,8 +333,7 @@ async function resolveAnimeAV1Slug(animeTitle: string, romajiTitle = ''): Promis
   const cacheKey = `${animeTitle}:${romajiTitle || ''}`;
   if (av1SlugCache.has(cacheKey)) return av1SlugCache.get(cacheKey)!;
 
-  const targetTitle = romajiTitle || animeTitle || '';
-  const seasonInfo = parseSeasonInfo(targetTitle);
+  const seasonInfo = parseSeasonInfo(animeTitle, romajiTitle);
 
   // Si es temporada 1, verificar lista fija
   if (seasonInfo.season === 1) {

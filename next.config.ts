@@ -59,11 +59,7 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    // Banners (the LCP image) are resized to AVIF/WebP per device. Covers and
-    // portraits are already small on AniList's CDN and load directly (see SafeImage).
-    formats: ["image/avif", "image/webp"],
-    // AniList file names are content-hashed, so optimized copies can be cached for long.
-    minimumCacheTTL: 60 * 60 * 24 * 30,
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "s4.anilist.co" },
       { protocol: "https", hostname: "img.anili.st" },

@@ -43,6 +43,7 @@ export type CatalogSeries = {
   anilistId: number | null;
   episodes: CatalogEpisode[];
   demo: boolean;
+  nextSeason?: { id: string; title: string; cover?: string | null } | null;
 };
 
 export type Entitlement =
@@ -70,6 +71,7 @@ export type PlaybackGrant = {
   isDubbedAvailable?: boolean;
   availableServers?: ServerOption[];
   currentServer?: "fast" | "clean";
+  nextSeason?: { id: string; title: string; cover?: string | null } | null;
 };
 
 /** Replaceable provider contract; a licensed CDN/DRM provider implements the same interface. */

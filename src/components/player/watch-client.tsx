@@ -348,6 +348,28 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
                     );
                   })}
                 </ol>
+                {grant?.nextSeason && (
+                  <div className="mt-3 pt-3 border-t border-line/60">
+                    <span className="text-[0.6875rem] font-bold uppercase tracking-wider text-primary">Siguiente Temporada</span>
+                    <Link
+                      href={`/watch/${grant.nextSeason.id}/1`}
+                      className="mt-1.5 flex items-center gap-3 rounded-[min(var(--k-radius-btn),12px)] p-2 transition-colors hover:bg-elevated border border-line bg-surface/50 group"
+                    >
+                      {grant.nextSeason.cover ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={grant.nextSeason.cover} alt="" className="aspect-square w-11 shrink-0 rounded-lg object-cover bg-elevated" referrerPolicy="no-referrer" />
+                      ) : (
+                        <span className="grid aspect-square w-11 shrink-0 place-items-center rounded-lg bg-primary/20 text-primary font-bold text-xs">
+                          SEQ
+                        </span>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-semibold group-hover:text-primary transition-colors">{grant.nextSeason.title}</span>
+                        <span className="block text-[0.6875rem] text-muted">Comenzar desde el Episodio 1 →</span>
+                      </div>
+                    </Link>
+                  </div>
+                )}
               </div>
             </motion.aside>
           )}

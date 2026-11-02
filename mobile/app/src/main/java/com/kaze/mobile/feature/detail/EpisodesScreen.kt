@@ -121,7 +121,15 @@ fun EpisodesScreen(onBack: () -> Unit, vm: EpisodesViewModel = hiltViewModel()) 
             else -> {
                 val a = d.anime
                 val known = a.episodes ?: a.nextEpisode?.minus(1)
-                val official = d.streamingEpisodes.associateBy { it.number }
+                val firstEpTitle = d.streamingEpisodes.firstOrNull()?.title?.lowercase().orEmpty()
+                val isContaminated = firstEpTitle.contains("ryomen sukuna") ||
+                    firstEpTitle.contains("cruelty") ||
+                    firstEpTitle.contains("to you, 2,000 years") ||
+                    firstEpTitle.contains("operation strix") ||
+                    firstEpTitle.contains("i will make you invite") ||
+                    firstEpTitle.contains("battle without a quirk") ||
+                    firstEpTitle.contains("the result of the battle")
+                val official = if (isContaminated) emptyMap() else d.streamingEpisodes.associateBy { it.number }
                 if (known == null || known <= 0) {
                     EmptyState("Episodios no anunciados", "Aún no se ha publicado la cantidad de episodios para ${a.displayTitle}.")
                     return@Column
@@ -205,6 +213,34 @@ fun EpisodesScreen(onBack: () -> Unit, vm: EpisodesViewModel = hiltViewModel()) 
                                 { vm.markWatchedThrough(if (watched) ep - 1 else ep) },
                                 tint = if (watched) c.success else c.textMuted,
                             )
+                        }
+                    }
+                    val sequel = d.relations.firstOrNull { it.type.equals("SEQUEL", ignoreCase = true) }?.anime
+                    if (sequel != null) {
+                        item {
+                            KazeCard(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .clickable(role = Role.Button, onClickLabel = "Ver siguiente temporada") {
+                                        PlayerLauncher.launch(context, PlaybackRequest(sequel.id, 1, sequel.displayTitle, sequel.coverUrl, sequel.bannerUrl, sequel.episodes))
+                                    }
+                            ) {
+                                Row(
+                                    Modifier.fillMaxWidth().padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Box(Modifier.width(68.dp).aspectRatio(16f / 9f).clip(Kaze.style.cardShape).background(c.surfaceHigh)) {
+                                        AnimeImage(sequel.coverUrl ?: sequel.bannerUrl, null, Modifier.fillMaxSize(), placeholderColor = parseHexColor(sequel.color))
+                                    }
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text("Siguiente Temporada", style = Kaze.type.overline, color = c.accentText)
+                                        Text(sequel.displayTitle, style = Kaze.type.titleSmall, color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text("Comenzar Episodio 1 →", style = Kaze.type.bodySmall, color = c.primary)
+                                    }
+                                }
+                            }
                         }
                     }
                 }

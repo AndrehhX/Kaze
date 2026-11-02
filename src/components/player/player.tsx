@@ -237,7 +237,7 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
     const onEnded = () => {
       setPlaying(false);
       persistNow(true);
-      if (grant.next && prefs.autoNext && onNavigateEpisode && !locked) setNextCountdown(8);
+      if ((grant.next || grant.nextSeason) && prefs.autoNext && !locked) setNextCountdown(8);
     };
     const onError = () => {
       if ((video.error?.code === 3 || video.error?.code === 4) && onAdaptCodec && !isAdaptedCodec) {
@@ -376,12 +376,16 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
     if (nextCountdown == null) return;
     if (nextCountdown <= 0) {
       setNextCountdown(null);
-      if (grant.next) onNavigateEpisode?.(grant.next.id);
+      if (grant.next) {
+        onNavigateEpisode?.(grant.next.id);
+      } else if (grant.nextSeason) {
+        window.location.href = `/watch/${grant.nextSeason.id}/1`;
+      }
       return;
     }
     const t = setTimeout(() => setNextCountdown((n) => (n == null ? null : n - 1)), 1000);
     return () => clearTimeout(t);
-  }, [nextCountdown, grant.next, onNavigateEpisode]);
+  }, [nextCountdown, grant.next, grant.nextSeason, onNavigateEpisode]);
 
   // ── Subtitles: own renderer (styling + delay) ──────────────────────
   const subTrackEls = useRef<Record<string, HTMLTrackElement | null>>({});
@@ -666,18 +670,30 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
         </AnimatePresence>
 
         {/* Auto-next */}
-        {nextCountdown != null && grant.next && (
-          <div className="absolute bottom-24 right-4 z-[13] w-[min(80%,300px)] rounded-[var(--k-radius-card)] bg-black/85 p-4 text-white sm:right-6" role="status">
-            <p className="text-xs uppercase tracking-wider text-white/60">Up next in {nextCountdown}s</p>
-            <p className="mt-1 font-semibold">
-              {grant.next.number}. {grant.next.title}
+        {nextCountdown != null && (grant.next || grant.nextSeason) && (
+          <div className="absolute bottom-24 right-4 z-[13] w-[min(80%,320px)] rounded-[var(--k-radius-card)] bg-black/90 border border-white/10 p-4 text-white sm:right-6 backdrop-blur shadow-xl" role="status">
+            <p className="text-xs uppercase tracking-wider text-primary font-bold">
+              {grant.next ? `Siguiente episodio en ${nextCountdown}s` : `Siguiente temporada en ${nextCountdown}s`}
+            </p>
+            <p className="mt-1 font-semibold truncate text-sm">
+              {grant.next ? `${grant.next.number}. ${grant.next.title}` : grant.nextSeason?.title}
             </p>
             <div className="mt-3 flex gap-2">
-              <button className="k-btn k-btn-primary k-btn-sm flex-1" onClick={() => onNavigateEpisode?.(grant.next!.id)}>
-                Play now
+              <button
+                className="k-btn k-btn-primary k-btn-sm flex-1 font-semibold"
+                onClick={() => {
+                  setNextCountdown(null);
+                  if (grant.next) {
+                    onNavigateEpisode?.(grant.next.id);
+                  } else if (grant.nextSeason) {
+                    window.location.href = `/watch/${grant.nextSeason.id}/1`;
+                  }
+                }}
+              >
+                {grant.next ? "Reproducir ahora" : "Comenzar temporada"}
               </button>
-              <button className="k-btn k-btn-sm bg-white/10 text-white" onClick={() => setNextCountdown(null)}>
-                Cancel
+              <button className="k-btn k-btn-sm bg-white/10 text-white hover:bg-white/20" onClick={() => setNextCountdown(null)}>
+                Cancelar
               </button>
             </div>
           </div>

@@ -1,6 +1,8 @@
 import "server-only";
 import { getMediaDetail } from "../anilist/service";
 import { parseEpisodeNumber, parseEpisodeTitle } from "../episodes";
+import { getKitsuSeasonEpisodes } from "./kitsu";
+import { parseSeasonInfo } from "./providers/stream-resolver";
 import type { CatalogEpisode, CatalogSeries, Entitlement, MediaProvider } from "./types";
 
 export class AnimeStreamingProvider implements MediaProvider {
@@ -20,15 +22,47 @@ export class AnimeStreamingProvider implements MediaProvider {
 
       const totalEps = media.episodes || (media.nextAiringEpisode ? media.nextAiringEpisode.episode - 1 : 12) || 12;
       const title = media.title.english || media.title.romaji || "Anime";
+      const titleRomaji = media.title.romaji || "";
+
+      // Check if this anime is a sequel / Season 2+
+      const sInfo = parseSeasonInfo(title, titleRomaji);
+      const hasPrequel = media.relations?.edges?.some((e) => e.relationType === "PREQUEL" && e.node?.type === "ANIME");
+      const isSequel = sInfo.season > 1 || Boolean(hasPrequel);
 
       const streamMap = new Map<number, { title: string | null; thumbnail: string | null }>();
-      for (const s of media.streamingEpisodes ?? []) {
-        const num = parseEpisodeNumber(s.title, s.url);
-        if (num != null) {
-          streamMap.set(num, {
-            title: parseEpisodeTitle(s.title) || `Episodio ${num}`,
-            thumbnail: s.thumbnail || null,
-          });
+
+      if (isSequel) {
+        // Fetch accurate season-specific episode titles and thumbnails from Kitsu
+        const kitsuMap = await getKitsuSeasonEpisodes(title, titleRomaji);
+        if (kitsuMap && kitsuMap.size > 0) {
+          for (const [n, info] of kitsuMap.entries()) {
+            streamMap.set(n, { title: info.title, thumbnail: info.thumbnail });
+          }
+        }
+      }
+
+      const firstTitle = (media.streamingEpisodes?.[0]?.title || "").toLowerCase();
+      const isContaminated = isSequel && (
+        firstTitle.includes("ryomen sukuna") ||
+        firstTitle.includes("cruelty") ||
+        firstTitle.includes("to you, 2,000 years") ||
+        firstTitle.includes("operation strix") ||
+        firstTitle.includes("i will make you invite") ||
+        firstTitle.includes("battle without a quirk") ||
+        firstTitle.includes("the result of the battle") ||
+        (parseEpisodeNumber(media.streamingEpisodes?.[0]?.title) ?? 1) > 50
+      );
+
+      // Only use AniList streamingEpisodes if it's Season 1 or NOT contaminated
+      if (!isContaminated && streamMap.size === 0) {
+        for (const s of media.streamingEpisodes ?? []) {
+          const num = parseEpisodeNumber(s.title, s.url);
+          if (num != null) {
+            streamMap.set(num, {
+              title: parseEpisodeTitle(s.title) || `Episodio ${num}`,
+              thumbnail: s.thumbnail || null,
+            });
+          }
         }
       }
       const fallbackThumb = media.bannerImage || media.coverImage.extraLarge || media.coverImage.large || null;
@@ -53,6 +87,24 @@ export class AnimeStreamingProvider implements MediaProvider {
         };
       });
 
+      const sequelEdge = media.relations?.edges?.find(
+        (e) => e.relationType === "SEQUEL" && e.node?.type === "ANIME"
+      );
+      const nextSeason = sequelEdge?.node
+        ? {
+            id: String(sequelEdge.node.id),
+            title:
+              sequelEdge.node.title?.english ||
+              sequelEdge.node.title?.romaji ||
+              sequelEdge.node.title?.userPreferred ||
+              "Siguiente Temporada",
+            cover:
+              sequelEdge.node.coverImage?.large ||
+              sequelEdge.node.coverImage?.extraLarge ||
+              null,
+          }
+        : null;
+
       return {
         id: String(media.id),
         title,
@@ -71,6 +123,7 @@ export class AnimeStreamingProvider implements MediaProvider {
         anilistId: media.id,
         episodes,
         demo: false,
+        nextSeason,
       };
     } catch (err) {
       console.warn("[AnimeStreamingProvider] Error fetching series:", err);
