@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar notification icon: the launcher mark cropped tight and flattened to a single colour. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="60"
+    android:viewportHeight="60">
+    <group android:translateX="-19" android:translateY="-24">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M40,33 L48,33 L48,51 L64,33 L74,33 L57,52 L75,75 L65,75 L52,58 L48,62 L48,75 L40,75 Z" />
+        <path
+            android:pathData="M27,44 L36,44 M23,54 L36,54 M29,64 L36,64"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="3.5"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

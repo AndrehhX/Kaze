@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KAZE mark: a blade-like K carried by three wind streaks (kaze = wind). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:pathData="M40,33 L48,33 L48,51 L64,33 L74,33 L57,52 L75,75 L65,75 L52,58 L48,62 L48,75 L40,75 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="40" android:startY="33"
+                android:endX="75" android:endY="75">
+                <item android:offset="0" android:color="#FFF7F5FF" />
+                <item android:offset="0.55" android:color="#FFA855F7" />
+                <item android:offset="1" android:color="#FFFF4FD8" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:pathData="M27,44 L36,44"
+        android:strokeColor="#CCFF4FD8"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M23,54 L36,54"
+        android:strokeColor="#99A855F7"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M29,64 L36,64"
+        android:strokeColor="#996D5EF8"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+</vector>

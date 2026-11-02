@@ -47,3 +47,14 @@ next-env.d.ts
 .claude/
 .vercel
 .env*
+
+# Android / Mobile build & secrets
+mobile/.gradle/
+mobile/build/
+mobile/app/build/
+mobile/.idea/
+mobile/local.properties
+mobile/*.apk
+mobile/*.aab
+*.apk
+local.properties

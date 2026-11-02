@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">KAZE</string>
+    <string name="app_tagline">Tu universo de anime. En cualquier lugar.</string>
+    <string name="channel_social">Social</string>
+    <string name="channel_social_desc">Solicitudes de amistad, respuestas y reacciones</string>
+    <string name="channel_parties">Watch parties</string>
+    <string name="channel_parties_desc">Invitaciones a salas de reproducción sincronizada</string>
+    <string name="channel_episodes">Nuevos episodios</string>
+    <string name="channel_episodes_desc">Avisos de emisión de los animes que estás viendo</string>
+</resources>

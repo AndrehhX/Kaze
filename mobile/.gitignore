@@ -1,0 +1,36 @@
+# Gradle / build
+.gradle/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+output-metadata.json
+
+# Local config & secrets — never commit
+local.properties
+secrets.properties
+*.jks
+*.keystore
+!debug.keystore.placeholder
+.env
+.env.*
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Kotlin
+.kotlin/
+
+# Test outputs / logs
+*.log
+/test-results/
+/screenshots/tmp/
