@@ -30,6 +30,7 @@ import com.kaze.mobile.core.datastore.UserPreferencesRepository
 import com.kaze.mobile.core.datastore.UserPrefs
 import com.kaze.mobile.data.library.LibraryRepository
 import com.kaze.mobile.data.library.ProgressRepository
+import com.kaze.mobile.data.playback.DownloadRepository
 import com.kaze.mobile.domain.playback.MediaProvider
 import com.kaze.mobile.domain.playback.PlaybackSource
 import com.kaze.mobile.domain.playback.SkipKind
@@ -90,6 +91,8 @@ data class PlayerUi(
     val fitMode: FitMode = FitMode.FIT,
     val resumedFromMs: Long? = null,
     val speedBoost: Boolean = false,
+    val currentAudioOption: String = "sub",
+    val isDubbedAvailable: Boolean = false,
 ) {
     val hasNext: Boolean get() = request?.let { r -> r.totalEpisodes == null || r.episode < r.totalEpisodes } ?: false
     val hasPrevious: Boolean get() = (request?.episode ?: 1) > 1
@@ -106,6 +109,7 @@ class PlayerViewModel @Inject constructor(
     private val progressRepo: ProgressRepository,
     private val library: LibraryRepository,
     private val prefsRepo: UserPreferencesRepository,
+    val downloadRepo: DownloadRepository,
     @ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
 
@@ -179,14 +183,14 @@ class PlayerViewModel @Inject constructor(
         load(request)
     }
 
-    private fun load(request: PlaybackRequest) {
+    private fun load(request: PlaybackRequest, audio: String = _ui.value.currentAudioOption) {
         countdownJob?.cancel()
         markedEpisodeWatched = false
         skippedMarkers.clear()
-        _ui.update { PlayerUi(request = request, fitMode = it.fitMode, speed = it.speed) }
+        _ui.update { PlayerUi(request = request, fitMode = it.fitMode, speed = it.speed, currentAudioOption = audio) }
         viewModelScope.launch {
             val p = prefsRepo.prefs.filterNotNull().first()
-            when (val r = provider.resolve(request.animeId, request.episode, request.title)) {
+            when (val r = provider.resolve(request.animeId, request.episode, request.title, preferredAudio = audio)) {
                 is Outcome.Failure -> _ui.update { it.copy(error = r.error.userMessage, buffering = false) }
                 is Outcome.Success -> {
                     val src = r.value
@@ -215,11 +219,56 @@ class PlayerViewModel @Inject constructor(
                     player.setPlaybackSpeed(p.playbackSpeed)
                     player.prepare()
                     player.playWhenReady = true
-                    _ui.update { it.copy(source = src, resumedFromMs = resume, speed = p.playbackSpeed) }
+                    _ui.update { it.copy(source = src, resumedFromMs = resume, speed = p.playbackSpeed, isDubbedAvailable = src.isDubbedAvailable, currentAudioOption = audio) }
                     startTicker()
                 }
             }
         }
+    }
+
+    fun switchAudio(audio: String) {
+        if (audio == _ui.value.currentAudioOption) return
+        val r = _ui.value.request ?: return
+        val currentPos = player.currentPosition
+        _ui.update { it.copy(currentAudioOption = audio, buffering = true) }
+        viewModelScope.launch {
+            when (val res = provider.resolve(r.animeId, r.episode, r.title, preferredAudio = audio)) {
+                is Outcome.Failure -> _ui.update { it.copy(error = res.error.userMessage, buffering = false) }
+                is Outcome.Success -> {
+                    val src = res.value
+                    val item = MediaItem.Builder()
+                        .setUri(src.uri)
+                        .setMimeType(src.mimeType)
+                        .setMediaId("${r.animeId}:${r.episode}")
+                        .setMediaMetadata(
+                            MediaMetadata.Builder()
+                                .setTitle("${r.title} · EP ${r.episode}")
+                                .setArtist(src.mediaTitle)
+                                .setArtworkUri(r.coverUrl?.let(Uri::parse))
+                                .build()
+                        )
+                        .setSubtitleConfigurations(src.subtitles.map { s ->
+                            MediaItem.SubtitleConfiguration.Builder(Uri.parse(s.url)).setMimeType(s.mimeType).setLanguage(s.language).setLabel(s.label).build()
+                        })
+                        .build()
+                    player.setMediaItem(item, currentPos)
+                    player.prepare()
+                    player.playWhenReady = true
+                    _ui.update { it.copy(source = src, buffering = false, isDubbedAvailable = src.isDubbedAvailable, currentAudioOption = audio) }
+                }
+            }
+        }
+    }
+
+    fun downloadCurrentEpisode() {
+        val r = _ui.value.request ?: return
+        downloadRepo.startDownload(
+            animeId = r.animeId,
+            episode = r.episode,
+            animeTitle = r.title,
+            coverUrl = r.coverUrl,
+            audio = _ui.value.currentAudioOption,
+        )
     }
 
     private fun startTicker() {

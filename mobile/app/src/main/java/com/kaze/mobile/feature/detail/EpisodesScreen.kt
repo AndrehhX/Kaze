@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -73,11 +74,24 @@ class EpisodesViewModel @Inject constructor(
     anilist: AniListRepository,
     private val library: LibraryRepository,
     progressRepo: ProgressRepository,
+    val downloadRepo: com.kaze.mobile.data.playback.DownloadRepository,
 ) : ViewModel() {
     val id = savedState.toRoute<EpisodesRoute>().id
     val detail: StateFlow<Loadable<AnimeDetail>> = anilist.detail(id).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Loadable(loading = true))
     val entry: StateFlow<LibraryEntry?> = library.entry(id).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     val progress: StateFlow<List<WatchProgress>> = progressRepo.forAnime(id).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val downloads = downloadRepo.downloads
+
+    fun downloadEpisode(ep: Int) = viewModelScope.launch {
+        val a = detail.value.data?.anime ?: return@launch
+        downloadRepo.startDownload(
+            animeId = id,
+            episode = ep,
+            animeTitle = a.displayTitle,
+            coverUrl = a.coverUrl,
+            audio = "sub"
+        )
+    }
 
     fun markWatchedThrough(ep: Int) = viewModelScope.launch {
         val a = detail.value.data?.anime ?: return@launch
@@ -95,11 +109,12 @@ fun EpisodesScreen(onBack: () -> Unit, vm: EpisodesViewModel = hiltViewModel()) 
     val state by vm.detail.collectAsStateWithLifecycle()
     val entry by vm.entry.collectAsStateWithLifecycle()
     val progress by vm.progress.collectAsStateWithLifecycle()
+    val downloads by vm.downloads.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val c = Kaze.colors
     val d = state.data
     Column(Modifier.fillMaxSize()) {
-        KazeTopBar("Episodes", onBack, subtitle = d?.anime?.displayTitle)
+        KazeTopBar("Episodios", onBack, subtitle = d?.anime?.displayTitle)
         when {
             d == null && state.error != null -> ErrorState(state.error!!.userMessage)
             d == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { KazeSpinner() }
@@ -108,7 +123,7 @@ fun EpisodesScreen(onBack: () -> Unit, vm: EpisodesViewModel = hiltViewModel()) 
                 val known = a.episodes ?: a.nextEpisode?.minus(1)
                 val official = d.streamingEpisodes.associateBy { it.number }
                 if (known == null || known <= 0) {
-                    EmptyState("Episodes not announced", "Aún no se ha publicado la cantidad de episodios para ${a.displayTitle}.")
+                    EmptyState("Episodios no anunciados", "Aún no se ha publicado la cantidad de episodios para ${a.displayTitle}.")
                     return@Column
                 }
                 val byEpisode = progress.associateBy { it.episode }
@@ -116,7 +131,7 @@ fun EpisodesScreen(onBack: () -> Unit, vm: EpisodesViewModel = hiltViewModel()) 
                     item {
                         KazeCard(Modifier.fillMaxWidth().padding(16.dp)) {
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text("About playback", style = Kaze.type.overline, color = c.accentText)
+                                Text("Sobre la reproducción", style = Kaze.type.overline, color = c.accentText)
                                 Text(
                                     "Reproducción oficial optimizada en streaming con servidores de alta velocidad, subtítulos y marcadores inteligentes AniSkip.",
                                     style = Kaze.type.bodySmall, color = c.text,
@@ -129,10 +144,14 @@ fun EpisodesScreen(onBack: () -> Unit, vm: EpisodesViewModel = hiltViewModel()) 
                             }
                         }
                     }
+                    val animeDownloads = downloads.filter { it.animeId == a.id }.associateBy { it.episode }
                     items((1..known).toList(), key = { it }) { ep ->
                         val p = byEpisode[ep]
                         val watched = (entry?.progress ?: 0) >= ep
                         val off = official[ep]
+                        val dl = animeDownloads[ep]
+                        val isDownloaded = dl?.status == com.kaze.mobile.data.playback.DownloadStatus.COMPLETED
+                        val isDownloading = dl?.status == com.kaze.mobile.data.playback.DownloadStatus.DOWNLOADING
                         Row(
                             Modifier.fillMaxWidth()
                                 .clickable(role = Role.Button, onClickLabel = "Reproducir episodio $ep") {
@@ -153,7 +172,7 @@ fun EpisodesScreen(onBack: () -> Unit, vm: EpisodesViewModel = hiltViewModel()) 
                                     when {
                                         p?.completed == true -> "Episodio visto"
                                         p != null -> "Episodio · ${(p.fraction * 100).toInt()}% visto"
-                                        else -> "Plays demo stream"
+                                        else -> "Disponible"
                                     },
                                     style = Kaze.type.bodySmall, color = c.textMuted,
                                 )
@@ -162,6 +181,24 @@ fun EpisodesScreen(onBack: () -> Unit, vm: EpisodesViewModel = hiltViewModel()) 
                                     modifier = Modifier.clickable(role = Role.Button, onClickLabel = "Open on ${off.site}") { context.openExternalUrl(off.url) },
                                 )
                             }
+                            KazeIconButton(
+                                icon = Icons.Filled.Download,
+                                contentDescription = when {
+                                    isDownloaded -> "Episodio $ep descargado"
+                                    isDownloading -> "Descargando episodio $ep"
+                                    else -> "Descargar episodio $ep"
+                                },
+                                onClick = {
+                                    if (!isDownloaded && !isDownloading) {
+                                        vm.downloadEpisode(ep)
+                                    }
+                                },
+                                tint = when {
+                                    isDownloaded -> c.primary
+                                    isDownloading -> c.accentText
+                                    else -> c.textMuted
+                                }
+                            )
                             KazeIconButton(
                                 if (watched) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
                                 if (watched) "Episodio $ep visto. Ajustar progreso al episodio ${ep - 1}" else "Marcar como visto hasta el episodio $ep",

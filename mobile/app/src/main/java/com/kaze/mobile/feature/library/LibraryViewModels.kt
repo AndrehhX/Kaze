@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.kaze.mobile.data.library.CollectionsRepository
 import com.kaze.mobile.data.library.LibraryRepository
+import com.kaze.mobile.data.playback.DownloadRepository
 import com.kaze.mobile.data.library.ProgressRepository
 import com.kaze.mobile.domain.model.AnimeCollection
 import com.kaze.mobile.domain.model.LibraryEntry
@@ -50,6 +51,7 @@ class LibraryViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repo: LibraryRepository,
     private val collectionsRepo: CollectionsRepository,
+    val downloadRepo: DownloadRepository,
 ) : ViewModel() {
 
     private val _filter = MutableStateFlow(LibraryFilter())

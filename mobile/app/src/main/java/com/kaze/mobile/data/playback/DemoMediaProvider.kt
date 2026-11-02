@@ -76,7 +76,10 @@ class DemoMediaProvider @Inject constructor() : MediaProvider {
 
     override suspend fun availability(animeId: Int, episode: Int) = MediaAvailability.AVAILABLE_DEMO
 
-    override suspend fun resolve(animeId: Int, episode: Int, animeTitle: String): Outcome<PlaybackSource> {
+    override suspend fun resolve(animeId: Int, episode: Int, animeTitle: String): Outcome<PlaybackSource> =
+        resolve(animeId, episode, animeTitle, "sub")
+
+    override suspend fun resolve(animeId: Int, episode: Int, animeTitle: String, preferredAudio: String): Outcome<PlaybackSource> {
         val demo = catalog[(episode - 1).mod(catalog.size)]
         return Outcome.Success(
             PlaybackSource(

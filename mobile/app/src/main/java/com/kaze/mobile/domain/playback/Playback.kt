@@ -7,12 +7,14 @@ import com.kaze.mobile.core.common.Outcome
  *  - AniList tells us *what* an anime is. It grants no right to stream anything.
  *  - A [MediaProvider] answers *whether and how* this user may play an episode
  *    ([PlaybackEntitlement]) and returns a [PlaybackSource].
- * Providers are replaceable; KAZE ships only an authorized demo provider.
+ * Providers are replaceable; KAZE ships an authorized provider connecting to Orunei.
  */
 interface MediaProvider {
     val id: String
     suspend fun availability(animeId: Int, episode: Int): MediaAvailability
-    suspend fun resolve(animeId: Int, episode: Int, animeTitle: String): Outcome<PlaybackSource>
+    suspend fun resolve(animeId: Int, episode: Int, animeTitle: String): Outcome<PlaybackSource> =
+        resolve(animeId, episode, animeTitle, preferredAudio = "sub")
+    suspend fun resolve(animeId: Int, episode: Int, animeTitle: String, preferredAudio: String = "sub"): Outcome<PlaybackSource>
 }
 
 enum class MediaAvailability { AVAILABLE_DEMO, AVAILABLE_LICENSED, UNAVAILABLE }
@@ -40,6 +42,8 @@ data class PlaybackSource(
     val skipMarkers: List<SkipMarker> = emptyList(),
     /** Shown on screen whenever the media is not the anime episode itself. */
     val demoNotice: String? = null,
+    val audioLanguage: String? = null,
+    val isDubbedAvailable: Boolean = false,
 )
 
 object SkipLogic {

@@ -39,6 +39,8 @@ import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Brightness6
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Pause
@@ -341,9 +343,33 @@ private fun InfoPanel(ui: PlayerUi, vm: PlayerViewModel, chrome: PlayerChrome, m
             }
         }
         ui.resumedFromMs?.let { Text("Reanudado desde ${formatTime(it)}", style = Kaze.type.bodySmall, color = c.primary) }
+        val downloads by vm.downloadRepo.downloads.collectAsStateWithLifecycle()
+        val isDownloaded = remember(downloads, ui.request) {
+            ui.request?.let { req -> downloads.any { it.id == "${req.animeId}:${req.episode}" && it.status == com.kaze.mobile.data.playback.DownloadStatus.COMPLETED } } ?: false
+        }
+        val isDownloading = remember(downloads, ui.request) {
+            ui.request?.let { req -> downloads.any { it.id == "${req.animeId}:${req.episode}" && it.status == com.kaze.mobile.data.playback.DownloadStatus.DOWNLOADING } } ?: false
+        }
+
+        // Selector de audio: Japonés SUB vs Español Latino DUB
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Audio:", style = Kaze.type.bodySmall, color = c.textMuted)
+            KazeChip("🇯🇵 Japonés (SUB)", selected = ui.currentAudioOption == "sub", onClick = { vm.switchAudio("sub") })
+            if (ui.isDubbedAvailable || ui.source?.isDubbedAvailable == true) {
+                KazeChip("🇲🇽 Latino (DUB)", selected = ui.currentAudioOption == "latino", onClick = { vm.switchAudio("latino") })
+            }
+        }
+
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             KazeButton("Anterior", vm::previous, icon = Icons.Filled.SkipPrevious, kind = KazeButtonKind.Secondary, enabled = ui.hasPrevious)
-            KazeButton("Siguiente episodio", vm::next, icon = Icons.Filled.SkipNext, enabled = ui.hasNext, modifier = Modifier.weight(1f))
+            KazeButton("Siguiente", vm::next, icon = Icons.Filled.SkipNext, enabled = ui.hasNext, modifier = Modifier.weight(1f))
+            KazeButton(
+                if (isDownloaded) "Descargado" else if (isDownloading) "Descargando…" else "Descargar",
+                onClick = { if (!isDownloaded && !isDownloading) vm.downloadCurrentEpisode() },
+                icon = if (isDownloaded) Icons.Filled.CheckCircle else Icons.Filled.Download,
+                kind = if (isDownloaded) KazeButtonKind.Ghost else KazeButtonKind.Secondary,
+                enabled = !isDownloaded && !isDownloading
+            )
         }
         KazeButton("Ver página del anime", chrome.onOpenAnime, kind = KazeButtonKind.Ghost)
         Text("Controles y gestos", style = Kaze.type.title, color = c.text)
@@ -366,6 +392,13 @@ private fun PlayerSettingsSheet(ui: PlayerUi, vm: PlayerViewModel, showStats: Bo
     val prefs by vm.prefs.collectAsStateWithLifecycle()
     ModalBottomSheet(onDismiss, containerColor = c.surface, shape = Kaze.style.sheetShape) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Audio y doblaje", style = Kaze.type.title, color = c.text)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                KazeChip("🇯🇵 Japonés (SUB)", selected = ui.currentAudioOption == "sub", onClick = { vm.switchAudio("sub") })
+                if (ui.isDubbedAvailable || ui.source?.isDubbedAvailable == true) {
+                    KazeChip("🇲🇽 Español Latino (DUB)", selected = ui.currentAudioOption == "latino", onClick = { vm.switchAudio("latino") })
+                }
+            }
             Text("Calidad", style = Kaze.type.title, color = c.text)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 KazeChip("Automático" + (if (ui.autoQuality) " · ${ui.stats.resolution}" else ""), selected = ui.autoQuality, onClick = { vm.selectQuality(null) })

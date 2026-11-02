@@ -9,6 +9,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,6 +49,10 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.ui.platform.LocalContext
+import com.kaze.mobile.feature.player.PlayerLauncher
+import com.kaze.mobile.feature.player.PlaybackRequest
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Sync
@@ -111,6 +117,9 @@ fun LibraryScreen(
     val filter by vm.filter.collectAsStateWithLifecycle()
     val selection by vm.selection.collectAsStateWithLifecycle()
     val collections by vm.collections.collectAsStateWithLifecycle()
+    val downloads by vm.downloadRepo.downloads.collectAsStateWithLifecycle()
+    var showDownloadsSheet by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
     var menu by remember { mutableStateOf(false) }
     var bulkStatusSheet by rememberSaveable { mutableStateOf(false) }
@@ -134,6 +143,7 @@ fun LibraryScreen(
                 Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(if (Kaze.style.uppercaseLabels) "BIBLIOTECA" else "Biblioteca", style = Kaze.type.display, color = c.text, modifier = Modifier.weight(1f).semantics { heading() })
+                        KazeIconButton(Icons.Filled.Download, "Descargas offline", { showDownloadsSheet = true })
                         KazeIconButton(Icons.Filled.CollectionsBookmark, "Colecciones", onCollections)
                         KazeIconButton(Icons.Filled.Biotech, "ADN del anime", onDna)
                         Box {
@@ -146,7 +156,7 @@ fun LibraryScreen(
                             }
                         }
                     }
-                    Text("${titleCount(ui.all.size)} · stored on this device", style = Kaze.type.bodySmall, color = c.textMuted)
+                    Text("${titleCount(ui.all.size)} · en este dispositivo", style = Kaze.type.bodySmall, color = c.textMuted)
                     Spacer(Modifier.height(12.dp))
                     Row(Modifier.fillMaxWidth().height(44.dp).background(c.surfaceHigh, Kaze.style.chipShape).border(1.dp, c.outline, Kaze.style.chipShape).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.Search, null, tint = c.textMuted, modifier = Modifier.size(18.dp))
@@ -159,6 +169,10 @@ fun LibraryScreen(
                     Spacer(Modifier.height(10.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         item { KazeChip("Todos ${ui.counts[null] ?: 0}", selected = filter.status == null && !filter.favoritesOnly, onClick = { vm.setStatus(null) }) }
+                        item {
+                            val completedCount = downloads.count { it.status == com.kaze.mobile.data.playback.DownloadStatus.COMPLETED }
+                            KazeChip("Descargas $completedCount", selected = showDownloadsSheet, icon = Icons.Filled.Download, onClick = { showDownloadsSheet = true })
+                        }
                         items(LibraryStatus.entries) { s -> KazeChip("${s.label} ${ui.counts[s] ?: 0}", selected = filter.status == s, onClick = { vm.setStatus(s) }) }
                         item { KazeChip("Favoritos ${ui.favorites}", selected = filter.favoritesOnly, icon = Icons.Filled.Favorite, onClick = vm::showFavorites) }
                     }
@@ -201,11 +215,11 @@ fun LibraryScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 KazeIconButton(Icons.Filled.Close, "Cancelar selección", vm::clearSelection)
-                Text("${selection.size} selected", style = Kaze.type.titleSmall, color = c.text, modifier = Modifier.weight(1f))
-                KazeIconButton(Icons.Filled.SelectAll, "Select all visible", vm::selectAllVisible)
-                KazeIconButton(Icons.Filled.CheckCircle, "Change status", { bulkStatusSheet = true })
+                Text("${selection.size} seleccionados", style = Kaze.type.titleSmall, color = c.text, modifier = Modifier.weight(1f))
+                KazeIconButton(Icons.Filled.SelectAll, "Seleccionar todos", vm::selectAllVisible)
+                KazeIconButton(Icons.Filled.CheckCircle, "Cambiar estado", { bulkStatusSheet = true })
                 KazeIconButton(Icons.Filled.CollectionsBookmark, "Añadir a colección", { bulkCollectionSheet = true })
-                KazeIconButton(Icons.Filled.Delete, "Remove selected", vm::bulkRemove, tint = c.error)
+                KazeIconButton(Icons.Filled.Delete, "Eliminar seleccionados", vm::bulkRemove, tint = c.error)
             }
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp))
@@ -230,6 +244,15 @@ fun LibraryScreen(
                 collections.forEach { col -> KazeChip(col.name, onClick = { vm.bulkAddToCollection(col.id); bulkCollectionSheet = false }) }
             }
         }
+    }
+    if (showDownloadsSheet) {
+        DownloadsSheet(
+            downloads = downloads.filter { it.status == com.kaze.mobile.data.playback.DownloadStatus.COMPLETED },
+            totalBytes = vm.downloadRepo.totalStorageBytes(),
+            onDelete = { vm.downloadRepo.deleteDownload(it) },
+            onPlay = { d -> PlayerLauncher.launch(context, PlaybackRequest(d.animeId, d.episode, d.animeTitle, d.coverUrl, null, null)) },
+            onDismiss = { showDownloadsSheet = false }
+        )
     }
 }
 
@@ -291,4 +314,71 @@ fun statusColor(s: LibraryStatus) = when (s) {
     LibraryStatus.DROPPED -> Kaze.colors.error
 }
 
-private fun titleCount(n: Int) = if (n == 1) "1 title" else "$n titles"
+private fun titleCount(n: Int) = if (n == 1) "1 anime" else "$n animes"
+
+
+@Composable
+private fun DownloadsSheet(
+    downloads: List<com.kaze.mobile.data.playback.DownloadedEpisode>,
+    totalBytes: Long,
+    onDelete: (String) -> Unit,
+    onPlay: (com.kaze.mobile.data.playback.DownloadedEpisode) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val c = Kaze.colors
+    ModalBottomSheet(onDismiss, containerColor = c.surface, shape = Kaze.style.sheetShape) {
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 36.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Capítulos descargados", style = Kaze.type.headline, color = c.text)
+                    Text(
+                        "${downloads.size} episodios · " + formatFileSize(totalBytes) + " · Disponibles sin conexión",
+                        style = Kaze.type.bodySmall, color = c.textMuted
+                    )
+                }
+                KazeIconButton(Icons.Filled.Close, "Cerrar", onDismiss)
+            }
+
+            if (downloads.isEmpty()) {
+                EmptyState(
+                    "No tienes descargas",
+                    "Puedes descargar episodios desde el reproductor para verlos sin conexión a internet.",
+                    icon = Icons.Filled.Download,
+                )
+            } else {
+                downloads.forEach { d ->
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .clip(Kaze.style.cardShape)
+                            .background(c.surfaceHigh)
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(Modifier.size(64.dp, 44.dp).clip(Kaze.style.chipShape).background(c.surface)) {
+                            AnimeImage(d.coverUrl, null, Modifier.fillMaxSize())
+                        }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(d.animeTitle, style = Kaze.type.titleSmall, color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                "EP ${d.episode} · ${if (d.audioOption == "latino") "🇲🇽 Latino" else "🇯🇵 Sub"} · ${formatFileSize(d.fileSizeBytes)}",
+                                style = Kaze.type.bodySmall, color = c.textMuted
+                            )
+                        }
+                        KazeIconButton(Icons.Filled.PlayArrow, "Reproducir", { onPlay(d) }, tint = c.primary)
+                        KazeIconButton(Icons.Filled.Delete, "Eliminar", { onDelete(d.id) }, tint = c.error)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatFileSize(bytes: Long): String = when {
+    bytes <= 0 -> "0 MB"
+    bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+    else -> "%.1f MB".format(bytes.toFloat() / (1024 * 1024))
+}
