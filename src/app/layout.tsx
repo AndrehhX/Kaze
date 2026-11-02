@@ -4,6 +4,7 @@ import { fontVariables } from "./fonts";
 import { Providers } from "@/components/providers/providers";
 import { DEFAULT_THEME, themeBootScript } from "@/lib/themes";
 import { siteUrl } from "@/lib/env";
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Saltar al contenido
         </a>
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
