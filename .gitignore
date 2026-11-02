@@ -57,4 +57,5 @@ mobile/local.properties
 mobile/*.apk
 mobile/*.aab
 *.apk
+!public/kaze.apk
 local.properties

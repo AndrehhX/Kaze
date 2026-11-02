@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./logo";
+import { Smartphone } from "lucide-react";
 
 export function SiteFooter() {
   return (
@@ -16,6 +17,12 @@ export function SiteFooter() {
             <li><Link className="hover:text-primary-ink" href="/discover/moods">Mood Explorer</Link></li>
             <li><Link className="hover:text-primary-ink" href="/discover/roulette">Anime Roulette</Link></li>
             <li><Link className="hover:text-primary-ink" href="/seasonal">Seasonal chart</Link></li>
+            <li>
+              <a className="hover:text-primary-ink flex items-center gap-1.5" href="/kaze.apk" download="kaze.apk">
+                <Smartphone className="size-3.5 text-primary" aria-hidden />
+                <span>App Android (APK)</span>
+              </a>
+            </li>
           </ul>
         </nav>
         <nav aria-label="You" className="text-sm">

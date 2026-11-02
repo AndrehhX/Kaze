@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { Compass, Home, Library, LayoutGrid, Paintbrush, Search, Settings, UserRound } from "lucide-react";
+import { Compass, Download, Home, Library, LayoutGrid, Paintbrush, Search, Settings, Smartphone, UserRound } from "lucide-react";
 import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { PRIMARY_NAV, isActive } from "./nav-config";
@@ -117,6 +117,26 @@ export function MobileNav() {
               </Link>
             </div>
           </div>
+
+          {/* Tarjeta de Descarga de APK */}
+          <a
+            href="/kaze.apk"
+            download="kaze.apk"
+            className="mb-4 flex items-center justify-between rounded-xl border border-line bg-surface/90 p-3 shadow-sm transition-colors hover:bg-surface"
+          >
+            <div className="flex items-center gap-3">
+              <div className="grid size-9 place-items-center rounded-lg bg-primary/15 text-primary">
+                <Smartphone className="size-4" aria-hidden />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-fg">KAZE App para Android</p>
+                <p className="text-[0.6875rem] text-muted">Descargar APK directa (25.8 MB)</p>
+              </div>
+            </div>
+            <span className="k-btn k-btn-ghost k-btn-icon k-btn-sm text-primary">
+              <Download className="size-4" aria-hidden />
+            </span>
+          </a>
 
           {/* Cuadrícula de Navegación del Universo */}
           <ul className="grid grid-cols-3 gap-2">

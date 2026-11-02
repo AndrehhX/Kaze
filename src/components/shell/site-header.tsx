@@ -3,7 +3,7 @@
 import Link from "next/link";
 import * as DM from "@radix-ui/react-dropdown-menu";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
-import { MoreHorizontal, Search } from "lucide-react";
+import { MoreHorizontal, Search, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "./logo";
 import { PRIMARY_NAV, isActive } from "./nav-config";
@@ -84,6 +84,24 @@ export function SiteHeader() {
           <button type="button" onClick={() => setOpen(true)} className="k-btn k-btn-ghost k-btn-icon k-btn-sm md:hidden" aria-label="Buscar">
             <Search className="size-[18px]" aria-hidden />
           </button>
+          <a
+            href="/kaze.apk"
+            download="kaze.apk"
+            className="k-btn k-btn-ghost k-btn-sm hidden items-center gap-1.5 !px-2.5 text-xs text-muted hover:text-fg sm:inline-flex"
+            title="Descargar app para Android (APK)"
+          >
+            <Smartphone className="size-4 text-primary" aria-hidden />
+            <span>App</span>
+          </a>
+          <a
+            href="/kaze.apk"
+            download="kaze.apk"
+            className="k-btn k-btn-ghost k-btn-icon k-btn-sm sm:hidden"
+            aria-label="Descargar App Android"
+            title="Descargar Kaze APK"
+          >
+            <Smartphone className="size-[18px] text-primary" aria-hidden />
+          </a>
           <NotificationBell />
           <ThemeSwitcher />
           <UserMenu />
