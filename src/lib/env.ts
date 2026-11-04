@@ -52,7 +52,12 @@ export const publicEnv = publicParsed.success ? publicParsed.data : {};
 
 export const isSupabaseConfigured = Boolean(publicEnv.NEXT_PUBLIC_SUPABASE_URL && publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
-export const siteUrl = publicEnv.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+export const siteUrl =
+  process.env.NODE_ENV === "production"
+    ? (publicEnv.NEXT_PUBLIC_SITE_URL && !publicEnv.NEXT_PUBLIC_SITE_URL.includes("localhost")
+        ? publicEnv.NEXT_PUBLIC_SITE_URL
+        : "https://www.orunei.sbs")
+    : (publicEnv.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000");
 
 /** Server-only accessor; never import the result into client components. */
 export function getServerEnv() {

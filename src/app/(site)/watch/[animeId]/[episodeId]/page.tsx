@@ -10,7 +10,27 @@ export async function generateMetadata({ params }: PageProps<"/watch/[animeId]/[
   const { animeId, episodeId } = await params;
   const found = await resolveSeries(animeId);
   const ep = found?.series.episodes.find((e) => e.id === episodeId);
-  return { title: ep ? `${ep.title} · ${found!.series.title}` : "Watch" };
+  const seriesTitle = found?.series.title ?? "Anime";
+  const epText = ep ? `Episodio ${ep.number} - ${ep.title}` : `Episodio ${episodeId}`;
+
+  return {
+    title: `Ver ${seriesTitle} ${epText} Online Gratis HD · KAZE`,
+    description: `Disfruta de ${seriesTitle} ${epText} online gratis en audio Latino y Sub Español en 1080p HD. Streaming rápido y sin publicidad invasiva en KAZE (Orunei).`,
+    keywords: [
+      `ver ${seriesTitle} capitulo ${episodeId}`,
+      `ver ${seriesTitle} episodio ${episodeId}`,
+      `${seriesTitle} sub español`,
+      `${seriesTitle} latino`,
+      "kaze anime",
+      "orunei",
+      "anime free",
+    ],
+    openGraph: {
+      title: `${seriesTitle} · ${epText} · KAZE (Orunei)`,
+      description: `Mira el episodio ${episodeId} de ${seriesTitle} en HD sin anuncios molestos en KAZE.`,
+      images: ep?.thumbnail ? [ep.thumbnail] : [],
+    },
+  };
 }
 
 export default async function WatchPage({ params }: PageProps<"/watch/[animeId]/[episodeId]">) {

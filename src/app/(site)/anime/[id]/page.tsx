@@ -35,12 +35,33 @@ async function load(idParam: string) {
 
 export async function generateMetadata({ params }: PageProps<"/anime/[id]">): Promise<Metadata> {
   const media = await load((await params).id);
-  if (!media) return { title: "Anime not found" };
+  if (!media) return { title: "Anime no encontrado · KAZE" };
   const title = media.title.english || media.title.romaji || "Anime";
+  const titleJp = media.title.native ? ` (${media.title.native})` : "";
+  const cleanDesc = cleanDescription(media.description);
+  const snippet = cleanDesc
+    ? cleanDesc.slice(0, 160)
+    : `Ver ${title} online gratis en audio Latino y Sub Español en HD 1080p en KAZE (Orunei).`;
+
   return {
-    title,
-    description: cleanDescription(media.description).slice(0, 180),
-    openGraph: { title, images: media.bannerImage ? [media.bannerImage] : media.coverImage.extraLarge ? [media.coverImage.extraLarge] : [] },
+    title: `Ver ${title}${titleJp} Online Gratis HD · KAZE`,
+    description: snippet,
+    keywords: [
+      `ver ${title}`,
+      `ver ${title} gratis`,
+      `ver ${title} online`,
+      `${title} sub español`,
+      `${title} audio latino`,
+      `${title} 1080p`,
+      "kaze anime",
+      "orunei",
+      "anime free",
+    ],
+    openGraph: {
+      title: `Ver ${title} Online en Español HD 1080p · KAZE`,
+      description: snippet,
+      images: media.bannerImage ? [media.bannerImage] : media.coverImage.extraLarge ? [media.coverImage.extraLarge] : [],
+    },
   };
 }
 
