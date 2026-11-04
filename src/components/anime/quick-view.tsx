@@ -27,7 +27,7 @@ export function QuickView({ media, open, onOpenChange, layoutId }: { media: Medi
       </div>
       <div className="relative -mt-20 grid gap-5 px-5 pb-6 sm:grid-cols-[150px_1fr]">
         <motion.div layoutId={layoutId} className="k-poster relative aspect-[2/3] w-28 sm:w-full">
-          <SafeImage src={media.coverImage.large || media.coverImage.extraLarge || ""} alt="" fill sizes="150px" className="object-cover" fallbackLabel={title} />
+          <SafeImage src={media.coverImage.extraLarge || media.coverImage.large || ""} alt="" fill sizes="150px" className="object-cover" fallbackLabel={title} />
         </motion.div>
         <div className="min-w-0 pt-2 sm:pt-16">
           <h2 className="font-display text-2xl leading-tight">{title}</h2>

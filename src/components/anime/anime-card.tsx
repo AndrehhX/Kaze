@@ -95,7 +95,7 @@ export function AnimeCard({ media, rank, priority, sizes = "(max-width: 640px) 4
         <span className="sr-only">{`${title}${year ? `, ${year}` : ""}`}</span>
         <motion.div layoutId={reduced ? undefined : layoutId} className="k-poster aspect-[2/3] w-full" style={{ backgroundColor: media.coverImage.color ?? undefined }}>
           <SafeImage
-            src={media.coverImage.large || media.coverImage.extraLarge || ""}
+            src={media.coverImage.extraLarge || media.coverImage.large || ""}
             alt=""
             fill
             sizes={sizes}

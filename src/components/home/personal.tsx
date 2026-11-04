@@ -78,7 +78,7 @@ export function ContinueWatching() {
             const seriesTitle = p.seriesTitle || media?.title.english || media?.title.romaji || "Anime";
             const epNum = p.episodeNumber || parseInt(p.episodeId, 10) || 1;
             const epTitle = p.title && !p.title.startsWith("Episodio") && p.title !== `Episode ${epNum}` ? p.title : `Episodio ${epNum}`;
-            const thumb = p.thumbnail || media?.bannerImage || media?.coverImage.large || media?.coverImage.extraLarge || null;
+            const thumb = p.thumbnail || media?.bannerImage || media?.coverImage.extraLarge || media?.coverImage.large || null;
             const pct = p.duration ? Math.min(100, Math.max(0, (p.position / p.duration) * 100)) : 0;
 
             return (
