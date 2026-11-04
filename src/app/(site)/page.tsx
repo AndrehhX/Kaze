@@ -31,9 +31,18 @@ async function HomeContent() {
   const hero = [...d.trending, ...d.season].filter((m) => m.bannerImage && !seen.has(m.id) && seen.add(m.id)).slice(0, 6);
   const seasonLabel = `${SEASONS.find((s) => s.value === d.seasonInfo.season)?.label} ${d.seasonInfo.year}`;
   const pool = [...d.trending, ...d.season, ...d.top, ...d.gems, ...d.favourites];
+  const firstBanner = hero[0]?.bannerImage;
 
   return (
     <>
+      {firstBanner && (
+        <link
+          rel="preload"
+          as="image"
+          href={firstBanner}
+          fetchPriority="high"
+        />
+      )}
       <HeroCarousel items={hero} kickerPrefix={seasonLabel} trendingIds={d.trending.map((t) => t.id)} />
       <ContinueWatching />
       <LibraryNudge />

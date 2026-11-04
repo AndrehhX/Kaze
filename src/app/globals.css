@@ -924,3 +924,9 @@ html[data-motion="reduce"] *::after {
     transform: scale(1) translateY(0);
   }
 }
+
+/* Core Web Vitals - Offscreen Content Virtualization */
+.k-offscreen-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 380px;
+}

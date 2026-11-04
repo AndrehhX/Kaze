@@ -33,7 +33,7 @@ export function RailSection({
 }) {
   if (!media.length) return null;
   return (
-    <section aria-labelledby={id} className="container-k mt-16 first:mt-10">
+    <section aria-labelledby={id} className="container-k mt-16 first:mt-10 k-offscreen-section">
       <SectionHeader
         id={id}
         title={title}
@@ -63,7 +63,7 @@ export function SeasonBento({ media, season, year }: { media: MediaHero[]; seaso
   const [lead, ...rest] = media.filter((x) => x.bannerImage).concat(media.filter((x) => !x.bannerImage));
   const s = SEASONS.find((x) => x.value === season);
   return (
-    <section aria-labelledby="season-h" className="container-k mt-20">
+    <section aria-labelledby="season-h" className="container-k mt-20 k-offscreen-section">
       <SectionHeader
         id="season-h"
         kicker={`${s?.label ?? season} ${year}`}
@@ -107,7 +107,7 @@ export function RecentlyReleased({ items }: { items: AiringItem[] }) {
   const now = useNow();
   if (!items.length) return null;
   return (
-    <section aria-labelledby="recent-h" className="container-k mt-20">
+    <section aria-labelledby="recent-h" className="container-k mt-20 k-offscreen-section">
       <SectionHeader id="recent-h" kicker="Últimas 72 horas" title="Episodios recientes" jp="最新話" />
       <Rail label="Recently released episodes" itemClassName="w-[78vw] xs:w-[60vw] sm:w-[44vw] md:w-[32vw] lg:w-[25vw] xl:w-[21vw] 3xl:w-[340px]">
         {items.map((a) => (
@@ -136,7 +136,7 @@ export function RecentlyReleased({ items }: { items: AiringItem[] }) {
 export function TopRatedEditorial({ media }: { media: MediaCard[] }) {
   if (!media.length) return null;
   return (
-    <section aria-labelledby="top-h" className="container-k mt-20">
+    <section aria-labelledby="top-h" className="container-k mt-20 k-offscreen-section">
       <SectionHeader
         id="top-h"
         kicker="Histórico"

@@ -116,9 +116,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Posters and covers load straight from AniList's CDN. */}
         <link rel="preconnect" href="https://s4.anilist.co" crossOrigin="" />
         <link rel="dns-prefetch" href="https://s4.anilist.co" />
-        <link rel="preconnect" href="https://orunei-stream.thealex230820.workers.dev" crossOrigin="" />
         <link rel="dns-prefetch" href="https://orunei-stream.thealex230820.workers.dev" />
-        <link rel="preconnect" href="https://afgvxmqapzikggmasskz.supabase.co" crossOrigin="" />
         <link rel="dns-prefetch" href="https://afgvxmqapzikggmasskz.supabase.co" />
       </head>
       <body className="antialiased" suppressHydrationWarning>
