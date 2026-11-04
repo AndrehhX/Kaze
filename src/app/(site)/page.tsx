@@ -16,6 +16,7 @@ import {
 import { BecauseYouLoved, ContinueWatching, FavoriteGenres, FriendsAreWatching, LibraryNudge, RecommendedForYou } from "@/components/home/personal";
 import { RailSkeleton } from "@/components/anime/skeletons";
 import { SEASONS } from "@/lib/anilist/browse-params";
+import { AdBanner } from "@/components/ads/ad-banner";
 
 export default function HomePage() {
   return (
@@ -59,6 +60,9 @@ async function HomeContent() {
       <BecauseYouLoved />
       <CommunityFavorites media={d.favourites} />
       <CalendarHint />
+      <div className="container-k mt-12 mb-4">
+        <AdBanner placement="home-bottom" />
+      </div>
       <StatCredit />
     </>
   );
