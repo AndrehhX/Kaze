@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { LayoutGroup, motion } from "motion/react";
-import { Captions, Keyboard, Popcorn, Server, Sparkles, Volume2 } from "lucide-react";
+import { Captions, Coffee, Keyboard, Popcorn, Server, Sparkles, Volume2 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { PlaybackGrant } from "@/lib/media/types";
 import { Player } from "./player";
@@ -272,6 +272,16 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
                   <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => setHelp(true)}>
                     <Keyboard className="size-4" aria-hidden /> Atajos
                   </button>
+                  <a
+                    href="https://ko-fi.com/andrehwallet/goal?g=0"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="k-btn k-btn-ghost k-btn-sm border border-line/60 hover:bg-elevated text-xs gap-1.5"
+                    title="Apoyar el proyecto en Ko-fi para mejorar servidores"
+                  >
+                    <Coffee className="size-3.5 text-[#FF5E5B]" aria-hidden />
+                    <span>Apoyar servidor</span>
+                  </a>
                 </div>
                 <p className="mt-5 text-xs text-muted">
                   {grant.series.license.attribution}{" "}

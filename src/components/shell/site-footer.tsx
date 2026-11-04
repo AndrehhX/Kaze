@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./logo";
-import { Smartphone } from "lucide-react";
+import { Coffee, Smartphone } from "lucide-react";
 
 export function SiteFooter() {
   return (
@@ -21,6 +21,17 @@ export function SiteFooter() {
               <a className="hover:text-primary-ink flex items-center gap-1.5" href="/kaze.apk" download="kaze.apk">
                 <Smartphone className="size-3.5 text-primary" aria-hidden />
                 <span>App Android (APK)</span>
+              </a>
+            </li>
+            <li>
+              <a
+                className="hover:text-primary-ink flex items-center gap-1.5"
+                href="https://ko-fi.com/andrehwallet/goal?g=0"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Coffee className="size-3.5 text-[#FF5E5B]" aria-hidden />
+                <span>Apoyar en Ko-fi</span>
               </a>
             </li>
           </ul>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import * as DM from "@radix-ui/react-dropdown-menu";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
-import { MoreHorizontal, Search, Smartphone } from "lucide-react";
+import { Coffee, MoreHorizontal, Search, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "./logo";
 import { PRIMARY_NAV, isActive } from "./nav-config";
@@ -101,6 +101,26 @@ export function SiteHeader() {
             title="Descargar Kaze APK"
           >
             <Smartphone className="size-[18px] text-primary" aria-hidden />
+          </a>
+          <a
+            href="https://ko-fi.com/andrehwallet/goal?g=0"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="k-btn k-btn-ghost k-btn-sm hidden items-center gap-1.5 !px-2.5 text-xs text-muted hover:text-fg sm:inline-flex border border-line/50 hover:border-line"
+            title="Apoyar el proyecto en Ko-fi"
+          >
+            <Coffee className="size-3.5 text-[#FF5E5B]" aria-hidden />
+            <span>Apoyar</span>
+          </a>
+          <a
+            href="https://ko-fi.com/andrehwallet/goal?g=0"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="k-btn k-btn-ghost k-btn-icon k-btn-sm sm:hidden"
+            aria-label="Apoyar en Ko-fi"
+            title="Apoyar en Ko-fi"
+          >
+            <Coffee className="size-[18px] text-[#FF5E5B]" aria-hidden />
           </a>
           <NotificationBell />
           <ThemeSwitcher />
