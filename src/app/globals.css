@@ -718,7 +718,13 @@ html, body, button, a, input, select, textarea, [role="button"], [role="tab"] {
   }
 
   /* Card hover affordance */
+  .k-poster {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
   .k-hoverable {
+    transform: translateZ(0);
+    backface-visibility: hidden;
     transition: transform 0.35s var(--k-ease-out), box-shadow 0.35s var(--k-ease-out);
   }
   @media (hover: hover) {

@@ -105,9 +105,9 @@ export function HeroCarousel({ items, kickerPrefix, trendingIds }: { items: Medi
             transition={{ duration: reduced ? 0.2 : 1.2, ease: [0.22, 1, 0.36, 1] }}
           >
             {item.bannerImage ? (
-              <Image src={item.bannerImage} alt="" fill loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} sizes="100vw" className={cn("object-cover object-[50%_30%]", theme === "zen" && "saturate-[0.85]")} />
+              <Image src={item.bannerImage} alt="" fill priority={index === 0} loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} sizes="100vw" className={cn("object-cover object-[50%_30%]", theme === "zen" && "saturate-[0.85]")} unoptimized />
             ) : (
-              <Image src={item.coverImage.extraLarge ?? ""} alt="" fill loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} sizes="100vw" className="scale-125 object-cover blur-2xl" />
+              <Image src={item.coverImage.extraLarge ?? ""} alt="" fill priority={index === 0} loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} sizes="100vw" className="scale-125 object-cover blur-2xl" unoptimized />
             )}
           </motion.div>
         </AnimatePresence>

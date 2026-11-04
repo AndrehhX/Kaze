@@ -63,7 +63,7 @@ export function DetailHero({ media }: { media: MediaDetail }) {
     <section className="relative -mt-[var(--k-nav-h)]">
       <div className="absolute inset-x-0 top-0 h-[min(62svh,560px)] overflow-hidden" aria-hidden>
         {media.bannerImage ? (
-          <Image src={media.bannerImage} alt="" fill loading="eager" fetchPriority="high" sizes="100vw" className="object-cover" />
+          <Image src={media.bannerImage} alt="" fill priority loading="eager" fetchPriority="high" sizes="100vw" className="object-cover" unoptimized />
         ) : (
           <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at 70% 20%, ${media.coverImage.color ?? "var(--k-primary)"}, transparent 70%)` }} />
         )}

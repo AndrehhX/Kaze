@@ -44,6 +44,10 @@ const nextConfig: NextConfig = {
       "@radix-ui/react-dropdown-menu",
       "@radix-ui/react-dialog",
       "sonner",
+      "zustand",
+      "@tanstack/react-query",
+      "clsx",
+      "tailwind-merge",
     ],
   },
   onDemandEntries: {
@@ -69,6 +73,12 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      {
+        source: "/(icon.svg|kaze.apk)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
+      },
       {
         source: "/:path*",
         headers: [
