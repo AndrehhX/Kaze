@@ -17,12 +17,12 @@ const csp = [
   // Next.js injects inline bootstrap scripts; the theme script is inline too.
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: https://s4.anilist.co https://img1.ak.crunchyroll.com https://img.anili.st https://i.ytimg.com ${supabaseOrigin}`.trim(),
+  `img-src 'self' data: blob: https: https://s4.anilist.co https://img1.ak.crunchyroll.com https://img.anili.st https://i.ytimg.com ${supabaseOrigin}`.trim(),
   "font-src 'self' data:",
   // hls.js uses an inline data: WebVTT placeholder for subtitle tracks.
   "media-src 'self' blob: data: https:",
   `connect-src 'self' blob: data: https: ${supabaseOrigin} ${supabaseWs}${isDev ? " ws://localhost:*" : ""}`.trim(),
-  "frame-src https://www.youtube-nocookie.com",
+  "frame-src 'self' https://www.youtube-nocookie.com https:",
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",

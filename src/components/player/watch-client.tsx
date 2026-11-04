@@ -15,6 +15,7 @@ import { DemoBadge, ErrorPanel, Skeleton } from "@/components/ui/primitives";
 import { cn, formatDuration } from "@/lib/utils";
 import { Dialog } from "@/components/ui/dialog";
 import { AnimeComments } from "@/components/social/anime-comments";
+import { AdBanner } from "@/components/ads/ad-banner";
 
 export async function requestGrant(
   seriesId: string,
@@ -256,6 +257,9 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
                     </div>
                   </div>
                 </div>
+
+                {/* Banner publicitario respetuoso debajo del reproductor */}
+                <AdBanner placement="player-bottom" className="mt-4 mb-3" />
 
                 <div className="flex flex-wrap items-center gap-2">
                   {grant.series.demo && <DemoBadge />}
