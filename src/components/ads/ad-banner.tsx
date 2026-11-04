@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Sparkles, Coffee, X, ShieldCheck, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -9,12 +9,14 @@ import { DEFAULT_AD_CONFIG, isAdDismissed, dismissAd } from "@/lib/ads/config";
 interface AdBannerProps {
   placement?: string;
   className?: string;
+  format?: "728x90" | "native";
   customBannerUrl?: string;
 }
 
 export function AdBanner({
   placement = "player-bottom",
   className,
+  format = "728x90",
   customBannerUrl,
 }: AdBannerProps) {
   const [mounted, setMounted] = useState(false);
@@ -26,6 +28,44 @@ export function AdBanner({
     setDismissed(isAdDismissed(placement));
   }, [placement]);
 
+  const adsterraKey = DEFAULT_AD_CONFIG.adsterraKey728x90;
+  const adUrl = customBannerUrl || DEFAULT_AD_CONFIG.customBannerUrl;
+
+  const adsterraIframeHtml = useMemo(() => {
+    if (!adsterraKey) return "";
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base target="_blank">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <script type="text/javascript">
+    atOptions = {
+      'key' : '${adsterraKey}',
+      'format' : 'iframe',
+      'height' : 90,
+      'width' : 728,
+      'params' : {}
+    };
+  </script>
+  <script type="text/javascript" src="https://bauval.org/22/${adsterraKey}"></script>
+</body>
+</html>`;
+  }, [adsterraKey]);
+
   if (!DEFAULT_AD_CONFIG.enabled || (mounted && dismissed)) {
     return null;
   }
@@ -35,7 +75,7 @@ export function AdBanner({
     setDismissed(true);
   };
 
-  const adUrl = customBannerUrl || DEFAULT_AD_CONFIG.customBannerUrl || DEFAULT_AD_CONFIG.adsterraBannerUrl;
+  const hasLiveAd = Boolean(adUrl || (adsterraKey && !adBlocked));
 
   return (
     <AnimatePresence>
@@ -70,8 +110,21 @@ export function AdBanner({
           </div>
 
           {/* Contenido del Anuncio */}
-          <div className="p-3 sm:p-4 min-h-[96px] flex items-center justify-center">
-            {adUrl && !adBlocked ? (
+          <div className="p-2 sm:p-3 min-h-[96px] flex items-center justify-center">
+            {hasLiveAd && adsterraIframeHtml ? (
+              <div className="w-full max-w-[728px] h-[90px] mx-auto overflow-hidden flex items-center justify-center">
+                <div className="w-[728px] h-[90px] shrink-0 scale-[0.46] xs:scale-[0.52] sm:scale-[0.72] md:scale-100 origin-center transition-transform">
+                  <iframe
+                    srcDoc={adsterraIframeHtml}
+                    title="Espacio publicitario Kaze"
+                    className="w-[728px] h-[90px] border-0"
+                    sandbox="allow-scripts allow-same-origin allow-popups"
+                    loading="lazy"
+                    onError={() => setAdBlocked(true)}
+                  />
+                </div>
+              </div>
+            ) : adUrl && !adBlocked ? (
               <div className="w-full max-w-[728px] h-[90px] mx-auto overflow-hidden flex items-center justify-center">
                 <iframe
                   src={adUrl}

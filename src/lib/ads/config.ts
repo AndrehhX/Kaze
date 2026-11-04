@@ -1,7 +1,8 @@
 export interface AdConfiguration {
   enabled: boolean;
   monetagZoneId?: string;
-  adsterraBannerUrl?: string;
+  adsterraKey728x90?: string;
+  adsterraNativeId?: string;
   customBannerUrl?: string;
   kofiUrl: string;
 }
@@ -9,7 +10,8 @@ export interface AdConfiguration {
 export const DEFAULT_AD_CONFIG: AdConfiguration = {
   enabled: process.env.NEXT_PUBLIC_DISABLE_ADS !== "true",
   monetagZoneId: process.env.NEXT_PUBLIC_MONETAG_ZONE_ID,
-  adsterraBannerUrl: process.env.NEXT_PUBLIC_ADSTERRA_BANNER_URL,
+  adsterraKey728x90: process.env.NEXT_PUBLIC_ADSTERRA_728X90_KEY ?? "9ab8bd629915bbaf089db67c630d53b8",
+  adsterraNativeId: process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_ID ?? "b24b161e910f58e46e26ca5675ab3fca",
   customBannerUrl: process.env.NEXT_PUBLIC_AD_BANNER_URL,
   kofiUrl: "https://ko-fi.com/andrehwallet/goal?g=0",
 };
