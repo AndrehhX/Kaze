@@ -1,9 +1,10 @@
-import { Compass, Home, Library, MessagesSquare, Popcorn, CalendarRange, Users, UserRound, type LucideIcon } from "lucide-react";
+import { BookOpen, Compass, Home, Library, MessagesSquare, Popcorn, CalendarRange, Users, UserRound, type LucideIcon } from "lucide-react";
 
 export type NavItem = { href: string; label: string; jp: string; icon: LucideIcon; match?: (path: string) => boolean };
 
 export const PRIMARY_NAV: NavItem[] = [
   { href: "/", label: "Inicio", jp: "ホーム", icon: Home, match: (p) => p === "/" },
+  { href: "/manga", label: "Manga", jp: "漫画", icon: BookOpen },
   { href: "/discover", label: "Descubrir", jp: "発見", icon: Compass },
   { href: "/seasonal", label: "Temporada", jp: "今期", icon: CalendarRange },
   { href: "/library", label: "Mi Biblioteca", jp: "ライブラリ", icon: Library },

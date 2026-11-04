@@ -1,7 +1,7 @@
 /** Typed subset of the AniList GraphQL schema used by KAZE. */
 
 export type MediaSeason = "WINTER" | "SPRING" | "SUMMER" | "FALL";
-export type MediaFormat = "TV" | "TV_SHORT" | "MOVIE" | "SPECIAL" | "OVA" | "ONA" | "MUSIC";
+export type MediaFormat = "TV" | "TV_SHORT" | "MOVIE" | "SPECIAL" | "OVA" | "ONA" | "MUSIC" | "MANGA" | "NOVEL" | "ONE_SHOT";
 export type MediaStatus = "FINISHED" | "RELEASING" | "NOT_YET_RELEASED" | "CANCELLED" | "HIATUS";
 export type MediaSource =
   | "ORIGINAL"
@@ -51,6 +51,35 @@ export type MediaCard = {
   startDate: FuzzyDate;
   nextAiringEpisode: { episode: number; airingAt: number; timeUntilAiring: number } | null;
   studios: { nodes: { id: number; name: string }[] };
+  chapters?: number | null;
+  volumes?: number | null;
+  countryOfOrigin?: string | null;
+  type?: "ANIME" | "MANGA";
+  staff?: { nodes: { id: number; name: { full: string } }[] };
+};
+
+export type MangaCard = MediaCard & {
+  type?: "MANGA";
+  chapters: number | null;
+  volumes: number | null;
+  countryOfOrigin: string | null;
+  description?: string | null;
+};
+
+export type MangaChapter = {
+  id: string;
+  chapter: string;
+  volume: string | null;
+  title: string | null;
+  language: string;
+  scanlationGroup?: string;
+  publishedAt?: string;
+  pagesCount?: number;
+};
+
+export type MangaPage = {
+  pageNumber: number;
+  url: string;
 };
 
 export type MediaHero = MediaCard & {

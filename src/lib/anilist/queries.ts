@@ -314,3 +314,94 @@ export const VIEWER_FAVOURITES_QUERY = /* GraphQL */ `
   }
   ${CARD_FIELDS}
 `;
+
+export const MANGA_CARD_FIELDS = /* GraphQL */ `
+  fragment MangaCardFields on Media {
+    id
+    idMal
+    title { romaji english native userPreferred }
+    coverImage { extraLarge large color }
+    bannerImage
+    format
+    status
+    chapters
+    volumes
+    countryOfOrigin
+    averageScore
+    meanScore
+    popularity
+    favourites
+    genres
+    isAdult
+    startDate { year month day }
+    staff(perPage: 3) { nodes { id name { full } } }
+  }
+`;
+
+export const MANGA_HOME_QUERY = /* GraphQL */ `
+  query MangaHome {
+    trending: Page(perPage: 14) {
+      media(sort: TRENDING_DESC, type: MANGA, isAdult: false) {
+        ...MangaCardFields
+        description(asHtml: false)
+      }
+    }
+    popular: Page(perPage: 14) {
+      media(sort: POPULARITY_DESC, type: MANGA, isAdult: false) {
+        ...MangaCardFields
+        description(asHtml: false)
+      }
+    }
+    manhwa: Page(perPage: 14) {
+      media(sort: POPULARITY_DESC, type: MANGA, countryOfOrigin: "KR", isAdult: false) {
+        ...MangaCardFields
+        description(asHtml: false)
+      }
+    }
+    topRated: Page(perPage: 12) {
+      media(sort: SCORE_DESC, type: MANGA, isAdult: false, popularity_greater: 15000) {
+        ...MangaCardFields
+      }
+    }
+  }
+  ${MANGA_CARD_FIELDS}
+`;
+
+export const MANGA_DETAILS_QUERY = /* GraphQL */ `
+  query MangaDetails($id: Int) {
+    Media(id: $id, type: MANGA) {
+      ...MangaCardFields
+      description(asHtml: false)
+      synonyms
+      source
+      countryOfOrigin
+      hashtag
+      endDate { year month day }
+      siteUrl
+      tags { id name rank category isMediaSpoiler isGeneralSpoiler }
+      relations {
+        edges {
+          relationType
+          node {
+            id
+            type
+            format
+            title { userPreferred romaji english native }
+            coverImage { extraLarge large color }
+            bannerImage
+            status
+            averageScore
+          }
+        }
+      }
+      recommendations(sort: RATING_DESC, perPage: 8) {
+        nodes {
+          mediaRecommendation {
+            ...MangaCardFields
+          }
+        }
+      }
+    }
+  }
+  ${MANGA_CARD_FIELDS}
+`;

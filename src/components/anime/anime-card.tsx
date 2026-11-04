@@ -75,7 +75,8 @@ export function AnimeCard({ media, rank, priority, sizes = "(max-width: 640px) 4
   const title = displayTitle(media);
   const alt = altTitle(media);
   const year = media.seasonYear ?? media.startDate?.year;
-  const href = `/anime/${media.id}`;
+  const isManga = (media as any).type === "MANGA" || media.format === "MANGA" || media.format === "NOVEL" || media.format === "ONE_SHOT";
+  const href = (media as any).href ?? (isManga ? `/manga/${media.id}` : `/anime/${media.id}`);
   const layoutId = `${layoutScope}-poster-${media.id}`;
 
   return (
@@ -125,7 +126,7 @@ export function AnimeCard({ media, rank, priority, sizes = "(max-width: 640px) 4
           <div aria-hidden className="absolute inset-x-0 bottom-0 z-[2] translate-y-2 p-2.5 text-white opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
             <p className="clamp-2 text-[0.6875rem] leading-snug text-white/85">{media.genres.slice(0, 3).join(" · ")}</p>
             <p className="mt-1 text-[0.6875rem] font-semibold text-white">
-              {[formatLabel(media.format), media.episodes ? `${media.episodes} ep` : null].filter(Boolean).join(" · ")}
+              {[formatLabel(media.format), (media as any).chapters ? `${(media as any).chapters} cap` : media.episodes ? `${media.episodes} ep` : null].filter(Boolean).join(" · ")}
             </p>
           </div>
           {entry?.status === "CURRENT" && media.episodes ? (

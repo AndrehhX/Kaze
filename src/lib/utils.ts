@@ -106,6 +106,9 @@ export function formatLabel(format: string | null | undefined) {
     OVA: "OVA",
     ONA: "ONA",
     MUSIC: "Musical",
+    MANGA: "Manga",
+    NOVEL: "Novela",
+    ONE_SHOT: "One Shot",
   };
   return map[format] ?? titleCase(format);
 }

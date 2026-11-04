@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { Check, ChevronDown, Clapperboard, ExternalLink, Eye, Minus, Play, Plus, Share2, ShieldAlert, Star, Tv } from "lucide-react";
+import { BookOpen, Check, ChevronDown, Clapperboard, ExternalLink, Eye, Minus, Play, Plus, Share2, ShieldAlert, Star, Tv } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { CharacterEdge, MediaDetail } from "@/lib/anilist/types";
@@ -176,6 +176,21 @@ export function DetailHero({ media }: { media: MediaDetail }) {
                 <button className="k-btn k-btn-ghost k-btn-icon" onClick={share} aria-label="Compartir">
                   <Share2 className="size-4" aria-hidden />
                 </button>
+                {(() => {
+                  const manga = media.relations?.edges?.find(
+                    (e) => (e.relationType === "ADAPTATION" || e.relationType === "SOURCE") && e.node?.type === "MANGA"
+                  )?.node;
+                  if (!manga) return null;
+                  return (
+                    <Link
+                      href={`/manga/${manga.id}`}
+                      className="k-btn k-btn-ghost text-primary-ink hover:text-primary font-semibold backdrop-blur"
+                      title="Leer Manga / Manhwa oficial"
+                    >
+                      <BookOpen className="size-4" aria-hidden /> Leer Manga
+                    </Link>
+                  );
+                })()}
               </div>
             );
           })()}
@@ -711,7 +726,7 @@ export function StaffList({ media }: { media: MediaDetail }) {
 }
 
 export function RelatedRail({ media }: { media: MediaDetail }) {
-  const rel = media.relations.edges.filter((e) => e.node.type === "ANIME" && !e.node.isAdult);
+  const rel = media.relations.edges.filter((e) => !e.node.isAdult);
   if (!rel.length) return <p className="text-sm text-muted">No related anime.</p>;
   return (
     <Rail label="Related anime">

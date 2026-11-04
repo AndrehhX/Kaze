@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronLeft, ChevronRight, Clapperboard, Pause, Play, Tv } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Clapperboard, Pause, Play, Tv } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MediaHero } from "@/lib/anilist/types";
 import { cleanDescription, cn, formatLabel, statusLabel, genreLabel } from "@/lib/utils";
@@ -53,7 +53,9 @@ export function HeroCarousel({ items, kickerPrefix, trendingIds }: { items: Medi
   if (!item) return null;
   const title = displayTitle(item);
   const desc = cleanDescription(item.description);
-  const studio = item.studios.nodes[0]?.name;
+  const studio = item.studios?.nodes?.[0]?.name;
+  const isManga = (item as any)?.type === "MANGA" || item.format === "MANGA" || item.format === "NOVEL" || item.format === "ONE_SHOT";
+  const itemHref = isManga ? `/manga/${item.id}` : `/anime/${item.id}#availability`;
   const words = title.split(" ");
   const tint = item.coverImage.color ?? "var(--k-primary)";
 
@@ -191,8 +193,9 @@ export function HeroCarousel({ items, kickerPrefix, trendingIds }: { items: Medi
                 </motion.p>
               )}
               <motion.div variants={titleVariants} custom={words.length + 5} className="mt-4 sm:mt-5 flex flex-wrap items-center gap-2.5">
-                <Link href={`/anime/${item.id}#availability`} prefetch={true} className="k-btn k-btn-primary">
-                  <Tv className="size-4" aria-hidden /> Ver opciones
+                <Link href={itemHref} prefetch={true} className="k-btn k-btn-primary">
+                  {isManga ? <BookOpen className="size-4" aria-hidden /> : <Tv className="size-4" aria-hidden />}
+                  {isManga ? "Leer manga" : "Ver opciones"}
                 </Link>
                 <ListMenu media={item} className="!bg-surface/70 backdrop-blur" />
                 {item.trailer?.site === "youtube" && (
