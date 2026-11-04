@@ -30,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="es" translate="no" data-theme={DEFAULT_THEME} className={`${fontVariables} notranslate`} suppressHydrationWarning>
       <head>
         <meta name="google" content="notranslate" />
+        <meta name="monetag" content="8770d2148e28c17ef3c8edcf87c6ff48" />
         {/* Applies the saved theme before first paint — no flash of the wrong theme. */}
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         {/* Posters and covers load straight from AniList's CDN. */}
