@@ -15,7 +15,7 @@ const mediaHosts = [
 const csp = [
   "default-src 'self'",
   // Next.js injects inline bootstrap scripts; the theme script is inline too.
-  `script-src 'self' 'unsafe-inline' https://bauval.org https://*.bauval.org https://nap5k.com https://*.nap5k.com${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://bauval.org https://*.bauval.org${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: https: https://s4.anilist.co https://img1.ak.crunchyroll.com https://img.anili.st https://i.ytimg.com ${supabaseOrigin}`.trim(),
   "font-src 'self' data:",

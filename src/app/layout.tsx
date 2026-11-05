@@ -89,7 +89,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="es" translate="no" data-theme={DEFAULT_THEME} className={`${fontVariables} notranslate`} suppressHydrationWarning>
       <head>
         <meta name="google" content="notranslate" />
-        <meta name="monetag" content="8770d2148e28c17ef3c8edcf87c6ff48" />
         {/* JSON-LD Schema estructurado para Google Search */}
         <script
           type="application/ld+json"
