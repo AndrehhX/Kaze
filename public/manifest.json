@@ -1,0 +1,57 @@
+{
+  "name": "KAZE Anime",
+  "short_name": "KAZE",
+  "description": "Tu plataforma para ver anime online gratis en HD con audio Latino y Sub Español sin interrupciones.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#080810",
+  "theme_color": "#080810",
+  "scope": "/",
+  "lang": "es",
+  "categories": ["entertainment", "video"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Explorar Anime",
+      "short_name": "Explorar",
+      "description": "Explora el catálogo de animes populares y en emisión",
+      "url": "/discover",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Mi Biblioteca",
+      "short_name": "Biblioteca",
+      "description": "Tu lista de animes y progreso",
+      "url": "/library",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

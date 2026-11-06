@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { fontVariables } from "./fonts";
 import { Providers } from "@/components/providers/providers";
+import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { DEFAULT_THEME, themeBootScript } from "@/lib/themes";
 import { siteUrl } from "@/lib/env";
 import { Analytics } from "@vercel/analytics/react";
@@ -71,7 +72,22 @@ export const metadata: Metadata = {
     description: "Kaze (Orunei): Disfruta de anime online gratis en HD 1080p sin molestos popups.",
     images: ["/icon.svg"],
   },
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "KAZE",
+  },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
@@ -111,6 +127,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
         {/* Applies the saved theme before first paint — no flash of the wrong theme. */}
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="KAZE" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
         {/* Posters and covers load straight from AniList's CDN. */}
         <link rel="preconnect" href="https://s4.anilist.co" crossOrigin="" />
         <link rel="dns-prefetch" href="https://s4.anilist.co" />
@@ -121,7 +142,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <a href="#main" className="k-btn k-btn-primary fixed left-3 top-3 z-[100] -translate-y-24 focus:translate-y-0">
           Saltar al contenido
         </a>
-        <Providers>{children}</Providers>
+        <Providers>
+          <ServiceWorkerRegister />
+          {children}
+        </Providers>
         <Analytics />
       </body>
     </html>
