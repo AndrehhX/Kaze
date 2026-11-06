@@ -49,6 +49,9 @@ async function HomeContent() {
       <LibraryNudge />
       <RailSection id="trending-h" title="Tendencias del momento" jp="急上昇" kicker="Ahora mismo en AniList" media={d.trending} ranked href="/discover?sort=TRENDING_DESC" />
       <SeasonBento media={d.season} season={d.seasonInfo.season} year={d.seasonInfo.year} />
+      <div className="container-k my-8">
+        <AdBanner placement="home-mid" />
+      </div>
       <RecommendedForYou pool={pool} />
       <RecentlyReleased items={d.recent} />
       <TopRatedEditorial media={d.top} />
@@ -60,9 +63,7 @@ async function HomeContent() {
       <BecauseYouLoved />
       <CommunityFavorites media={d.favourites} />
       <CalendarHint />
-      <div className="container-k mt-12 mb-4">
-        <AdBanner placement="home-bottom" />
-      </div>
+
       <StatCredit />
     </>
   );

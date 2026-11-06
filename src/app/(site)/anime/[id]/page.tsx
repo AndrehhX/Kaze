@@ -24,6 +24,7 @@ import {
 import { MediaReviews } from "@/components/social/reviews";
 import { DiscussionList } from "@/components/social/discussions";
 import { FriendsWithTitle } from "@/components/social/friends-with-title";
+import { AdBanner } from "@/components/ads/ad-banner";
 
 async function load(idParam: string) {
   const id = Number.parseInt(idParam, 10);
@@ -89,6 +90,10 @@ export default async function AnimePage({ params }: PageProps<"/anime/[id]">) {
           <InfoList media={media} />
         </aside>
       </section>
+
+      <div className="container-k my-8">
+        <AdBanner placement="anime-detail" />
+      </div>
 
       <DetailSection id="episodes" title="Episodes" jp="エピソード">
         <EpisodesPreview media={media} />

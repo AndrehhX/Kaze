@@ -110,10 +110,10 @@ export function AdBanner({
           </div>
 
           {/* Contenido del Anuncio */}
-          <div className="p-2 sm:p-3 min-h-[96px] flex items-center justify-center">
+          <div className="p-2 sm:p-3 flex items-center justify-center">
             {hasLiveAd && adsterraKey ? (
-              <div className="w-full max-w-[728px] h-[90px] mx-auto overflow-hidden flex items-center justify-center">
-                <div className="w-[728px] h-[90px] shrink-0 scale-[0.46] xs:scale-[0.52] sm:scale-[0.72] md:scale-100 origin-center transition-transform">
+              <div className="w-full max-w-[728px] h-[52px] xs:h-[58px] sm:h-[76px] md:h-[90px] mx-auto overflow-hidden flex items-center justify-center">
+                <div className="w-[728px] h-[90px] shrink-0 scale-[0.46] xs:scale-[0.52] sm:scale-[0.75] md:scale-100 origin-center transition-transform">
                   <iframe
                     src="/ads/banner.html"
                     title="Espacio publicitario Kaze"
@@ -125,7 +125,7 @@ export function AdBanner({
                 </div>
               </div>
             ) : adUrl && !adBlocked ? (
-              <div className="w-full max-w-[728px] h-[90px] mx-auto overflow-hidden flex items-center justify-center">
+              <div className="w-full max-w-[728px] h-[52px] xs:h-[58px] sm:h-[76px] md:h-[90px] mx-auto overflow-hidden flex items-center justify-center">
                 <iframe
                   src={adUrl}
                   title="Espacio publicitario Kaze"
