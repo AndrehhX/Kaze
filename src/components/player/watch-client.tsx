@@ -220,7 +220,7 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
                           )}
                         >
                           <span>⚡</span>
-                          <span>1080p Ultra Rápido</span>
+                          <span>Ultra Rápido</span>
                           <span className="hidden sm:inline text-[0.625rem] opacity-75 font-mono px-1 rounded bg-black/10">
                             HLS
                           </span>
@@ -236,9 +236,9 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
                           )}
                         >
                           <span>✨</span>
-                          <span>1080p HD Limpio</span>
+                          <span>HD Limpio</span>
                           <span className="hidden sm:inline text-[0.625rem] opacity-75 font-mono px-1 rounded bg-black/10">
-                            Sin Marcas
+                            Directo
                           </span>
                         </button>
                       </div>
@@ -247,7 +247,7 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
                     <div className="flex items-center gap-2 text-[0.75rem] text-muted">
                       <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                       <span>
-                        Activo: <strong className="text-fg">{grant.serverName ?? "1080p Ultra Rápido"}</strong>
+                        Activo: <strong className="text-fg">{grant.serverName ?? "Ultra Rápido"}</strong>
                       </span>
                       {grant.audioLanguage && (
                         <span className="rounded bg-line px-1.5 py-0.5 text-[0.6875rem] uppercase font-mono text-fg/80">

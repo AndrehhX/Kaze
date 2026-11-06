@@ -754,12 +754,12 @@ async function resolveFromLatanime(
       const aName = a.name.toLowerCase();
       const bName = b.name.toLowerCase();
       if (preferredServer === 'clean') {
-        // En modo limpio: MP4Upload y OkRu primero
-        const score = (n: string) => (n.includes('mp4upload') ? 3 : n.includes('ok') ? 2 : n.includes('yourupload') ? 1 : 0);
+        // En modo limpio: YourUpload y MP4Upload primero
+        const score = (n: string) => (n.includes('yourupload') ? 4 : n.includes('mp4upload') ? 3 : n.includes('ok') ? 2 : 0);
         return score(bName) - score(aName);
       } else {
-        // En modo rápido: OkRu primero (HLS/rápido), luego MP4Upload
-        const score = (n: string) => (n.includes('ok') ? 3 : n.includes('mp4upload') ? 2 : n.includes('yourupload') ? 1 : 0);
+        // En modo rápido: OkRu (HLS/rápido) primero
+        const score = (n: string) => (n.includes('ok') ? 4 : n.includes('yourupload') ? 2 : n.includes('mp4upload') ? 1 : 0);
         return score(bName) - score(aName);
       }
     });
@@ -772,8 +772,8 @@ async function resolveFromLatanime(
           const isHls = direct.includes('.m3u8');
           return {
             serverName: isHls
-              ? `1080p Ultra Rápido (${dialect === 'castellano' ? 'Castellano' : 'Latino'})`
-              : `1080p HD Limpio (${dialect === 'castellano' ? 'Castellano' : 'Latino'})`,
+              ? `⚡ 1080p Ultra Rápido (${dialect === 'castellano' ? 'Castellano' : 'Latino'})`
+              : `✨ HD Limpio (${dialect === 'castellano' ? 'Castellano' : 'Latino'})`,
             serverType: isHls ? 'fast' : 'clean',
             audioLanguage: dialect === 'castellano' ? 'es-ES' : 'es-419',
             quality: '1080p',
@@ -787,38 +787,41 @@ async function resolveFromLatanime(
             },
           };
         }
-      } else if (server.name.includes('mp4upload') || server.url.includes('mp4upload')) {
-        const direct = await extractMP4Upload(server.url);
+      } else if (server.name.includes('yourupload') || server.url.includes('yourupload')) {
+        const direct = await extractYourUpload(server.url);
         if (direct) {
           recordProviderOutcome('latanime', 'found');
           return {
-            serverName: `1080p HD Limpio (${dialect === 'castellano' ? 'Castellano' : 'Latino'})`,
+            serverName: `✨ YourUpload Limpio (${dialect === 'castellano' ? 'Castellano' : 'Latino'})`,
             serverType: 'clean',
             audioLanguage: dialect === 'castellano' ? 'es-ES' : 'es-419',
-            quality: '1080p',
+            quality: '720p',
             asset: {
-              id: `latanime-mp4-${episode}`,
+              id: `latanime-yu-${episode}`,
               kind: 'mp4',
-              src: toClientProxyUrl(direct, 'https://www.mp4upload.com/'),
+              src: toClientProxyUrl(direct, 'https://www.yourupload.com/'),
               subtitles: [],
               markers: [],
               duration: 1440,
             },
           };
         }
-      } else if (server.name.includes('yourupload') || server.url.includes('yourupload')) {
-        const direct = await extractYourUpload(server.url);
+      } else if (server.name.includes('mp4upload') || server.url.includes('mp4upload')) {
+        const direct = await extractMP4Upload(server.url);
         if (direct) {
           recordProviderOutcome('latanime', 'found');
+          const isCleanReq = preferredServer === 'clean';
           return {
-            serverName: `YourUpload (${dialect === 'castellano' ? 'Castellano' : 'Latino'})`,
-            serverType: 'clean',
+            serverName: isCleanReq
+              ? `✨ MP4 Directo (${dialect === 'castellano' ? 'Castellano' : 'Latino'})`
+              : `⚡ MP4 Rápido (${dialect === 'castellano' ? 'Castellano' : 'Latino'})`,
+            serverType: isCleanReq ? 'clean' : 'fast',
             audioLanguage: dialect === 'castellano' ? 'es-ES' : 'es-419',
-            quality: '1080p',
+            quality: '720p',
             asset: {
-              id: `latanime-yu-${episode}`,
+              id: `latanime-mp4-${episode}`,
               kind: 'mp4',
-              src: toClientProxyUrl(direct, 'https://www.yourupload.com/'),
+              src: toClientProxyUrl(direct, 'https://www.mp4upload.com/'),
               subtitles: [],
               markers: [],
               duration: 1440,
@@ -1012,7 +1015,8 @@ async function resolveFromMonosChinos(
   malId: string | number | null,
   animeTitle: string,
   episode: number,
-  romajiTitle = ''
+  romajiTitle = '',
+  preferredServer: 'fast' | 'clean' = 'clean'
 ): Promise<ResolvedStream | null> {
   const cacheKey = `${malId || ''}:${animeTitle}:${romajiTitle || ''}`;
   const directSlugs = generateProviderSlugs(malId, animeTitle, romajiTitle);
@@ -1048,10 +1052,10 @@ async function resolveFromMonosChinos(
         if (direct) {
           mcSlugCache.set(cacheKey, cleanSlug);
           return {
-            serverName: '1080p HD Limpio (Sub Español)',
+            serverName: '✨ YourUpload Limpio (Sub Español)',
             serverType: 'clean',
             audioLanguage: 'ja',
-            quality: '1080p',
+            quality: '720p',
             asset: {
               id: `monos-yu-${episode}`,
               kind: 'mp4',
@@ -1064,17 +1068,18 @@ async function resolveFromMonosChinos(
         }
       }
 
-      // 2. MP4Upload (Verificado limpio H.264)
+      // 2. MP4Upload (H.264 directo)
       const mp4u = rawServers.find((s) => s.includes('mp4upload'));
       if (mp4u) {
         const direct = await extractMP4Upload(mp4u);
         if (direct) {
           mcSlugCache.set(cacheKey, cleanSlug);
+          const isCleanReq = preferredServer === 'clean';
           return {
-            serverName: 'MP4Upload (Sub Español)',
-            serverType: 'clean',
+            serverName: isCleanReq ? '✨ MP4 Directo (Sub Español)' : '⚡ MP4 Rápido (Sub Español)',
+            serverType: isCleanReq ? 'clean' : 'fast',
             audioLanguage: 'ja',
-            quality: '1080p',
+            quality: '720p',
             asset: {
               id: `monos-mp4-${episode}`,
               kind: 'mp4',
@@ -1245,31 +1250,32 @@ export async function resolvePlayableStream(
   // --- B. PRIORIDAD 1: DOBLAJE EN ESPAÑOL (Solicitado explícitamente o anime con doblaje disponible) ---
   if (!streamResult && !forceH264 && (isDubRequested || (isDubbed && !isSubRequested))) {
     if (wantClean) {
-      // 1) Servidor Limpio Sin Marcas: LatAnime (MP4Upload 1080p directo / OkRu 1080p)
+      // 1) Servidor Limpio: LatAnime (YourUpload / MP4Upload / OkRu limpio)
       streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'clean');
-      // 2) Servidor Limpio: AnimeAV1 DUB (MP4Upload 1080p / YourUpload Limpio)
+      // 2) Servidor Limpio: AnimeAV1 DUB
       if (!streamResult) {
         streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji, 'clean');
       }
-      // 3) Fallback automático a Servidor Rápido si no hay fuente limpia para este episodio
-      if (!streamResult) {
-        streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji, 'fast');
-      }
+      // 3) Fallback a rápido si no hay limpio
       if (!streamResult) {
         streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'fast');
       }
+      if (!streamResult) {
+        streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji, 'fast');
+      }
     } else {
-      // 1) Servidor Rápido: AnimeAV1 1080p Ultra Rápido HLS con Audio Latino
-      streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji, 'fast');
-      // 2) Fallback automático a Servidor Limpio de LatAnime si no hay HLS
+      // 1) Servidor Rápido: LatAnime (OkRu HLS / stream rápido)
+      streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'fast');
+      // 2) Servidor Rápido: AnimeAV1 1080p Ultra Rápido HLS con Audio Latino
+      if (!streamResult) {
+        streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji, 'fast');
+      }
+      // 3) Fallback a limpio si no hay HLS
       if (!streamResult) {
         streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'clean');
       }
       if (!streamResult) {
         streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji, 'clean');
-      }
-      if (!streamResult) {
-        streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'fast');
       }
     }
 
@@ -1278,11 +1284,11 @@ export async function resolvePlayableStream(
       const markers = await markersPromise;
       streamResult.asset.markers = markers;
       streamResult.availableServers = [
-        { id: 'fast', name: '⚡ 1080p Ultra Rápido', badge: 'HLS', description: 'Carga instantánea en 0.5s' },
-        { id: 'clean', name: '✨ 1080p HD Limpio', badge: 'Directo', description: 'Sin marcas de agua' },
+        { id: 'fast', name: '⚡ Ultra Rápido', badge: 'HLS/Rápido', description: 'Carga instantánea en 0.5s' },
+        { id: 'clean', name: '✨ HD Limpio', badge: 'Directo', description: 'Sin marcas de agua' },
       ];
       if (!streamResult.serverType) {
-        streamResult.serverType = streamResult.serverName.includes('Limpio') || streamResult.serverName.includes('MP4Upload') || streamResult.serverName.includes('OkRu') ? 'clean' : 'fast';
+        streamResult.serverType = streamResult.serverName.includes('Limpio') || streamResult.serverName.includes('Directo') ? 'clean' : 'fast';
       }
       return streamResult;
     }
@@ -1292,33 +1298,34 @@ export async function resolvePlayableStream(
   // REGLA ESTRICTA: Cuando se solicita SUB, NUNCA caer a audio en español.
   if (!streamResult && !forceH264) {
     if (wantClean) {
-      // 1) Servidor Limpio Sin Marcas: AnimeAV1 MP4Upload 1080p AV1 10-bit / YourUpload (Sub Español)
-      streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, 'sub', opts.titleRomaji, 'clean');
-      // 2) Servidor Limpio: MonosChinos (YourUpload / MP4Upload 1080p HD Limpio)
+      // 1) Servidor Limpio Sin Marcas: MonosChinos (YourUpload / MP4Upload)
+      streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, 'clean');
+      // 2) AnimeAV1 Clean
       if (!streamResult) {
-        streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+        streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, 'sub', opts.titleRomaji, 'clean');
       }
       // 3) JKanime
       if (!streamResult) {
         streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
       }
-      // 4) Fallback automático a Servidor Rápido si no hay servidor limpio disponible
+      // 4) Fallback a rápido si no hay limpio
+      if (!streamResult) {
+        streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, 'fast');
+      }
+    } else {
+      // 1) Servidor Rápido: JKanime HLS Ultra HD (Sub Español)
+      streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+      // 2) AnimeAV1 Ultra Rápido HLS
       if (!streamResult) {
         streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, 'sub', opts.titleRomaji, 'fast');
       }
-    } else {
-      // 1) Servidor Rápido: AnimeAV1 1080p Ultra Rápido HLS (Sub Español)
-      streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, 'sub', opts.titleRomaji, 'fast');
-      // 2) Servidor Rápido: JKanime HLS Ultra HD (Sub Español)
+      // 3) MonosChinos Fast
       if (!streamResult) {
-        streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+        streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, 'fast');
       }
-      // 3) Fallback automático a Servidor Limpio si no hay HLS
+      // 4) Fallback a limpio si no hay HLS
       if (!streamResult) {
-        streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, 'sub', opts.titleRomaji, 'clean');
-      }
-      if (!streamResult) {
-        streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+        streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, 'clean');
       }
     }
 
@@ -1338,11 +1345,11 @@ export async function resolvePlayableStream(
     const markers = await markersPromise;
     streamResult.asset.markers = markers;
     streamResult.availableServers = [
-      { id: 'fast', name: '⚡ 1080p Ultra Rápido', badge: 'HLS', description: 'Carga instantánea en 0.5s' },
-      { id: 'clean', name: '✨ 1080p HD Limpio', badge: 'Directo', description: 'Sin marcas de agua' },
+      { id: 'fast', name: '⚡ Ultra Rápido', badge: 'HLS/Rápido', description: 'Carga instantánea en 0.5s' },
+      { id: 'clean', name: '✨ HD Limpio', badge: 'Directo', description: 'Sin marcas de agua' },
     ];
     if (!streamResult.serverType) {
-      streamResult.serverType = streamResult.serverName.includes('Limpio') || streamResult.serverName.includes('MP4Upload') || streamResult.serverName.includes('OkRu') ? 'clean' : 'fast';
+      streamResult.serverType = streamResult.serverName.includes('Limpio') || streamResult.serverName.includes('Directo') ? 'clean' : 'fast';
     }
   }
 
