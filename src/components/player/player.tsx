@@ -107,6 +107,18 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
 
   const fatal = hs.fatal ?? mediaError;
 
+  const switchingPositionRef = useRef<number | null>(null);
+  const prevAssetSrcRef = useRef(asset.src);
+
+  useEffect(() => {
+    if (prevAssetSrcRef.current !== asset.src) {
+      if (video && video.currentTime > 2) {
+        switchingPositionRef.current = video.currentTime;
+      }
+      prevAssetSrcRef.current = asset.src;
+    }
+  }, [asset.src, video]);
+
   const refVideo = useCallback(
     (el: HTMLVideoElement | null) => {
       setVideo(el);
@@ -209,7 +221,14 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
     const onMeta = () => {
       setDuration(video.duration || asset.duration);
       setWaiting(false);
-      if (!resumed.current && !locked) {
+
+      if (switchingPositionRef.current !== null && switchingPositionRef.current > 0) {
+        const targetPos = switchingPositionRef.current;
+        switchingPositionRef.current = null;
+        if (targetPos < (video.duration || Infinity) - 5) {
+          video.currentTime = targetPos;
+        }
+      } else if (!resumed.current && !locked) {
         resumed.current = true;
         const saved = useProgress.getState().get(grant.series.id, grant.episode.id);
         if (saved && !saved.completed && saved.position > 5 && saved.position < (video.duration || Infinity) - 10) {

@@ -135,8 +135,8 @@ function scoreSlug(slug: string, queryTokens: string[], seasonInfo: SeasonInfo):
   const slugLower = slug.toLowerCase();
 
   if (!seasonInfo.isMovieOrOva) {
-    if (/(?:break-time|petit|chibi|spin-off|mini|ova|special|movie|gekijouban|lost-girls|kuinaki-sentaku|hyouketsu-no-kizuna|memory-snow)/i.test(slugLower)) {
-      score -= 100;
+    if (/(?:break-time|petit|chibi|spin-off|mini|ova|special|movie|pelicula|gekijouban|lost-girls|kuinaki-sentaku|hyouketsu-no-kizuna|memory-snow|last-attack|the-last|el-arco-de|the-movie|kanketsu-hen|memories)/i.test(slugLower)) {
+      score -= 200;
     }
   }
 
@@ -146,20 +146,30 @@ function scoreSlug(slug: string, queryTokens: string[], seasonInfo: SeasonInfo):
     }
   }
 
+  // Penalizar exceso de palabras en el slug que no estén en la búsqueda
+  const slugWords = slugLower.replace(/[^a-z0-9]/g, ' ').split(/\s+/).filter((w) => w.length > 2 && !['latino', 'castellano', 'sub', 'espanol'].includes(w));
+  for (const w of slugWords) {
+    if (!queryTokens.includes(w)) {
+      score -= 5;
+    }
+  }
+
   const { season, part } = seasonInfo;
 
   if (season === 1) {
-    if (/(?:2nd|3rd|4th|5th|6th)-season|season-[2-9]|-s[2-9]\b|\bii\b|\biii\b|\biv\b|final-season/i.test(slugLower)) {
-      score -= 80;
+    if (/(?:2nd|3rd|4th|5th|6th)-season|season-[2-9]|-[2-9]-|-s[2-9]\b|\bii\b|\biii\b|\biv\b|final-season|the-final-season/i.test(slugLower)) {
+      score -= 100;
+    } else if (/-s1\b|season-1\b/i.test(slugLower)) {
+      score += 30;
     } else {
       score += 40;
     }
   } else {
     const seasonRegexMap: Record<number, RegExp> = {
-      2: /(?:2nd-season|season-2\b|-s2\b|-ii\b)/i,
-      3: /(?:3rd-season|season-3\b|-s3\b|-iii\b)/i,
-      4: /(?:4th-season|season-4\b|-s4\b|-iv\b|the-final-season|final-season)/i,
-      5: /(?:5th-season|season-5\b|-s5\b|-v\b)/i,
+      2: /(?:2nd-season|season-2\b|-s2\b|-ii\b|-2-)/i,
+      3: /(?:3rd-season|season-3\b|-s3\b|-iii\b|-3-)/i,
+      4: /(?:4th-season|season-4\b|-s4\b|-iv\b|the-final-season|final-season|-4-)/i,
+      5: /(?:5th-season|season-5\b|-s5\b|-v\b|-5-)/i,
     };
 
     const targetRegex = seasonRegexMap[season];
@@ -288,7 +298,7 @@ const VERIFIED_LATANIME_SLUGS: Record<string, string> = {
   '1535:latino': 'death-note-latino',
   '1535:castellano': 'death-note-castellano',
   '21:latino': 'one-piece-latino',
-  '31964:latino': 'boku-no-hero-academia-latino',
+  '31964:latino': 'boku-no-hero-academia-s1-latino',
   '31964:castellano': 'boku-no-hero-academia-castellano',
   '38000:latino': 'kimetsu-no-yaiba-latino',
   '20:latino': 'naruto-latino',
@@ -297,6 +307,8 @@ const VERIFIED_LATANIME_SLUGS: Record<string, string> = {
   '50273:latino': 'spy-x-family-latino',
   '34572:latino': 'black-clover-latino',
   '54595:latino': 'dandadan-latino',
+  '16498:latino': 'shingeki-no-kyojin-latino',
+  '16498:castellano': 'shingeki-no-kyojin-castellano',
 };
 
 const VERIFIED_ANIMEAV1_SLUGS: Record<string, string> = {
@@ -406,13 +418,10 @@ async function resolveFromAnimeAV1(
     const dubBlock = html.match(/DUB:\s*(\[[^\]]*\])/)?.[1] || '';
     const subBlock = html.match(/SUB:\s*(\[[^\]]*\])/)?.[1] || '';
 
-    const primaryBlock = isDub ? dubBlock : subBlock;
-    const fallbackBlock = isDub ? subBlock : dubBlock;
-
-    const targetBlocks = [
-      { block: primaryBlock, isDubAudio: isDub },
-      ...(isDub ? [{ block: fallbackBlock, isDubAudio: false }] : []),
-    ];
+    // Estricta segregación: DUB solo usa bloque DUB (Audio Español), SUB solo usa bloque SUB (Audio Japonés)
+    const targetBlocks = isDub
+      ? [{ block: dubBlock, isDubAudio: true }]
+      : [{ block: subBlock, isDubAudio: false }];
 
     for (const { block, isDubAudio } of targetBlocks) {
       if (!block) continue;
@@ -567,7 +576,8 @@ const slugCache = new Map<string, string>();
 async function resolveLatanimeSlug(
   malId: string | number | null,
   animeTitle: string,
-  dialect: 'latino' | 'castellano'
+  dialect: 'latino' | 'castellano',
+  romajiTitle = ''
 ): Promise<string | null> {
   const normDialect = dialect === 'castellano' ? 'castellano' : 'latino';
   const malKey = malId ? `${malId}:${normDialect}` : '';
@@ -575,53 +585,65 @@ async function resolveLatanimeSlug(
     return VERIFIED_LATANIME_SLUGS[malKey];
   }
 
-  const cacheKey = `latanime:${malId || ''}:${animeTitle}:${normDialect}`;
+  const cacheKey = `latanime:${malId || ''}:${animeTitle}:${romajiTitle || ''}:${normDialect}`;
   if (slugCache.has(cacheKey)) {
     return slugCache.get(cacheKey)!;
   }
 
-  const query = animeTitle.split(':')[0].trim();
-  if (!query) return null;
+  const targetDialect = normDialect === 'castellano' ? 'castellano' : 'latino';
+  const queries = Array.from(
+    new Set([
+      animeTitle.split(':')[0].trim(),
+      romajiTitle ? romajiTitle.split(':')[0].trim() : null,
+      cleanSearchTitle(animeTitle).split(' ')[0],
+      romajiTitle ? cleanSearchTitle(romajiTitle).split(' ')[0] : null,
+    ])
+  ).filter(Boolean) as string[];
 
-  try {
-    const searchUrl = `https://latanime.org/buscar?q=${encodeURIComponent(query)}`;
-    const res = await fetch(searchUrl, {
-      headers: { 'User-Agent': USER_AGENT },
-      signal: AbortSignal.timeout(4000),
-    });
-    if (!res.ok) return null;
+  const allCandidates: { slug: string; title: string }[] = [];
 
-    const html = await res.text();
-    const cardRegex = /<a\s+href="([^"]+)"[^>]*>[\s\S]*?<h3[^>]*>([\s\S]*?)<\/h3>/g;
-    let match: RegExpExecArray | null;
-    const candidates: { slug: string; title: string }[] = [];
+  for (const q of queries) {
+    try {
+      const searchUrl = `https://latanime.org/buscar?q=${encodeURIComponent(q)}`;
+      const res = await fetch(searchUrl, {
+        headers: { 'User-Agent': USER_AGENT },
+        signal: AbortSignal.timeout(4000),
+      });
+      if (!res.ok) continue;
 
-    while ((match = cardRegex.exec(html)) !== null) {
-      const href = match[1];
-      const title = match[2].replace(/<[^>]+>/g, '').trim().toLowerCase();
-      if (href && href.includes('/anime/')) {
-        const slug = href.split('/anime/')[1].replace(/\/+$/, '');
-        candidates.push({ slug, title });
+      const html = await res.text();
+      const cardRegex = /<a\s+href="([^"]+)"[^>]*>[\s\S]*?<h3[^>]*>([\s\S]*?)<\/h3>/g;
+      let match: RegExpExecArray | null;
+
+      while ((match = cardRegex.exec(html)) !== null) {
+        const href = match[1];
+        const title = match[2].replace(/<[^>]+>/g, '').trim().toLowerCase();
+        if (href && href.includes('/anime/')) {
+          const slug = href.split('/anime/')[1].replace(/\/+$/, '');
+          allCandidates.push({ slug, title });
+        }
       }
+    } catch {
+      // ignore
     }
+  }
 
-    if (candidates.length === 0) return null;
-
-    const targetDialect = normDialect === 'castellano' ? 'castellano' : 'latino';
-    const dialectMatches = candidates.filter(
+  if (allCandidates.length > 0) {
+    const dialectMatches = allCandidates.filter(
       (c) => c.slug.includes(targetDialect) || c.title.includes(targetDialect)
     );
-    const chosen = dialectMatches[0] || candidates[0];
-    if (chosen?.slug) {
-      slugCache.set(cacheKey, chosen.slug);
-      return chosen.slug;
+    const pool = dialectMatches.length > 0 ? dialectMatches : allCandidates;
+    const uniqueSlugs = Array.from(new Set(pool.map((c) => c.slug)));
+    const best = matchBestSlug(uniqueSlugs, animeTitle, romajiTitle);
+    if (best) {
+      slugCache.set(cacheKey, best);
+      return best;
     }
-  } catch {
-    // ignore
   }
 
   // Fallback slug directo
   const directSlug = `${cleanSearchTitle(animeTitle).replace(/\s+/g, '-')}-${normDialect}`;
+  slugCache.set(cacheKey, directSlug);
   return directSlug;
 }
 
@@ -712,11 +734,12 @@ async function resolveFromLatanime(
   animeTitle: string,
   episode: number,
   dialect: 'latino' | 'castellano' = 'latino',
-  preferredServer: 'fast' | 'clean' = 'fast'
+  preferredServer: 'fast' | 'clean' = 'fast',
+  romajiTitle = ''
 ): Promise<ResolvedStream | null> {
   if (!isProviderAvailable('latanime')) return null;
 
-  const slug = await resolveLatanimeSlug(malId, animeTitle, dialect);
+  const slug = await resolveLatanimeSlug(malId, animeTitle, dialect, romajiTitle);
   if (!slug) return null;
 
   const epUrl = `https://latanime.org/ver/${slug}-episodio-${episode}`;
@@ -1228,59 +1251,41 @@ export async function resolvePlayableStream(
   const dialect = opts.preferredAudio === 'castellano' ? 'castellano' : 'latino';
   const serverPref: 'fast' | 'clean' = wantClean ? 'clean' : 'fast';
 
-  // --- A. Adaptación específica H.264 (Apple / iPadOS sin soporte nativo AV1) ---
-  if (forceH264) {
-    if (isDubRequested && isDubbed) {
-      streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, serverPref);
-    }
-    if (!streamResult) {
-      streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
-    }
-    if (!streamResult) {
-      streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
-    }
-    if (!streamResult && isDubbed && !isSubRequested) {
-      streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, serverPref);
-    }
-    if (!streamResult) {
-      streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
-    }
-  }
-
-  // --- B. PRIORIDAD 1: DOBLAJE EN ESPAÑOL (Solicitado explícitamente o anime con doblaje disponible) ---
-  if (!streamResult && !forceH264 && (isDubRequested || (isDubbed && !isSubRequested))) {
+  // --- A. SOLICITUD EXPLÍCITA DE DOBLAJE (Latino o Castellano) ---
+  if (isDubRequested) {
     if (wantClean) {
-      // 1) Servidor Limpio: LatAnime (YourUpload / MP4Upload / OkRu limpio)
-      streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'clean');
-      // 2) Servidor Limpio: AnimeAV1 DUB
+      // 1) LatAnime Servidor Limpio (MP4Upload / YourUpload / OkRu directo)
+      streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'clean', opts.titleRomaji);
+      // 2) AnimeAV1 DUB Limpio (MP4Upload H.264)
       if (!streamResult) {
         streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji, 'clean');
       }
-      // 3) Fallback a rápido si no hay limpio
+      // 3) Fallback a LatAnime Rápido si no hay limpio
       if (!streamResult) {
-        streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'fast');
+        streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'fast', opts.titleRomaji);
       }
-      if (!streamResult) {
+      // 4) Fallback a AnimeAV1 DUB Rápido si no es forzado H.264
+      if (!streamResult && !forceH264) {
         streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji, 'fast');
       }
     } else {
-      // 1) Servidor Rápido: LatAnime (OkRu HLS / stream rápido)
-      streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'fast');
-      // 2) Servidor Rápido: AnimeAV1 1080p Ultra Rápido HLS con Audio Latino
-      if (!streamResult) {
+      // 1) LatAnime Servidor Rápido (OkRu HLS / stream rápido)
+      streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'fast', opts.titleRomaji);
+      // 2) AnimeAV1 DUB Rápido (HLS Zilla si no es forzado H.264)
+      if (!streamResult && !forceH264) {
         streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji, 'fast');
       }
-      // 3) Fallback a limpio si no hay HLS
+      // 3) LatAnime Limpio
       if (!streamResult) {
-        streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'clean');
+        streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'clean', opts.titleRomaji);
       }
+      // 4) AnimeAV1 DUB Limpio (MP4Upload H.264)
       if (!streamResult) {
         streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji, 'clean');
       }
     }
 
-    // Si el usuario pidió específicamente doblaje y se encontró, devolver con metadatos
-    if (streamResult && isDubRequested) {
+    if (streamResult) {
       const markers = await markersPromise;
       streamResult.asset.markers = markers;
       streamResult.availableServers = [
@@ -1292,52 +1297,102 @@ export async function resolvePlayableStream(
       }
       return streamResult;
     }
+
+    // Si se solicitó DUB y no se encontró doblaje, retornar null para que provider.ts maneje la transparencia.
+    // ¡NUNCA devolver subtitulado en japonés bajo la etiqueta de doblaje!
+    return null;
   }
 
-  // --- C. PRIORIDAD 2: SUB ESPAÑOL (Solicitado explícitamente o fallback general) ---
-  // REGLA ESTRICTA: Cuando se solicita SUB, NUNCA caer a audio en español.
-  if (!streamResult && !forceH264) {
-    if (wantClean) {
-      // 1) Servidor Limpio Sin Marcas: MonosChinos (YourUpload / MP4Upload)
-      streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, 'clean');
-      // 2) AnimeAV1 Clean
-      if (!streamResult) {
-        streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, 'sub', opts.titleRomaji, 'clean');
-      }
-      // 3) JKanime
-      if (!streamResult) {
+  // --- B. SOLICITUD EXPLÍCITA DE SUB ESPAÑOL ---
+  if (isSubRequested) {
+    if (forceH264) {
+      if (wantClean) {
+        streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, 'clean');
+        if (!streamResult) {
+          streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, 'sub', opts.titleRomaji, 'clean');
+        }
+        if (!streamResult) {
+          streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+        }
+        if (!streamResult) {
+          streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
+        }
+      } else {
         streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
-      }
-      // 4) Fallback a rápido si no hay limpio
-      if (!streamResult) {
-        streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, 'fast');
+        if (!streamResult) {
+          streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, 'fast');
+        }
+        if (!streamResult) {
+          streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, 'sub', opts.titleRomaji, 'clean');
+        }
+        if (!streamResult) {
+          streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
+        }
       }
     } else {
-      // 1) Servidor Rápido: JKanime HLS Ultra HD (Sub Español)
-      streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
-      // 2) AnimeAV1 Ultra Rápido HLS
-      if (!streamResult) {
-        streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, 'sub', opts.titleRomaji, 'fast');
-      }
-      // 3) MonosChinos Fast
-      if (!streamResult) {
-        streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, 'fast');
-      }
-      // 4) Fallback a limpio si no hay HLS
-      if (!streamResult) {
+      if (wantClean) {
         streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, 'clean');
+        if (!streamResult) {
+          streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, 'sub', opts.titleRomaji, 'clean');
+        }
+        if (!streamResult) {
+          streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+        }
+        if (!streamResult) {
+          streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, 'fast');
+        }
+        if (!streamResult) {
+          streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
+        }
+      } else {
+        streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+        if (!streamResult) {
+          streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, 'sub', opts.titleRomaji, 'fast');
+        }
+        if (!streamResult) {
+          streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, 'fast');
+        }
+        if (!streamResult) {
+          streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, 'clean');
+        }
+        if (!streamResult) {
+          streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
+        }
       }
     }
 
-    // Fallback final de emergencia: AnimeFLV
-    if (!streamResult) {
-      streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
+    if (streamResult) {
+      const markers = await markersPromise;
+      streamResult.asset.markers = markers;
+      streamResult.availableServers = [
+        { id: 'fast', name: '⚡ Ultra Rápido', badge: 'HLS/Rápido', description: 'Carga instantánea en 0.5s' },
+        { id: 'clean', name: '✨ HD Limpio', badge: 'Directo', description: 'Sin marcas de agua' },
+      ];
+      if (!streamResult.serverType) {
+        streamResult.serverType = streamResult.serverName.includes('Limpio') || streamResult.serverName.includes('Directo') ? 'clean' : 'fast';
+      }
+      return streamResult;
     }
+
+    // Si se solicitó SUB y no se encontró, retornar null
+    return null;
   }
 
-  // --- D. Fallback final a DUB si aún no hay stream y el anime cuenta con doblaje y no se forzó SUB ---
-  if (!streamResult && isDubbed && !isSubRequested) {
-    streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, 'latino', serverPref);
+  // --- C. CARGA POR DEFECTO (Ni DUB ni SUB especificado explícitamente) ---
+  if (isDubbed) {
+    streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, 'latino', serverPref, opts.titleRomaji);
+    if (!streamResult && !forceH264) {
+      streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, 'latino', opts.titleRomaji, serverPref);
+    }
+  }
+  if (!streamResult) {
+    streamResult = await resolveFromJKanime(malId, opts.title, opts.episodeNumber, opts.titleRomaji);
+  }
+  if (!streamResult) {
+    streamResult = await resolveFromMonosChinos(malId, opts.title, opts.episodeNumber, opts.titleRomaji, serverPref);
+  }
+  if (!streamResult) {
+    streamResult = await resolveFromAnimeFLV(opts.title, opts.episodeNumber, malId, opts.titleRomaji);
   }
 
   // --- E. Inyectar marcas AniSkip y lista de servidores disponibles ---

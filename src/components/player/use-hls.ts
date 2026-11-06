@@ -40,12 +40,30 @@ export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryK
       video.src = asset.src;
       setState((s) => ({ ...s, engine: "progressive" }));
       return () => {
-        video.removeAttribute("src");
-        video.load();
+        video.pause();
       };
     }
 
     (async () => {
+      // Priorizar el reproductor nativo por hardware de Apple en iPadOS/iOS para evitar cuellos de botella de MSE
+      const isAppleDevice =
+        typeof window !== "undefined" &&
+        (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+
+      if (isAppleDevice && video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = asset.src;
+        setState((s) => ({ ...s, engine: "native" }));
+        const onNativeErr = () => {
+          if ((video.error?.code === 3 || video.error?.code === 4) && onCodecError) {
+            onCodecError();
+          }
+        };
+        video.addEventListener("error", onNativeErr, { once: true });
+        removeListeners = () => video.removeEventListener("error", onNativeErr);
+        return;
+      }
+
       const { default: HlsCtor } = await import("hls.js");
       if (destroyed) return;
       if (!HlsCtor.isSupported()) {

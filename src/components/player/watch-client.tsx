@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { LayoutGroup, motion } from "motion/react";
-import { Captions, Coffee, Keyboard, Popcorn, Server, Sparkles, Volume2 } from "lucide-react";
+import { Captions, Coffee, Info, Keyboard, Popcorn, Server, Sparkles, Volume2 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { PlaybackGrant } from "@/lib/media/types";
 import { Player } from "./player";
@@ -45,6 +45,7 @@ export function usePlaybackGrant(
     queryKey: ["grant", seriesId, episodeId, preferredAudio, preferredServer, codecPreference],
     queryFn: () => requestGrant(seriesId, episodeId, preferredAudio, preferredServer, codecPreference),
     staleTime: 60 * 60_000,
+    placeholderData: (previousData) => previousData,
     retry: 1,
   });
 }
@@ -79,9 +80,7 @@ function isAppleOrNonAV1(): boolean {
 
 export function WatchClient({ seriesId, episodeId }: { seriesId: string; episodeId: string }) {
   const router = useRouter();
-  const [preferredAudio, setPreferredAudio] = useState<"latino" | "sub">(() =>
-    isAppleOrNonAV1() ? "sub" : "latino"
-  );
+  const [preferredAudio, setPreferredAudio] = useState<"latino" | "sub">("latino");
   const [preferredServer, setPreferredServer] = useState<"fast" | "clean">("fast");
   const [codecPreference, setCodecPreference] = useState<"av1" | "h264">(() =>
     isAppleOrNonAV1() ? "h264" : "av1"
@@ -101,13 +100,11 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
 
   const handleAdaptToH264 = useCallback(() => {
     setCodecPreference("h264");
-    setPreferredAudio("sub");
   }, []);
 
   useEffect(() => {
     if (isAppleOrNonAV1()) {
       setCodecPreference("h264");
-      setPreferredAudio("sub");
     }
   }, []);
 
@@ -139,7 +136,7 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
               <Skeleton className="aspect-video w-full !rounded-[var(--k-radius-panel)]" />
             ) : (
               <Player
-                key={`${grant.episode.id}-${preferredAudio}-${preferredServer}-${codecPreference}`}
+                key={grant.episode.id}
                 grant={grant}
                 onNavigateEpisode={go}
                 onAdaptCodec={handleAdaptToH264}
@@ -169,6 +166,11 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
                         >
                           <span>🇲🇽</span>
                           <span>Español Latino (DUB)</span>
+                          {grant.isDubbedAvailable === false && (
+                            <span className="text-[0.625rem] opacity-75 font-mono px-1 rounded bg-black/10">
+                              Sin doblaje
+                            </span>
+                          )}
                         </button>
                         <button
                           type="button"
@@ -256,6 +258,13 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
                       )}
                     </div>
                   </div>
+
+                  {preferredAudio === "latino" && grant.audioLanguage === "ja" && (
+                    <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-300">
+                      <Info className="size-4 shrink-0 text-amber-400" />
+                      <span>Este episodio no cuenta con doblaje oficial en español. Se está reproduciendo en versión japonesa subtitulada.</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Banner publicitario respetuoso debajo del reproductor */}

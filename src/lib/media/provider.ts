@@ -63,7 +63,7 @@ export async function createPlaybackGrant(
   if (series.anilistId) {
     const malId = resolveMalId(series.anilistId);
     isDubbedAvailable = malId ? isMalIdDubbedInSpanish(malId) : false;
-    const resolved = await resolvePlayableStream({
+    let resolved = await resolvePlayableStream({
       anilistId: series.anilistId,
       title: series.title,
       titleRomaji: series.titleRomaji,
@@ -72,6 +72,27 @@ export async function createPlaybackGrant(
       preferredServer,
       codecPreference,
     });
+
+    // Si se solicitó DUB pero este anime o episodio no tiene doblaje disponible:
+    if (!resolved && (preferredAudio === "latino" || preferredAudio === "castellano")) {
+      const subResolved = await resolvePlayableStream({
+        anilistId: series.anilistId,
+        title: series.title,
+        titleRomaji: series.titleRomaji,
+        episodeNumber: Number(episodeId) || 1,
+        preferredAudio: "sub",
+        preferredServer,
+        codecPreference,
+      });
+      if (subResolved) {
+        resolved = {
+          ...subResolved,
+          audioLanguage: "ja",
+          serverName: `${subResolved.serverName} (Doblaje no disponible)`,
+        };
+      }
+    }
+
     if (resolved) {
       playAsset = resolved.asset;
       audioLanguage = resolved.audioLanguage;
