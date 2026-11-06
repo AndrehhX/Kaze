@@ -41,6 +41,7 @@ export type CatalogSeries = {
   license: { name: string; url: string; attribution: string };
   /** Present when the series corresponds to an AniList entry with confirmed rights. */
   anilistId: number | null;
+  malId?: number | null;
   episodes: CatalogEpisode[];
   demo: boolean;
   nextSeason?: { id: string; title: string; cover?: string | null } | null;

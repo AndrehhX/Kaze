@@ -107,17 +107,25 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
 
   const fatal = hs.fatal ?? mediaError;
 
-  const switchingPositionRef = useRef<number | null>(null);
+  const lastWatchedTimeRef = useRef(0);
+  const targetResumeTimeRef = useRef<number | null>(null);
   const prevAssetSrcRef = useRef(asset.src);
+  const prevEpisodeIdRef = useRef(grant.episode.id);
 
-  useEffect(() => {
+  // Detección síncrona en render: captura la posición antes de que cualquier hook modifique video.src
+  if (prevEpisodeIdRef.current === grant.episode.id) {
     if (prevAssetSrcRef.current !== asset.src) {
-      if (video && video.currentTime > 2) {
-        switchingPositionRef.current = video.currentTime;
+      if (lastWatchedTimeRef.current > 2) {
+        targetResumeTimeRef.current = lastWatchedTimeRef.current;
       }
       prevAssetSrcRef.current = asset.src;
     }
-  }, [asset.src, video]);
+  } else {
+    prevEpisodeIdRef.current = grant.episode.id;
+    prevAssetSrcRef.current = asset.src;
+    lastWatchedTimeRef.current = 0;
+    targetResumeTimeRef.current = null;
+  }
 
   const refVideo = useCallback(
     (el: HTMLVideoElement | null) => {
@@ -216,26 +224,42 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
     video.playbackRate = prefs.rate;
     const onTime = () => {
       setTime(video.currentTime);
+      if (video.currentTime > 0) {
+        lastWatchedTimeRef.current = video.currentTime;
+      }
       if (Date.now() - lastSaved.current > 5000) persistNow();
     };
     const onMeta = () => {
       setDuration(video.duration || asset.duration);
       setWaiting(false);
 
-      if (switchingPositionRef.current !== null && switchingPositionRef.current > 0) {
-        const targetPos = switchingPositionRef.current;
-        switchingPositionRef.current = null;
-        if (targetPos < (video.duration || Infinity) - 5) {
-          video.currentTime = targetPos;
-        }
-      } else if (!resumed.current && !locked) {
+      const savedProgress = useProgress.getState().get(grant.series.id, grant.episode.id);
+      const targetPos =
+        targetResumeTimeRef.current !== null && targetResumeTimeRef.current > 2
+          ? targetResumeTimeRef.current
+          : !resumed.current && savedProgress && !savedProgress.completed && savedProgress.position > 5
+          ? savedProgress.position
+          : null;
+
+      if (targetPos !== null && targetPos < (video.duration || Infinity) - 5) {
+        video.currentTime = targetPos;
+        lastWatchedTimeRef.current = targetPos;
+        targetResumeTimeRef.current = null;
         resumed.current = true;
-        const saved = useProgress.getState().get(grant.series.id, grant.episode.id);
-        if (saved && !saved.completed && saved.position > 5 && saved.position < (video.duration || Infinity) - 10) {
-          video.currentTime = saved.position;
-          toast(`Resumed at ${formatDuration(saved.position)}`, { action: { label: "Start over", onClick: () => (video.currentTime = 0) } });
-        }
+        toast(`Continuando desde ${formatDuration(targetPos)}`, {
+          action: {
+            label: "Empezar de nuevo",
+            onClick: () => {
+              if (video) video.currentTime = 0;
+              lastWatchedTimeRef.current = 0;
+              targetResumeTimeRef.current = null;
+            },
+          },
+        });
+      } else if (!resumed.current) {
+        resumed.current = true;
       }
+
       if (autoPlay && !locked) video.play().catch(() => setPlaying(false));
     };
     const onProgress = () => {
@@ -364,9 +388,11 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
     (t: number) => {
       if (!video || locked) return;
       const d = Number.isFinite(video.duration) ? video.duration : duration;
-      video.currentTime = clamp(t, 0, Math.max(0, d - 0.25));
-      setTime(video.currentTime);
-      sync?.onLocalAction?.({ type: "seek", position: video.currentTime });
+      const target = clamp(t, 0, Math.max(0, d - 0.25));
+      video.currentTime = target;
+      lastWatchedTimeRef.current = target;
+      setTime(target);
+      sync?.onLocalAction?.({ type: "seek", position: target });
     },
     [video, locked, duration, sync],
   );
@@ -378,7 +404,7 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
   };
 
   // ── Skip markers ───────────────────────────────────────────────────
-  const marker: TimingMarker | undefined = asset.markers.find((m) => time >= m.start && time < m.end - 1);
+  const marker: TimingMarker | undefined = (asset.markers || []).find((m) => time >= m.start && time < m.end - 1);
   useEffect(() => {
     if (!marker || locked) return;
     const key = `${marker.kind}-${marker.start}`;
@@ -386,7 +412,7 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
     if (auto && !skippedMarkers.current.has(key)) {
       skippedMarkers.current.add(key);
       seekTo(marker.end);
-      toast(`Skipped ${marker.kind}`);
+      toast(`Saltando ${marker.kind === "intro" ? "intro" : marker.kind === "outro" ? "ending" : "resumen"}`);
     }
   }, [marker, prefs.autoSkipIntro, prefs.autoSkipOutro, seekTo, locked]);
 
@@ -676,14 +702,19 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
         <AnimatePresence>
           {marker && !locked && !fatal && (
             <motion.button
-              key={marker.kind}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="k-btn k-btn-primary absolute bottom-24 right-4 z-[12] sm:right-6"
-              onClick={() => seekTo(marker.end)}
+              key={`${marker.kind}-${marker.start}`}
+              initial={{ opacity: 0, x: 20, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="k-btn k-btn-primary absolute bottom-24 right-4 z-[25] sm:right-6 shadow-2xl flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider backdrop-blur"
+              onClick={() => {
+                skippedMarkers.current.add(`${marker.kind}-${marker.start}`);
+                seekTo(marker.end);
+              }}
             >
-              Skip {marker.kind === "intro" ? "intro" : marker.kind === "outro" ? "credits" : "recap"} <SkipForward className="size-4" aria-hidden />
+              <span>{marker.kind === "intro" ? "Saltar intro" : marker.kind === "outro" ? "Saltar ending" : "Saltar resumen"}</span>
+              <SkipForward className="size-4" aria-hidden />
             </motion.button>
           )}
         </AnimatePresence>
@@ -774,8 +805,16 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
                 {buffered.map(([a, b], i) => (
                   <div key={i} className="absolute inset-y-0 rounded-full bg-white/30" style={{ left: `${(a / duration) * 100}%`, width: `${((b - a) / duration) * 100}%` }} />
                 ))}
-                {asset.markers.map((m) => (
-                  <div key={`${m.kind}${m.start}`} className="absolute inset-y-0 bg-accent/50" style={{ left: `${(m.start / duration) * 100}%`, width: `${((m.end - m.start) / duration) * 100}%` }} title={m.kind} />
+                {(asset.markers || []).map((m) => (
+                  <div
+                    key={`${m.kind}-${m.start}`}
+                    className={cn(
+                      "absolute inset-y-0 z-[2] rounded-full",
+                      m.kind === "intro" ? "bg-amber-400/80" : m.kind === "outro" ? "bg-sky-400/80" : "bg-purple-400/80"
+                    )}
+                    style={{ left: `${(m.start / duration) * 100}%`, width: `${((m.end - m.start) / duration) * 100}%` }}
+                    title={m.kind === "intro" ? "Intro (AniSkip)" : m.kind === "outro" ? "Ending (AniSkip)" : "Resumen (AniSkip)"}
+                  />
                 ))}
                 <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary to-accent" style={{ width: `${pct}%` }} />
                 <div className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 scale-0 rounded-full bg-white shadow transition-transform group-hover/seek:scale-100" style={{ left: `${pct}%` }} />

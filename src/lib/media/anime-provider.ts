@@ -121,6 +121,7 @@ export class AnimeStreamingProvider implements MediaProvider {
           attribution: "Fuentes comunitarias de transmisión",
         },
         anilistId: media.id,
+        malId: media.idMal || null,
         episodes,
         demo: false,
         nextSeason,

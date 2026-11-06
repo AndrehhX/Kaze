@@ -61,10 +61,11 @@ export async function createPlaybackGrant(
   let currentServer: "fast" | "clean" | undefined;
 
   if (series.anilistId) {
-    const malId = resolveMalId(series.anilistId);
+    const malId = series.malId ? String(series.malId) : resolveMalId(series.anilistId);
     isDubbedAvailable = malId ? isMalIdDubbedInSpanish(malId) : false;
     let resolved = await resolvePlayableStream({
       anilistId: series.anilistId,
+      malId: malId ? Number(malId) : null,
       title: series.title,
       titleRomaji: series.titleRomaji,
       episodeNumber: Number(episodeId) || 1,
@@ -77,6 +78,7 @@ export async function createPlaybackGrant(
     if (!resolved && (preferredAudio === "latino" || preferredAudio === "castellano")) {
       const subResolved = await resolvePlayableStream({
         anilistId: series.anilistId,
+        malId: malId ? Number(malId) : null,
         title: series.title,
         titleRomaji: series.titleRomaji,
         episodeNumber: Number(episodeId) || 1,
