@@ -15,9 +15,6 @@ export async function fetchAniSkipMarkers(
   }
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
-
     const lengthVal = Math.round(Number(episodeLength) > 0 ? Number(episodeLength) : 0);
     const url = `https://api.aniskip.com/v2/skip-times/${malId}/${episodeNumber}?types[]=op&types[]=ed&types[]=mixed-op&types[]=mixed-ed&types[]=recap&episodeLength=${lengthVal}`;
 
@@ -26,9 +23,9 @@ export async function fetchAniSkipMarkers(
         'User-Agent': 'Mozilla/5.0 (compatible; KAZE/1.0; +https://kaze.moe)',
         'Accept': 'application/json',
       },
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+      signal: AbortSignal.timeout(2500),
+      next: { revalidate: 86400 },
+    } as RequestInit & { next: { revalidate: number } });
 
     if (!res.ok) {
       if (res.status === 404) {
@@ -43,9 +40,13 @@ export async function fetchAniSkipMarkers(
       return [];
     }
 
-    const markers: TimingMarker[] = data.results
-      .filter((r: any) => r.interval && typeof r.interval.startTime === 'number' && typeof r.interval.endTime === 'number')
-      .map((r: any) => ({
+    type AniSkipEntry = { skipType?: string; interval?: { startTime?: unknown; endTime?: unknown } };
+    const markers: TimingMarker[] = (data.results as AniSkipEntry[])
+      .filter(
+        (r): r is AniSkipEntry & { interval: { startTime: number; endTime: number } } =>
+          Boolean(r.interval && typeof r.interval.startTime === 'number' && typeof r.interval.endTime === 'number')
+      )
+      .map((r) => ({
         kind: r.skipType === 'op' || r.skipType === 'mixed-op' ? 'intro' : r.skipType === 'ed' || r.skipType === 'mixed-ed' ? 'outro' : 'recap',
         start: Number(r.interval.startTime.toFixed(2)),
         end: Number(r.interval.endTime.toFixed(2)),

@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
+import { cacheLife, cacheTag } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getMediaDetail } from "@/lib/anilist/service";
 import { EpisodeBrowser } from "@/components/anime/episode-browser";
+
+export function generateStaticParams() {
+  return [{ id: "154587" }, { id: "21" }];
+}
 
 export async function generateMetadata({ params }: PageProps<"/anime/[id]/episodes">): Promise<Metadata> {
   const id = Number((await params).id);
@@ -11,13 +16,15 @@ export async function generateMetadata({ params }: PageProps<"/anime/[id]/episod
   return { title: media ? `Episodes · ${media.title.english || media.title.romaji}` : "Episodes" };
 }
 
-export default async function EpisodesPage({ params }: PageProps<"/anime/[id]/episodes">) {
-  const raw = (await params).id;
-  const id = Number.parseInt(raw, 10);
-  if (!Number.isInteger(id) || id <= 0 || String(id) !== raw) notFound();
+async function CachedEpisodesBody({ id }: { id: number }) {
+  "use cache";
+  cacheLife("days");
+  cacheTag(`page:episodes:${id}`);
+
   const media = await getMediaDetail(id);
-  if (!media || media.isAdult) notFound();
+  if (!media || media.isAdult) return null;
   const title = media.title.english || media.title.romaji || "Anime";
+
   return (
     <div className="container-k pt-8">
       <nav aria-label="Breadcrumb" className="text-sm text-muted">
@@ -55,4 +62,13 @@ export default async function EpisodesPage({ params }: PageProps<"/anime/[id]/ep
       <EpisodeBrowser media={media} />
     </div>
   );
+}
+
+export default async function EpisodesPage({ params }: PageProps<"/anime/[id]/episodes">) {
+  const raw = (await params).id;
+  const id = Number.parseInt(raw, 10);
+  if (!Number.isInteger(id) || id <= 0 || String(id) !== raw) notFound();
+  const media = await getMediaDetail(id);
+  if (!media || media.isAdult) notFound();
+  return <CachedEpisodesBody id={media.id} />;
 }

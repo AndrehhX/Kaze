@@ -160,7 +160,7 @@ export function DetailHero({ media }: { media: MediaDetail }) {
 
             return (
               <div className="mt-6 flex flex-wrap items-center gap-2.5">
-                <Link href={`/watch/${media.id}/${targetEp}`} prefetch={true} className="k-btn k-btn-primary font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]">
+                <Link href={`/watch/${media.id}/${targetEp}`} prefetch={false} className="k-btn k-btn-primary font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]">
                   <Play className="size-4 fill-current" /> {playLabel}
                 </Link>
                 <a href="#availability" className="k-btn k-btn-ghost backdrop-blur">

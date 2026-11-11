@@ -1225,6 +1225,11 @@ async function resolveFromAnimeFLV(
   return null;
 }
 
+const streamCache = new Map<string, { value: ResolvedStream | null; expiresAt: number }>();
+const streamInflight = new Map<string, Promise<ResolvedStream | null>>();
+const STREAM_TTL_HIT_MS = 20 * 60_000;
+const STREAM_TTL_MISS_MS = 3 * 60_000;
+
 /**
  * Resuelve y extrae el mejor stream para un episodio determinado.
  * Implementa matriz de dos dimensiones con fallback automático transparente:
@@ -1232,6 +1237,42 @@ async function resolveFromAnimeFLV(
  * 2) Sub Español: Servidor Rápido (Zilla/JKanime HLS 1080p) y Servidor Limpio Sin Marcas (MP4Upload/YourUpload 1080p).
  */
 export async function resolvePlayableStream(
+  opts: StreamResolutionOptions
+): Promise<ResolvedStream | null> {
+  const cacheKey = [
+    opts.anilistId,
+    opts.episodeNumber,
+    opts.preferredAudio ?? "default",
+    opts.preferredServer ?? "fast",
+    opts.codecPreference ?? "av1",
+  ].join(":");
+
+  const cached = streamCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.value;
+  }
+
+  const pending = streamInflight.get(cacheKey);
+  if (pending) return pending;
+
+  const task = resolvePlayableStreamUncached(opts).then((res) => {
+    streamCache.set(cacheKey, {
+      value: res,
+      expiresAt: Date.now() + (res ? STREAM_TTL_HIT_MS : STREAM_TTL_MISS_MS),
+    });
+    if (streamCache.size > 400) {
+      const oldest = streamCache.keys().next().value;
+      if (oldest) streamCache.delete(oldest);
+    }
+    return res;
+  });
+
+  streamInflight.set(cacheKey, task);
+  task.finally(() => streamInflight.delete(cacheKey)).catch(() => {});
+  return task;
+}
+
+async function resolvePlayableStreamUncached(
   opts: StreamResolutionOptions
 ): Promise<ResolvedStream | null> {
   const malId = opts.malId ? String(opts.malId) : resolveMalId(opts.anilistId);

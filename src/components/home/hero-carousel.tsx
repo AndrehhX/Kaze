@@ -191,7 +191,7 @@ export function HeroCarousel({ items, kickerPrefix, trendingIds }: { items: Medi
                 </motion.p>
               )}
               <motion.div variants={titleVariants} custom={words.length + 5} className="mt-4 sm:mt-5 flex flex-wrap items-center gap-2.5">
-                <Link href={`/anime/${item.id}#availability`} prefetch={true} className="k-btn k-btn-primary">
+                <Link href={`/anime/${item.id}#availability`} prefetch={false} className="k-btn k-btn-primary">
                   <Tv className="size-4" aria-hidden /> Ver opciones
                 </Link>
                 <ListMenu media={item} className="!bg-surface/70 backdrop-blur" />

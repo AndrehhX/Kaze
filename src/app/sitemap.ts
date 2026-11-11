@@ -1,8 +1,15 @@
 import type { MetadataRoute } from "next";
+import { cacheLife } from "next/cache";
 import { siteUrl } from "@/lib/env";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
+async function getSitemapDate() {
+  "use cache";
+  cacheLife("days");
+  return new Date().toISOString();
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const now = await getSitemapDate();
   return [
     {
       url: siteUrl,

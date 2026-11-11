@@ -7,6 +7,10 @@ export const metadata: Metadata = { title: "Discussion" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+export function generateStaticParams() {
+  return [{ id: "00000000-0000-0000-0000-000000000000" }];
+}
+
 export default async function Page({ params }: PageProps<"/community/discussions/[id]">) {
   const { id } = await params;
   if (!UUID.test(id)) notFound();

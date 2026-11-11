@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
+import { cacheLife, cacheTag } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Tv } from "lucide-react";
+import { DEMO_SERIES } from "@/lib/media/demo-catalog";
 import { resolveSeries } from "@/lib/media/provider";
 import { getMediaDetail } from "@/lib/anilist/service";
 import { WatchClient } from "@/components/player/watch-client";
+
+export function generateStaticParams() {
+  return DEMO_SERIES.flatMap((series) =>
+    series.episodes.map((ep) => ({ animeId: series.id, episodeId: ep.id })),
+  );
+}
 
 export async function generateMetadata({ params }: PageProps<"/watch/[animeId]/[episodeId]">): Promise<Metadata> {
   const { animeId, episodeId } = await params;
@@ -33,19 +41,22 @@ export async function generateMetadata({ params }: PageProps<"/watch/[animeId]/[
   };
 }
 
-export default async function WatchPage({ params }: PageProps<"/watch/[animeId]/[episodeId]">) {
-  const { animeId, episodeId } = await params;
+async function CachedWatchBody({ animeId, episodeId }: { animeId: string; episodeId: string }) {
+  "use cache";
+  cacheLife("days");
+  cacheTag(`page:watch:${animeId}:${episodeId}`);
+
   const found = await resolveSeries(animeId);
   if (found) {
-    if (!found.series.episodes.some((e) => e.id === episodeId)) notFound();
+    if (!found.series.episodes.some((e) => e.id === episodeId)) return null;
     return <WatchClient seriesId={animeId} episodeId={episodeId} />;
   }
 
   // An AniList id with no licensed playback: explain honestly and point to official sources.
   const id = Number.parseInt(animeId, 10);
-  if (!Number.isInteger(id) || id <= 0 || String(id) !== animeId) notFound();
+  if (!Number.isInteger(id) || id <= 0 || String(id) !== animeId) return null;
   const media = await getMediaDetail(id);
-  if (!media || media.isAdult) notFound();
+  if (!media || media.isAdult) return null;
   const title = media.title.english || media.title.romaji;
   const links = media.externalLinks.filter((l) => l.type === "STREAMING" && !l.isDisabled);
   return (
@@ -80,4 +91,11 @@ export default async function WatchPage({ params }: PageProps<"/watch/[animeId]/
       </div>
     </div>
   );
+}
+
+export default async function WatchPage({ params }: PageProps<"/watch/[animeId]/[episodeId]">) {
+  const { animeId, episodeId } = await params;
+  const body = await CachedWatchBody({ animeId, episodeId });
+  if (!body) notFound();
+  return body;
 }

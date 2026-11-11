@@ -1,4 +1,5 @@
 import "server-only";
+import { cacheLife, cacheTag } from "next/cache";
 
 export interface KitsuEpisodeInfo {
   number: number;
@@ -6,20 +7,13 @@ export interface KitsuEpisodeInfo {
   thumbnail: string | null;
 }
 
-const kitsuCache = new Map<string, Map<number, KitsuEpisodeInfo> | null>();
-
-/**
- * Fetches verified season-specific episode titles and thumbnails from Kitsu.
- * Used when AniList streamingEpisodes are contaminated by Crunchyroll's Season 1 bundle.
- */
-export async function getKitsuSeasonEpisodes(
+async function fetchKitsuEntries(
   title: string,
-  romajiTitle = ""
-): Promise<Map<number, KitsuEpisodeInfo> | null> {
-  const cacheKey = `${title}:::${romajiTitle}`;
-  if (kitsuCache.has(cacheKey)) {
-    return kitsuCache.get(cacheKey)!;
-  }
+  romajiTitle: string,
+): Promise<[number, KitsuEpisodeInfo][] | null> {
+  "use cache";
+  cacheLife("days");
+  cacheTag("kitsu:episodes");
 
   const queries = Array.from(
     new Set([
@@ -27,7 +21,7 @@ export async function getKitsuSeasonEpisodes(
       romajiTitle,
       title.replace(/[:\-]/g, " ").replace(/\s+/g, " ").trim(),
       romajiTitle.replace(/[:\-]/g, " ").replace(/\s+/g, " ").trim(),
-    ])
+    ]),
   ).filter((q) => Boolean(q) && q.length > 2);
 
   for (const q of queries) {
@@ -35,7 +29,8 @@ export async function getKitsuSeasonEpisodes(
       const searchUrl = `https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(q)}&page[limit]=1`;
       const res = await fetch(searchUrl, {
         headers: { "User-Agent": "Kaze/2.0" },
-        signal: AbortSignal.timeout(3500),
+        signal: AbortSignal.timeout(2500),
+        next: { revalidate: 86400 },
       });
       if (!res.ok) continue;
 
@@ -46,14 +41,15 @@ export async function getKitsuSeasonEpisodes(
       const epUrl = `https://kitsu.io/api/edge/episodes?filter[mediaId]=${anime.id}&filter[mediaType]=Anime&page[limit]=100&sort=number`;
       const epRes = await fetch(epUrl, {
         headers: { "User-Agent": "Kaze/2.0" },
-        signal: AbortSignal.timeout(4000),
+        signal: AbortSignal.timeout(3000),
+        next: { revalidate: 86400 },
       });
       if (!epRes.ok) continue;
 
       const epJson = await epRes.json();
       if (!epJson.data || epJson.data.length === 0) continue;
 
-      const map = new Map<number, KitsuEpisodeInfo>();
+      const entries: [number, KitsuEpisodeInfo][] = [];
       for (const item of epJson.data) {
         const num = item.attributes?.number;
         const epTitle =
@@ -68,23 +64,37 @@ export async function getKitsuSeasonEpisodes(
           null;
 
         if (num != null && epTitle && typeof epTitle === "string" && epTitle !== "undefined") {
-          map.set(Number(num), {
-            number: Number(num),
-            title: epTitle.trim(),
-            thumbnail: thumb,
-          });
+          const epNum = Number(num);
+          entries.push([
+            epNum,
+            {
+              number: epNum,
+              title: epTitle.trim(),
+              thumbnail: thumb,
+            },
+          ]);
         }
       }
 
-      if (map.size > 0) {
-        kitsuCache.set(cacheKey, map);
-        return map;
+      if (entries.length > 0) {
+        return entries;
       }
     } catch {
       // try next query
     }
   }
 
-  kitsuCache.set(cacheKey, null);
   return null;
+}
+
+/**
+ * Fetches verified season-specific episode titles and thumbnails from Kitsu.
+ * Used when AniList streamingEpisodes are contaminated by Crunchyroll's Season 1 bundle.
+ */
+export async function getKitsuSeasonEpisodes(
+  title: string,
+  romajiTitle = "",
+): Promise<Map<number, KitsuEpisodeInfo> | null> {
+  const entries = await fetchKitsuEntries(title, romajiTitle);
+  return entries ? new Map<number, KitsuEpisodeInfo>(entries) : null;
 }

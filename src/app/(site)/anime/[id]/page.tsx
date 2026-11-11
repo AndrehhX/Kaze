@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { cacheLife, cacheTag } from "next/cache";
 import { notFound } from "next/navigation";
 import { getMediaDetail } from "@/lib/anilist/service";
-import { findPlayableForAniList } from "@/lib/media/provider";
+import { demoProvider } from "@/lib/media/demo-catalog";
 import { cleanDescription } from "@/lib/utils";
 import { snapshotFromMedia } from "@/lib/library/types";
 import {
@@ -25,6 +26,10 @@ import { MediaReviews } from "@/components/social/reviews";
 import { DiscussionList } from "@/components/social/discussions";
 import { FriendsWithTitle } from "@/components/social/friends-with-title";
 import { AdBanner } from "@/components/ads/ad-banner";
+
+export function generateStaticParams() {
+  return [{ id: "154587" }, { id: "21" }];
+}
 
 async function load(idParam: string) {
   const id = Number.parseInt(idParam, 10);
@@ -66,10 +71,19 @@ export async function generateMetadata({ params }: PageProps<"/anime/[id]">): Pr
   };
 }
 
-export default async function AnimePage({ params }: PageProps<"/anime/[id]">) {
-  const media = await load((await params).id);
-  if (!media) notFound();
-  const playable = await findPlayableForAniList(media.id);
+async function CachedAnimeArticle({ id }: { id: number }) {
+  "use cache";
+  cacheLife("days");
+  cacheTag(`page:anime:${id}`);
+
+  const media = await getMediaDetail(id);
+  if (!media || media.isAdult) return null;
+
+  const demo = demoProvider.findByAniListId ? await demoProvider.findByAniListId(media.id) : null;
+  const title = media.title.english || media.title.romaji || "Anime";
+  const playable = demo
+    ? { seriesId: demo.id, title: demo.title }
+    : { seriesId: String(media.id), title };
   const snapshot = snapshotFromMedia(media);
 
   return (
@@ -124,8 +138,14 @@ export default async function AnimePage({ params }: PageProps<"/anime/[id]">) {
         <FriendsWithTitle mediaId={media.id} />
       </DetailSection>
       <DetailSection id="availability" title="Where to Watch" jp="配信">
-        <Availability media={media} playable={playable ? { seriesId: playable.id, title: playable.title } : null} />
+        <Availability media={media} playable={playable} />
       </DetailSection>
     </article>
   );
+}
+
+export default async function AnimePage({ params }: PageProps<"/anime/[id]">) {
+  const media = await load((await params).id);
+  if (!media) notFound();
+  return <CachedAnimeArticle id={media.id} />;
 }

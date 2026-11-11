@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { Compass, Download, Home, Library, LayoutGrid, Paintbrush, Search, Settings, Smartphone, UserRound } from "lucide-react";
 import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
-import { PRIMARY_NAV, isActive } from "./nav-config";
+import { APK_DOWNLOAD_URL, PRIMARY_NAV, isActive } from "./nav-config";
 import { usePalette } from "./command-palette";
 import { ThemePreviewCard, useThemeSwitch } from "./theme-switcher";
 import { THEME_IDS } from "@/lib/themes";
@@ -85,7 +85,7 @@ export function MobileNav() {
                     {inner}
                   </button>
                 ) : (
-                  <Link href={t.href} prefetch={true} className={cls} aria-current={t.active ? "page" : undefined}>
+                  <Link href={t.href} className={cls} aria-current={t.active ? "page" : undefined}>
                     {inner}
                   </Link>
                 )}
@@ -109,7 +109,7 @@ export function MobileNav() {
             <div className="flex items-center gap-2">
               <Link
                 href={profileUrl}
-                prefetch={true}
+                prefetch={false}
                 onClick={closeAndClear}
                 className="k-btn k-btn-primary k-btn-sm text-xs font-semibold"
               >
@@ -120,7 +120,8 @@ export function MobileNav() {
 
           {/* Tarjeta de Descarga de APK */}
           <a
-            href="/kaze.apk"
+            href={APK_DOWNLOAD_URL}
+            rel="noopener noreferrer"
             download="kaze.apk"
             className="mb-4 flex items-center justify-between rounded-xl border border-line bg-surface/90 p-3 shadow-sm transition-colors hover:bg-surface"
           >
@@ -149,7 +150,7 @@ export function MobileNav() {
               <li key={n.href}>
                 <Link
                   href={n.href}
-                  prefetch={true}
+                  prefetch={false}
                   onClick={closeAndClear}
                   className={cn(
                     "k-card flex aspect-[5/4] flex-col justify-between p-3 text-sm font-medium",

@@ -6,7 +6,7 @@ import { motion, useMotionValueEvent, useScroll } from "motion/react";
 import { Coffee, MoreHorizontal, Search, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "./logo";
-import { PRIMARY_NAV, isActive } from "./nav-config";
+import { APK_DOWNLOAD_URL, PRIMARY_NAV, isActive } from "./nav-config";
 import { ThemeSwitcher } from "./theme-switcher";
 import { UserMenu } from "./user-menu";
 import { NotificationBell } from "./notifications";
@@ -36,7 +36,7 @@ export function SiteHeader() {
           {main.map((item) => {
             const active = isActive(item, path);
             return (
-              <Link key={item.href} href={item.href} prefetch={true} className="k-nav-item" data-active={active} aria-current={active ? "page" : undefined}>
+              <Link key={item.href} href={item.href} className="k-nav-item" data-active={active} aria-current={active ? "page" : undefined}>
                 {item.label}
                 {active && theme !== "cyber" && theme !== "sakura" && (
                   <motion.span
@@ -60,7 +60,7 @@ export function SiteHeader() {
               <DM.Content sideOffset={8} className="k-panel z-[90] min-w-52 !bg-surface p-1.5">
                 {more.map((m) => (
                   <DM.Item key={m.href} asChild>
-                    <Link href={m.href} prefetch={true} className="flex min-h-10 items-center gap-2.5 rounded-[min(var(--k-radius-btn),10px)] px-3 text-sm outline-none data-[highlighted]:bg-[var(--k-btn-ghost)]">
+                    <Link href={m.href} prefetch={false} className="flex min-h-10 items-center gap-2.5 rounded-[min(var(--k-radius-btn),10px)] px-3 text-sm outline-none data-[highlighted]:bg-[var(--k-btn-ghost)]">
                       <m.icon className="size-4" aria-hidden /> <span className="flex-1">{m.label}</span>
                       <span className="k-jp text-xs text-muted">{m.jp}</span>
                     </Link>
@@ -85,7 +85,8 @@ export function SiteHeader() {
             <Search className="size-[18px]" aria-hidden />
           </button>
           <a
-            href="/kaze.apk"
+            href={APK_DOWNLOAD_URL}
+            rel="noopener noreferrer"
             download="kaze.apk"
             className="k-btn k-btn-ghost k-btn-sm hidden items-center gap-1.5 !px-2.5 text-xs text-muted hover:text-fg sm:inline-flex"
             title="Descargar app para Android (APK)"
@@ -94,7 +95,8 @@ export function SiteHeader() {
             <span>App</span>
           </a>
           <a
-            href="/kaze.apk"
+            href={APK_DOWNLOAD_URL}
+            rel="noopener noreferrer"
             download="kaze.apk"
             className="k-btn k-btn-ghost k-btn-icon k-btn-sm sm:hidden"
             aria-label="Descargar App Android"

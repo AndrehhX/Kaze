@@ -3,6 +3,10 @@ import { Suspense } from "react";
 import { ProfileStatsPage } from "@/components/profile/pages";
 import { Skeleton } from "@/components/ui/primitives";
 
+export function generateStaticParams() {
+  return [{ username: "kaze" }];
+}
+
 export async function generateMetadata({ params }: PageProps<"/profile/[username]/stats">): Promise<Metadata> {
   const { username } = await params;
   return { title: `@${decodeURIComponent(username)} · ADN Anime` };

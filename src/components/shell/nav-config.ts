@@ -14,6 +14,10 @@ export const PRIMARY_NAV: NavItem[] = [
 
 export const PROFILE_NAV: NavItem = { href: "/profile", label: "Perfil", jp: "プロフィール", icon: UserRound };
 
+export const APK_DOWNLOAD_URL =
+  process.env.NEXT_PUBLIC_APK_URL ||
+  "https://raw.githubusercontent.com/AndrehhX/Kaze/479c81ed2d8880b949b7ff2219b97c409f75065b/public/kaze.apk";
+
 export function isActive(item: NavItem, path: string) {
   return item.match ? item.match(path) : path === item.href || path.startsWith(item.href + "/");
 }

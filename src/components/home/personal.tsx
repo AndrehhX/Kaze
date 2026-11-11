@@ -82,7 +82,7 @@ export function ContinueWatching() {
             const pct = p.duration ? Math.min(100, Math.max(0, (p.position / p.duration) * 100)) : 0;
 
             return (
-              <Link key={`p-${p.seriesId}-${p.episodeId}`} href={`/watch/${p.seriesId}/${p.episodeId}`} prefetch={true} className="k-card group block overflow-hidden">
+              <Link key={`p-${p.seriesId}-${p.episodeId}`} href={`/watch/${p.seriesId}/${p.episodeId}`} prefetch={false} className="k-card group block overflow-hidden">
                 <div className="relative aspect-video bg-elevated overflow-hidden">
                   {thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -120,7 +120,7 @@ export function ContinueWatching() {
             );
           }),
           ...watching.slice(0, 10).map((e) => (
-            <Link key={`l-${e.mediaId}`} href={`/anime/${e.mediaId}#availability`} prefetch={true} className="k-card group flex h-full gap-3 overflow-hidden p-2.5">
+            <Link key={`l-${e.mediaId}`} href={`/anime/${e.mediaId}#availability`} prefetch={false} className="k-card group flex h-full gap-3 overflow-hidden p-2.5">
               <div className="k-poster relative aspect-[2/3] w-16 shrink-0">
                 <SafeImage src={e.media.cover ?? ""} alt="" fill sizes="64px" className="object-cover" fallbackLabel={e.media.title} />
               </div>

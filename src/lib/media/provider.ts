@@ -1,36 +1,78 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
+import { cacheLife, cacheTag } from "next/cache";
 import { demoProvider } from "./demo-catalog";
 import { animeStreamingProvider } from "./anime-provider";
-import { resolvePlayableStream } from "./providers/stream-resolver";
+import { resolvePlayableStream, type ResolvedStream } from "./providers/stream-resolver";
 import { isMalIdDubbedInSpanish, resolveMalId } from "./dub-catalog";
-import type { Entitlement, MediaProvider, PlaybackGrant, ServerOption } from "./types";
+import type { CatalogSeries, Entitlement, PlaybackGrant, ServerOption } from "./types";
 
 /**
- * Provider registry. To add a licensed source, implement MediaProvider and
- * register it here; routes and the player depend only on the interface.
+ * Server-cached wrapper for anime series metadata so watch/[animeId]/[episodeId]
+ * upgrades to static/ISR without triggering uncached fetches on every request.
  */
-const providers: MediaProvider[] = [demoProvider, animeStreamingProvider];
+export async function getCachedAnimeSeries(seriesId: string): Promise<CatalogSeries | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`series:${seriesId}`);
+  return animeStreamingProvider.getSeries(seriesId);
+}
+
+async function resolveCachedStreamOrThrow(input: {
+  anilistId: number;
+  malId: number | null;
+  title: string;
+  titleRomaji: string;
+  episodeNumber: number;
+  preferredAudio: "latino" | "castellano" | "sub" | undefined;
+  preferredServer: "fast" | "clean" | undefined;
+  codecPreference: "av1" | "h264" | undefined;
+}): Promise<ResolvedStream> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`stream:${input.anilistId}:${input.episodeNumber}`);
+  const res = await resolvePlayableStream(input);
+  if (!res) throw new Error("STREAM_MISS");
+  return res;
+}
+
+/**
+ * Server-cached stream resolution wrapper so repeat playback grants reuse
+ * extracted HLS/MP4 URLs across invocations without caching transient misses for hours.
+ */
+async function resolveCachedStream(input: {
+  anilistId: number;
+  malId: number | null;
+  title: string;
+  titleRomaji: string;
+  episodeNumber: number;
+  preferredAudio: "latino" | "castellano" | "sub" | undefined;
+  preferredServer: "fast" | "clean" | undefined;
+  codecPreference: "av1" | "h264" | undefined;
+}): Promise<ResolvedStream | null> {
+  try {
+    return await resolveCachedStreamOrThrow(input);
+  } catch (err) {
+    if (err instanceof Error && err.message === "STREAM_MISS") return null;
+    return resolvePlayableStream(input);
+  }
+}
 
 export async function resolveSeries(seriesId: string) {
-  for (const p of providers) {
-    const s = await p.getSeries(seriesId);
-    if (s) return { provider: p, series: s };
-  }
+  const demo = await demoProvider.getSeries(seriesId);
+  if (demo) return { provider: demoProvider, series: demo };
+  const anime = await getCachedAnimeSeries(seriesId);
+  if (anime) return { provider: animeStreamingProvider, series: anime };
   return null;
 }
 
 export async function findPlayableForAniList(anilistId: number) {
-  for (const p of providers) {
-    const s = await p.findByAniListId(anilistId);
-    if (s) return s;
-  }
-  return null;
+  const demo = await demoProvider.findByAniListId(anilistId);
+  if (demo) return demo;
+  return getCachedAnimeSeries(String(anilistId));
 }
 
 export async function listPlayableSeries() {
-  const all = await Promise.all(providers.map((p) => p.listSeries()));
-  return all.flat();
+  return demoProvider.listSeries();
 }
 
 export type GrantResult = { ok: true; grant: PlaybackGrant } | { ok: false; entitlement: Entitlement; status: number };
@@ -41,7 +83,7 @@ export async function createPlaybackGrant(
   userId: string | null,
   preferredAudio?: "latino" | "castellano" | "sub",
   preferredServer?: "fast" | "clean",
-  codecPreference?: "av1" | "h264"
+  codecPreference?: "av1" | "h264",
 ): Promise<GrantResult> {
   const found = await resolveSeries(seriesId);
   if (!found) return { ok: false, entitlement: { allowed: false, reason: "not-licensed" }, status: 404 };
@@ -63,11 +105,11 @@ export async function createPlaybackGrant(
   if (series.anilistId) {
     const malId = series.malId ? String(series.malId) : resolveMalId(series.anilistId);
     isDubbedAvailable = malId ? isMalIdDubbedInSpanish(malId) : false;
-    let resolved = await resolvePlayableStream({
+    let resolved = await resolveCachedStream({
       anilistId: series.anilistId,
       malId: malId ? Number(malId) : null,
       title: series.title,
-      titleRomaji: series.titleRomaji,
+      titleRomaji: series.titleRomaji || "",
       episodeNumber: Number(episodeId) || 1,
       preferredAudio,
       preferredServer,
@@ -76,11 +118,11 @@ export async function createPlaybackGrant(
 
     // Si se solicitó DUB pero este anime o episodio no tiene doblaje disponible:
     if (!resolved && (preferredAudio === "latino" || preferredAudio === "castellano")) {
-      const subResolved = await resolvePlayableStream({
+      const subResolved = await resolveCachedStream({
         anilistId: series.anilistId,
         malId: malId ? Number(malId) : null,
         title: series.title,
-        titleRomaji: series.titleRomaji,
+        titleRomaji: series.titleRomaji || "",
         episodeNumber: Number(episodeId) || 1,
         preferredAudio: "sub",
         preferredServer,
@@ -119,7 +161,7 @@ export async function createPlaybackGrant(
   return {
     ok: true,
     grant: {
-      sessionId: randomUUID(),
+      sessionId: `${series.id}-${ep.id}`,
       series: {
         id: series.id,
         title: series.title,

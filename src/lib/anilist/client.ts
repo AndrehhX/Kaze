@@ -1,7 +1,7 @@
 /**
  * Low-level AniList GraphQL transport.
  * - De-duplicates identical in-flight requests.
- * - Honours 429 Retry-After with bounded retries.
+ * - Fails fast on rate limits instead of sleeping Fluid CPU threads for 12s+.
  * - Never logs Authorization headers.
  */
 
@@ -19,12 +19,12 @@ export class AniListError extends Error {
 }
 
 const inflight = new Map<string, Promise<unknown>>();
-// Cache en memoria (TTL 15 min) para respuestas públicas de AniList: carga instantánea a 0ms.
+// Cache en memoria (TTL 30 min) para respuestas públicas de AniList: carga instantánea a 0ms.
 const memoryCache = new Map<string, { data: unknown; expiresAt: number }>();
 
 type FetchOptions = {
   token?: string;
-  /** Max automatic retries on 429/5xx. */
+  /** Max automatic retries on 5xx / transient network failures. */
   retries?: number;
   signal?: AbortSignal;
 };
@@ -47,9 +47,11 @@ export async function anilistRequest<T>(query: string, variables: Record<string,
   if (key && inflight.has(key)) return inflight.get(key) as Promise<T>;
 
   const run = (async () => {
-    const retries = opts.retries ?? 2;
+    const retries = opts.retries ?? 1;
     for (let attempt = 0; ; attempt++) {
       let res: Response;
+      const timeoutSignal = AbortSignal.timeout(8000);
+      const signal = opts.signal ? AbortSignal.any([opts.signal, timeoutSignal]) : timeoutSignal;
       try {
         const fetchHeaders: Record<string, string> = {
           "Content-Type": "application/json",
@@ -61,37 +63,45 @@ export async function anilistRequest<T>(query: string, variables: Record<string,
           method: "POST",
           headers: fetchHeaders,
           body,
-          signal: opts.signal,
+          signal,
         };
 
         if (opts.token) {
           fetchInit.cache = "no-store";
         } else {
-          // Revalidación cada 15 min en Next.js Data Cache para peticiones públicas
-          fetchInit.next = { revalidate: 900 };
+          // Revalidación cada 1 hora en Next.js Data Cache para peticiones públicas
+          fetchInit.next = { revalidate: 3600 };
         }
 
         res = await fetch(ANILIST_ENDPOINT, fetchInit);
       } catch (err) {
         if (attempt < retries && !opts.signal?.aborted) {
-          await sleep(400 * 2 ** attempt);
+          await sleep(400);
           continue;
         }
         throw new AniListError(`AniList is unreachable (${(err as Error).message})`, 0);
       }
 
-      if (res.status === 429 || res.status >= 500) {
+      if (res.status === 429) {
         const retryAfter = Number(res.headers.get("retry-after") ?? "0");
-        if (attempt < retries) {
-          // Cap the wait so a request never hangs a render for long.
-          await sleep(Math.min(Math.max(retryAfter, 1) * 1000, 6000));
+        // Fast-fail if AniList says wait > 1s so Serverless Fluid Compute never hangs idle.
+        if (attempt === 0 && retryAfter > 0 && retryAfter <= 1) {
+          await sleep(retryAfter * 1000);
           continue;
         }
         throw new AniListError(
-          res.status === 429 ? "AniList rate limit reached. Please try again in a minute." : `AniList returned ${res.status}`,
-          res.status,
+          "AniList rate limit reached. Please try again in a minute.",
+          429,
           retryAfter || undefined,
         );
+      }
+
+      if (res.status >= 500) {
+        if (attempt < retries) {
+          await sleep(500);
+          continue;
+        }
+        throw new AniListError(`AniList returned ${res.status}`, res.status);
       }
 
       const json = (await res.json().catch(() => null)) as { data?: T; errors?: { message: string; status?: number }[] } | null;
@@ -103,7 +113,7 @@ export async function anilistRequest<T>(query: string, variables: Record<string,
       }
       if (!res.ok || !json.data) throw new AniListError(`AniList request failed (${res.status})`, res.status);
       if (key && !opts.token) {
-        memoryCache.set(key, { data: json.data, expiresAt: Date.now() + 15 * 60_000 });
+        memoryCache.set(key, { data: json.data, expiresAt: Date.now() + 30 * 60_000 });
         if (memoryCache.size > 500) {
           const firstKey = memoryCache.keys().next().value;
           if (firstKey) memoryCache.delete(firstKey);

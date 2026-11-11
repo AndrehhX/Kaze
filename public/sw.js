@@ -35,11 +35,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Nunca interceptar peticiones de streaming de video, audio o proxies
+  // Ignorar peticiones de otros orígenes y peticiones de streaming de video, audio o proxies
   if (
+    url.origin !== self.location.origin ||
     url.pathname.includes('/api/stream') ||
     url.pathname.includes('/api/playback') ||
-    url.hostname.includes('workers.dev') ||
     url.pathname.endsWith('.m3u8') ||
     url.pathname.endsWith('.ts') ||
     url.pathname.endsWith('.mp4') ||
@@ -56,12 +56,27 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Assets estáticos (JS, CSS, imágenes, fuentes): Stale-while-revalidate
-  if (
-    url.pathname.startsWith('/_next/static/') ||
-    url.pathname.startsWith('/fonts/') ||
-    url.pathname.match(/\.(png|jpg|jpeg|svg|webp|ico|woff2)$/)
-  ) {
+  // Assets estáticos con hash (/ _next/static/) -> Cache-first sin re-hits de red innecesarios
+  if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/fonts/')) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return networkResponse;
+        });
+      })
+    );
+    return;
+  }
+
+  // Otros assets estáticos locales: Stale-while-revalidate
+  if (url.pathname.match(/\.(png|jpg|jpeg|svg|webp|ico|woff2)$/)) {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
         const fetchPromise = fetch(event.request)

@@ -24,10 +24,13 @@ export async function requestGrant(
   preferredServer?: "fast" | "clean",
   codecPreference?: "av1" | "h264"
 ): Promise<PlaybackGrant> {
-  const res = await fetch("/api/playback/session", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ seriesId, episodeId, preferredAudio, preferredServer, codecPreference }),
+  const params = new URLSearchParams({ seriesId, episodeId });
+  if (preferredAudio) params.set("preferredAudio", preferredAudio);
+  if (preferredServer) params.set("preferredServer", preferredServer);
+  if (codecPreference) params.set("codecPreference", codecPreference);
+  const res = await fetch(`/api/playback/session?${params.toString()}`, {
+    method: "GET",
+    headers: { Accept: "application/json" },
   });
   const body = await res.json().catch(() => null);
   if (!res.ok) throw Object.assign(new Error(body?.error ?? "Reproducción no disponible"), { status: res.status, reason: body?.reason });
