@@ -27,11 +27,13 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import type { PlaybackGrant, TimingMarker } from "@/lib/media/types";
 import { useSettings } from "@/stores/settings";
 import { useProgress, isEffectivelyComplete } from "@/stores/progress";
 import { useLibrary } from "@/stores/library";
+import { useAuth } from "@/stores/auth";
 import type { MediaSnapshot } from "@/lib/library/types";
 import { clamp, cn, formatDuration } from "@/lib/utils";
 import { useKazeMotion } from "@/lib/motion";
@@ -80,6 +82,11 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
   const setPrefs = useSettings((s) => s.setPlayer);
   const saveProgress = useProgress((s) => s.save);
   const { reduced, theme } = useKazeMotion();
+
+  const authUser = useAuth((s) => s.user);
+  const authStatus = useAuth((s) => s.status);
+  const isLoggedIn = authStatus === "signed-in" && Boolean(authUser);
+  const [showAuthGate, setShowAuthGate] = useState(false);
 
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
@@ -280,6 +287,10 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
     const onEnded = () => {
       setPlaying(false);
       persistNow(true);
+      if (!isLoggedIn) {
+        setShowAuthGate(true);
+        return;
+      }
       if ((grant.next || grant.nextSeason) && prefs.autoNext && !locked) setNextCountdown(8);
     };
     const onError = () => {
@@ -562,6 +573,10 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
       setSubId((cur) => (cur ? null : (first?.id ?? null)));
     } else if (k === "n" && e.shiftKey && grant.next && !locked) {
       handled();
+      if (!isLoggedIn && (isEffectivelyComplete(time, duration) || time > duration * 0.85)) {
+        setShowAuthGate(true);
+        return;
+      }
       onNavigateEpisode?.(grant.next.id);
     } else if (k === "p" && e.shiftKey && grant.prev && !locked) {
       handled();
@@ -749,6 +764,35 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
           </div>
         )}
 
+        {/* Modal de cuenta requerida al terminar el episodio */}
+        {showAuthGate && (
+          <div className="absolute inset-0 z-[25] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md" role="dialog" aria-modal="true">
+            <div className="w-full max-w-sm rounded-2xl border border-line bg-surface/95 p-6 shadow-2xl text-center">
+              <div className="mx-auto grid size-12 place-items-center rounded-full bg-primary/20 text-primary mb-3">
+                <Sparkles className="size-6 text-primary" />
+              </div>
+              <h3 className="font-display text-xl font-bold text-fg">¡Episodio completado!</h3>
+              <p className="mt-2 text-xs text-muted leading-relaxed">
+                Para continuar viendo el siguiente episodio y guardar tu historial y progreso en la nube, crea tu cuenta gratuita en Orunei.
+              </p>
+              <div className="mt-5 space-y-2">
+                <Link
+                  href={`/register?next=${encodeURIComponent(grant.next ? `/watch/${grant.series.id}/${grant.next.id}` : `/anime/${grant.series.id}`)}`}
+                  className="k-btn k-btn-primary w-full !min-h-11 font-semibold flex items-center justify-center gap-2"
+                >
+                  Crear cuenta gratis
+                </Link>
+                <Link
+                  href={`/login?next=${encodeURIComponent(grant.next ? `/watch/${grant.series.id}/${grant.next.id}` : `/anime/${grant.series.id}`)}`}
+                  className="k-btn k-btn-ghost w-full !min-h-10 text-xs text-muted hover:text-fg flex items-center justify-center"
+                >
+                  Ya tengo cuenta · Iniciar sesión
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {sync?.banner && <div className="absolute left-3 top-3 z-[14]">{sync.banner}</div>}
 
         {/* Stats */}
@@ -836,7 +880,16 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
                 </CtrlButton>
               )}
               {grant.next && onNavigateEpisode && !locked && (
-                <CtrlButton label="Next episode (Shift+N)" onClick={() => onNavigateEpisode(grant.next!.id)}>
+                <CtrlButton
+                  label="Next episode (Shift+N)"
+                  onClick={() => {
+                    if (!isLoggedIn && (isEffectivelyComplete(time, duration) || time > duration * 0.85)) {
+                      setShowAuthGate(true);
+                      return;
+                    }
+                    onNavigateEpisode(grant.next!.id);
+                  }}
+                >
                   <SkipForward className="size-5" />
                 </CtrlButton>
               )}
