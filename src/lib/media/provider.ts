@@ -105,13 +105,21 @@ export async function createPlaybackGrant(
   if (series.anilistId) {
     const malId = series.malId ? String(series.malId) : resolveMalId(series.anilistId);
     isDubbedAvailable = malId ? isMalIdDubbedInSpanish(malId) : false;
+
+    // Si se solicitó DUB pero el catálogo confirma que el anime NO tiene doblaje en español,
+    // ir directamente a "sub" (Japonés) para resolver instantáneamente (<1s) sin timeouts
+    const targetAudio =
+      (preferredAudio === "latino" || preferredAudio === "castellano") && !isDubbedAvailable
+        ? "sub"
+        : preferredAudio;
+
     let resolved = await resolveCachedStream({
       anilistId: series.anilistId,
       malId: malId ? Number(malId) : null,
       title: series.title,
       titleRomaji: series.titleRomaji || "",
       episodeNumber: Number(episodeId) || 1,
-      preferredAudio,
+      preferredAudio: targetAudio,
       preferredServer,
       codecPreference,
     });

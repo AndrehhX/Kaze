@@ -304,6 +304,7 @@ const VERIFIED_LATANIME_SLUGS: Record<string, string> = {
   '20:latino': 'naruto-latino',
   '269:latino': 'bleach-latino',
   '30694:latino': 'dragon-ball-super-latino',
+  '31240:latino': 'rezero-kara-hajimeru-isekai-seikatsu-latino',
   '50273:latino': 'spy-x-family-latino',
   '34572:latino': 'black-clover-latino',
   '54595:latino': 'dandadan-latino',
@@ -313,6 +314,11 @@ const VERIFIED_LATANIME_SLUGS: Record<string, string> = {
 
 const VERIFIED_ANIMEAV1_SLUGS: Record<string, string> = {
   'chainsaw man': 'chainsaw-man',
+  're zero': 'rezero-kara-hajimeru-isekai-seikatsu',
+  'rezero': 'rezero-kara-hajimeru-isekai-seikatsu',
+  'rezero kara hajimeru isekai seikatsu': 'rezero-kara-hajimeru-isekai-seikatsu',
+  're:zero': 'rezero-kara-hajimeru-isekai-seikatsu',
+  're zero starting life in another world': 'rezero-kara-hajimeru-isekai-seikatsu',
   'jujutsu kaisen': 'jujutsu-kaisen',
   'solo leveling': 'ore-dake-level-up-na-ken',
   'dandadan': 'dandadan',
@@ -1310,19 +1316,22 @@ async function resolvePlayableStreamUncached(
         streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji, 'fast');
       }
     } else {
-      // 1) LatAnime Servidor Rápido (OkRu HLS / stream rápido)
-      streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'fast', opts.titleRomaji);
-      // 2) AnimeAV1 DUB Rápido (HLS Zilla si no es forzado H.264)
-      if (!streamResult && !forceH264) {
-        streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji, 'fast');
+      // Ultra Rápido (Default Desktop/Android): consultar AnimeAV1 y LatAnime en paralelo para resolver en < 1.5s sin bloquear
+      const [av1Res, latRes] = await Promise.allSettled([
+        resolveFromAnimeAV1(opts.title, opts.episodeNumber, dialect, opts.titleRomaji, 'fast'),
+        resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'fast', opts.titleRomaji),
+      ]);
+      streamResult =
+        (av1Res.status === 'fulfilled' && av1Res.value) ? av1Res.value :
+        (latRes.status === 'fulfilled' && latRes.value) ? latRes.value : null;
+
+      // 3) AnimeAV1 DUB Limpio si no hubo rápido
+      if (!streamResult) {
+        streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, dialect, opts.titleRomaji, 'clean');
       }
-      // 3) LatAnime Limpio
+      // 4) LatAnime Limpio si aún no se resolvió
       if (!streamResult) {
         streamResult = await resolveFromLatanime(malId, opts.title, opts.episodeNumber, dialect, 'clean', opts.titleRomaji);
-      }
-      // 4) AnimeAV1 DUB Limpio (MP4Upload H.264)
-      if (!streamResult) {
-        streamResult = await resolveFromAnimeAV1(opts.title, opts.episodeNumber, opts.preferredAudio, opts.titleRomaji, 'clean');
       }
     }
 

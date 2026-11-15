@@ -3,6 +3,8 @@ import { z } from "zod";
 import { createPlaybackGrant } from "@/lib/media/provider";
 import { json, limitOrNull } from "@/lib/api-response";
 
+export const maxDuration = 15;
+
 const querySchema = z.object({
   seriesId: z.string().min(1).max(64),
   episodeId: z.string().min(1).max(64),

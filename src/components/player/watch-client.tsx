@@ -28,13 +28,41 @@ export async function requestGrant(
   if (preferredAudio) params.set("preferredAudio", preferredAudio);
   if (preferredServer) params.set("preferredServer", preferredServer);
   if (codecPreference) params.set("codecPreference", codecPreference);
-  const res = await fetch(`/api/playback/session?${params.toString()}`, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
-  const body = await res.json().catch(() => null);
-  if (!res.ok) throw Object.assign(new Error(body?.error ?? "Reproducción no disponible"), { status: res.status, reason: body?.reason });
-  return body.grant as PlaybackGrant;
+
+  // Intentar obtener la sesión de streaming con tolerancia activa a cold-starts de Serverless
+  const maxAttempts = 5;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetch(`/api/playback/session?${params.toString()}`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      const body = await res.json().catch(() => null);
+      if (res.ok && body?.grant) {
+        return body.grant as PlaybackGrant;
+      }
+      // Errores de cliente definitivos (404 no encontrado, 403 prohibido, 401 autenticación)
+      if (res.status === 404 || res.status === 403 || res.status === 401) {
+        throw Object.assign(new Error(body?.error ?? "Reproducción no disponible"), { status: res.status, reason: body?.reason });
+      }
+      // Error 502/503/504 o caída temporal: reintentar con espera progresiva
+      if (attempt < maxAttempts) {
+        const delay = Math.min(attempt * 1500, 4000);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+      throw Object.assign(new Error(body?.error ?? "El servidor de streaming tardó en responder. Reintentando..."), { status: res.status, reason: body?.reason });
+    } catch (err: any) {
+      if (err?.status === 404 || err?.status === 403 || err?.status === 401) throw err;
+      if (attempt < maxAttempts) {
+        const delay = Math.min(attempt * 1500, 4000);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("No se pudo iniciar la reproducción");
 }
 
 export function usePlaybackGrant(
@@ -49,7 +77,8 @@ export function usePlaybackGrant(
     queryFn: () => requestGrant(seriesId, episodeId, preferredAudio, preferredServer, codecPreference),
     staleTime: 60 * 60_000,
     placeholderData: (previousData) => previousData,
-    retry: 1,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(attempt * 2000, 5000),
   });
 }
 
