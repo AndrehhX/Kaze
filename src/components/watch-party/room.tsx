@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
-import { Copy, Crown, DoorOpen, Lock, Send, Unlock, UserPlus, Wifi, WifiOff } from "lucide-react";
+import { Copy, Crown, DoorOpen, Globe, Lock, Play, Popcorn, Send, Unlock, UserPlus, Wifi, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
@@ -69,6 +69,8 @@ function RoomInner({ roomId }: { roomId: string }) {
   const [draft, setDraft] = useState("");
   const [invite, setInvite] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [confirmLeaveHost, setConfirmLeaveHost] = useState(false);
+  const [episodeEndedPrompt, setEpisodeEndedPrompt] = useState(false);
   const video = useRef<HTMLVideoElement | null>(null);
   const stateRef = useRef<RoomState | null>(null);
   const channel = useRef<RealtimeChannel | null>(null);
@@ -131,6 +133,26 @@ function RoomInner({ roomId }: { roomId: string }) {
     }
 
     if (!roomData) return setLoadError("Esta sala no existe, ha finalizado o no tienes acceso.");
+    if (roomData.ended_at) {
+      setRoom(roomData);
+      return;
+    }
+
+    // Validación de seguridad para salas 'Solo Amigos':
+    if (roomData.invite_only && roomData.host_id !== me) {
+      try {
+        const [{ data: isFriend }, { data: invite }] = await Promise.all([
+          db.rpc("are_friends", { user_a: me, user_b: roomData.host_id }),
+          db.from("watch_party_invites").select("room_id").eq("room_id", roomId).eq("user_id", me).maybeSingle(),
+        ]);
+        if (!isFriend && !invite) {
+          return setLoadError("Esta sala es privada (Solo Amigos). Solo los amigos mutuos del anfitrión o personas con invitación pueden acceder.");
+        }
+      } catch (err) {
+        console.warn("[kaze] friendship check error:", err);
+      }
+    }
+
     setRoom(roomData);
     stateRef.current = rowToState(roomData);
 
@@ -198,6 +220,29 @@ function RoomInner({ roomId }: { roomId: string }) {
       clearInterval(clock);
       db.removeChannel(ch);
       db.from("watch_party_participants").update({ left_at: new Date().toISOString() }).eq("room_id", roomId).eq("user_id", me).then(() => {});
+      if (isHost) {
+        try {
+          db.from("watch_party_participants")
+            .select("user_id")
+            .eq("room_id", roomId)
+            .is("left_at", null)
+            .neq("user_id", me)
+            .then(({ data }) => {
+              if (!data || data.length === 0) {
+                const nowIso = new Date().toISOString();
+                db.from("watch_party_rooms").update({ ended_at: nowIso, is_playing: false }).eq("id", roomId).then(() => {});
+                try {
+                  const raw = localStorage.getItem("kaze:watch_party_rooms");
+                  if (raw) {
+                    const list = JSON.parse(raw);
+                    const updated = list.map((r: any) => (r.id === roomId ? { ...r, ended_at: nowIso, is_playing: false } : r));
+                    localStorage.setItem("kaze:watch_party_rooms", JSON.stringify(updated));
+                  }
+                } catch {}
+              }
+            });
+        } catch {}
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, me]);
@@ -297,6 +342,11 @@ function RoomInner({ roomId }: { roomId: string }) {
               autoPlay={false}
               onVideo={(v) => (video.current = v)}
               onNavigateEpisode={isHost ? (id) => control(false, 0, id) : undefined}
+              onEnded={() => {
+                if (isHost) {
+                  setEpisodeEndedPrompt(true);
+                }
+              }}
               sync={{
                 locked: !isHost,
                 onLocalAction: isHost ? (a) => control(a.type === "play" ? true : a.type === "pause" ? false : !(video.current?.paused ?? true), a.position) : undefined,
@@ -365,7 +415,18 @@ function RoomInner({ roomId }: { roomId: string }) {
           </span>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-section mr-auto">{room.title}</h1>
+          <div className="mr-auto flex flex-wrap items-center gap-2.5">
+            <h1 className="font-display text-section">{room.title}</h1>
+            {room.invite_only ? (
+              <span className="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-semibold border border-amber-500/30">
+                <Lock className="size-3.5" /> Solo Amigos
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold border border-emerald-500/30">
+                <Globe className="size-3.5" /> Pública
+              </span>
+            )}
+          </div>
           <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold", conn === "live" ? "text-success" : "text-danger")} role="status">
             {conn === "live" ? <Wifi className="size-4" aria-hidden /> : <WifiOff className="size-4" aria-hidden />}
             {conn === "live" ? "En vivo" : conn === "connecting" ? "Conectando…" : conn === "reconnecting" ? "Reconectando…" : "Desconectado"}
@@ -409,7 +470,13 @@ function RoomInner({ roomId }: { roomId: string }) {
           )}
           <button
             className="k-btn k-btn-outline k-btn-sm"
-            onClick={() => router.push("/watch-parties")}
+            onClick={() => {
+              if (isHost) {
+                setConfirmLeaveHost(true);
+              } else {
+                router.push("/watch-parties");
+              }
+            }}
           >
             <DoorOpen className="size-4" aria-hidden /> Salir de la sala
           </button>
@@ -478,6 +545,88 @@ function RoomInner({ roomId }: { roomId: string }) {
           router.push("/watch-parties");
         }}
       />
+      <ConfirmDialog
+        open={confirmLeaveHost}
+        onOpenChange={setConfirmLeaveHost}
+        title="¿Salir de la sala de cine?"
+        body="Como anfitrión, si sales la sala se cerrará para que no quede abierta sin nadie viendo anime."
+        destructive
+        confirmLabel="Finalizar y salir"
+        onConfirm={async () => {
+          const nowStr = new Date().toISOString();
+          try {
+            const raw = localStorage.getItem("kaze:watch_party_rooms");
+            if (raw) {
+              const list = JSON.parse(raw);
+              const updated = list.map((r: any) => (r.id === roomId ? { ...r, ended_at: nowStr, is_playing: false } : r));
+              localStorage.setItem("kaze:watch_party_rooms", JSON.stringify(updated));
+            }
+          } catch {}
+          try {
+            await db.from("watch_party_rooms").update({ ended_at: nowStr, is_playing: false }).eq("id", roomId);
+          } catch {}
+          setConfirmLeaveHost(false);
+          toast.success("Sala finalizada");
+          router.push("/watch-parties");
+        }}
+      />
+
+      {episodeEndedPrompt && isHost && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="k-card max-w-md w-full p-6 text-center space-y-4 border border-line shadow-2xl">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/20 text-primary">
+              <Popcorn className="size-6" />
+            </div>
+            <div>
+              <h3 className="font-display text-xl font-bold">¡Episodio finalizado!</h3>
+              <p className="text-sm text-muted mt-1">
+                El episodio ha terminado. ¿Deseas pasar al siguiente episodio o finalizar la sala de cine?
+              </p>
+            </div>
+            <div className="grid gap-2.5 pt-2">
+              {grant?.next ? (
+                <button
+                  className="k-btn k-btn-primary w-full py-2.5 font-bold"
+                  onClick={() => {
+                    setEpisodeEndedPrompt(false);
+                    control(false, 0, grant.next!.id);
+                  }}
+                >
+                  Reproducir siguiente episodio ({grant.next.title || `Episodio ${Number(room.episode_id) + 1}`})
+                </button>
+              ) : null}
+              <button
+                className="k-btn k-btn-outline w-full py-2.5 font-bold text-danger border-danger/30 hover:bg-danger/10"
+                onClick={async () => {
+                  setEpisodeEndedPrompt(false);
+                  const nowStr = new Date().toISOString();
+                  try {
+                    const raw = localStorage.getItem("kaze:watch_party_rooms");
+                    if (raw) {
+                      const list = JSON.parse(raw);
+                      const updated = list.map((r: any) => (r.id === roomId ? { ...r, ended_at: nowStr, is_playing: false } : r));
+                      localStorage.setItem("kaze:watch_party_rooms", JSON.stringify(updated));
+                    }
+                  } catch {}
+                  try {
+                    await db.from("watch_party_rooms").update({ ended_at: nowStr, is_playing: false }).eq("id", roomId);
+                  } catch {}
+                  toast.success("Sala finalizada");
+                  router.push("/watch-parties");
+                }}
+              >
+                Finalizar sala de cine
+              </button>
+              <button
+                className="k-btn k-btn-ghost w-full text-xs text-muted"
+                onClick={() => setEpisodeEndedPrompt(false)}
+              >
+                Permanecer en la sala
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

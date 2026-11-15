@@ -57,12 +57,13 @@ type Props = {
   persist?: boolean;
   onAdaptCodec?: () => void;
   isAdaptedCodec?: boolean;
+  onEnded?: () => void;
 };
 
 type Menu = null | "root" | "quality" | "speed" | "subs" | "audio" | "caption-style";
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
-export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = true, persist = true, onAdaptCodec, isAdaptedCodec }: Props) {
+export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = true, persist = true, onAdaptCodec, isAdaptedCodec, onEnded: onEndedProp }: Props) {
   const asset = grant.asset;
   const wrapRef = useRef<HTMLDivElement>(null);
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
@@ -287,6 +288,7 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
     const onEnded = () => {
       setPlaying(false);
       persistNow(true);
+      onEndedProp?.();
       if (!isLoggedIn) {
         setShowAuthGate(true);
         return;

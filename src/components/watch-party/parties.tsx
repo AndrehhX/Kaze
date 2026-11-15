@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Film, Play, Popcorn, Radio, Search, Sparkles, Users } from "lucide-react";
+import { Film, Globe, Lock, Play, Popcorn, Radio, Search, Sparkles, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
@@ -13,7 +13,8 @@ import { api } from "@/lib/api-client";
 import { useDebounced, useNow } from "@/lib/hooks";
 import { AuthGate } from "@/components/social/gate";
 import { EmptyState, SafeImage, Skeleton } from "@/components/ui/primitives";
-import { relativeTime } from "@/lib/utils";
+import { cn, relativeTime } from "@/lib/utils";
+import { useFriendsList } from "@/components/social/friends";
 
 type RoomRow = {
   id: string;
@@ -22,6 +23,7 @@ type RoomRow = {
   episode_id: string;
   host_id: string;
   is_playing: boolean;
+  invite_only?: boolean;
   created_at: string;
   ended_at: string | null;
   host?: { username: string; display_name: string } | null;
@@ -59,6 +61,8 @@ function Inner() {
   const me = useAuth((s) => s.user?.id) || "guest";
   const myProfile = useAuth((s) => s.profile);
   const libraryEntries = useLibrary((s) => s.entries);
+  const { data: friendsList } = useFriendsList();
+  const friendIds = useMemo(() => new Set(friendsList?.map((f) => f.id) || []), [friendsList]);
   const sp = useSearchParams();
   const router = useRouter();
   const now = useNow();
@@ -143,7 +147,7 @@ function Inner() {
         if (db) {
           const { data, error } = await db
             .from("watch_party_rooms")
-            .select("id, title, series_id, episode_id, host_id, is_playing, created_at, ended_at, host:profiles!watch_party_rooms_host_id_fkey(username, display_name)")
+            .select("id, title, series_id, episode_id, host_id, is_playing, invite_only, created_at, ended_at, host:profiles!watch_party_rooms_host_id_fkey(username, display_name)")
             .is("ended_at", null)
             .order("created_at", { ascending: false })
             .limit(30);
@@ -152,24 +156,47 @@ function Inner() {
         }
       } catch {}
 
+      // Limpiar salas huérfanas o finalizadas de localStorage
       let localRooms: RoomRow[] = [];
       try {
         const raw = localStorage.getItem("kaze:watch_party_rooms");
         if (raw) {
-          localRooms = (JSON.parse(raw) as RoomRow[]).filter((r) => !r.ended_at);
+          const parsed = JSON.parse(raw) as RoomRow[];
+          localRooms = parsed.filter((r) => {
+            if (r.ended_at) return false;
+            // Descartar salas con más de 6 horas
+            const ageHours = (Date.now() - new Date(r.created_at).getTime()) / (1000 * 60 * 60);
+            return ageHours < 6;
+          });
+          localStorage.setItem("kaze:watch_party_rooms", JSON.stringify(localRooms));
         }
       } catch {}
 
-      const all = [...localRooms, ...remoteRooms];
+      // Priorizar salas de Supabase si existen; si no hay conexión, usar salas locales limpias
+      const all = remoteRooms.length > 0 ? remoteRooms : localRooms;
       const seen = new Set<string>();
       return all.filter((r) => {
         if (seen.has(r.id)) return false;
         seen.add(r.id);
-        return true;
+        if (r.ended_at) return false;
+        const ageHours = (Date.now() - new Date(r.created_at).getTime()) / (1000 * 60 * 60);
+        return ageHours < 6;
       });
     },
-    refetchInterval: 30_000,
+    refetchInterval: 15_000,
   });
+
+  // Filtrar salas según visibilidad (Pública para todos, Solo Amigos si es host o amigo mutuo)
+  const visibleRooms = useMemo(() => {
+    return (rooms.data ?? []).filter((r) => {
+      if (r.ended_at) return false;
+      if (!r.invite_only) return true; // Sala Pública
+      // Sala Privada (Solo Amigos): solo visible para el host o amigos agregados
+      if (r.host_id === me) return true;
+      if (friendIds.has(r.host_id)) return true;
+      return false;
+    });
+  }, [rooms.data, me, friendIds]);
 
   // 3. Crear sala con compatibilidad híbrida (Supabase + Local)
   const create = async (e: React.FormEvent) => {
@@ -184,6 +211,7 @@ function Inner() {
       series_id: selectedAnime.id,
       episode_id: episode,
       is_playing: false,
+      invite_only: inviteOnly,
       created_at: new Date().toISOString(),
       ended_at: null,
       host: {
@@ -324,16 +352,51 @@ function Inner() {
           </p>
         </div>
 
-        {/* Opciones de Privacidad */}
-        <label className="flex items-center gap-2.5 text-sm cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={inviteOnly}
-            onChange={(e) => setInviteOnly(e.target.checked)}
-            className="size-4 rounded accent-primary"
-          />
-          <span>Solo amigos y personas invitadas</span>
-        </label>
+        {/* Opciones de Privacidad y Visibilidad */}
+        <div>
+          <label className="mb-2 block text-sm font-semibold">
+            Visibilidad de la sala
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setInviteOnly(false)}
+              className={cn(
+                "flex flex-col items-start gap-1 p-3.5 rounded-xl border text-left transition-all",
+                !inviteOnly
+                  ? "border-primary bg-primary/10 shadow-sm"
+                  : "border-line bg-surface/50 hover:border-line/80 text-muted hover:text-fg"
+              )}
+            >
+              <div className="flex items-center gap-2 font-bold text-sm text-fg">
+                <Globe className={cn("size-4", !inviteOnly ? "text-primary" : "text-muted")} />
+                <span>Pública</span>
+              </div>
+              <p className="text-xs text-muted">
+                Cualquiera puede verla en la lista y unirse a ver anime contigo.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setInviteOnly(true)}
+              className={cn(
+                "flex flex-col items-start gap-1 p-3.5 rounded-xl border text-left transition-all",
+                inviteOnly
+                  ? "border-primary bg-primary/10 shadow-sm"
+                  : "border-line bg-surface/50 hover:border-line/80 text-muted hover:text-fg"
+              )}
+            >
+              <div className="flex items-center gap-2 font-bold text-sm text-fg">
+                <Lock className={cn("size-4", inviteOnly ? "text-primary" : "text-muted")} />
+                <span>Solo Amigos</span>
+              </div>
+              <p className="text-xs text-muted">
+                Privada: Solo amigos mutuos agregados o con invitación pueden entrar.
+              </p>
+            </button>
+          </div>
+        </div>
 
         <button className="k-btn k-btn-primary w-full py-2.5 font-bold" disabled={busy}>
           {busy ? "Creando sala…" : "Crear y abrir sala"}
@@ -346,7 +409,7 @@ function Inner() {
           Salas disponibles para unirte
         </h2>
         {rooms.isLoading && <Skeleton className="h-40" />}
-        {!rooms.isLoading && (!rooms.data || rooms.data.length === 0) && (
+        {!rooms.isLoading && visibleRooms.length === 0 && (
           <EmptyState
             icon={<Users className="size-6" />}
             jp="宴"
@@ -355,7 +418,7 @@ function Inner() {
           />
         )}
         <ul className="grid gap-3.5 sm:grid-cols-2">
-          {rooms.data?.map((r) => {
+          {visibleRooms.map((r) => {
             return (
               <li key={r.id}>
                 <Link
@@ -363,14 +426,25 @@ function Inner() {
                   className="k-card flex h-full flex-col justify-between gap-3 p-5 transition-all hover:border-primary hover:shadow-lg"
                 >
                   <div>
-                    <span className="flex items-center gap-2 mb-1.5">
-                      {r.is_playing ? (
-                        <Radio className="size-4 animate-pulse text-danger" aria-label="Reproduciendo" />
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="flex items-center gap-2 truncate">
+                        {r.is_playing ? (
+                          <Radio className="size-4 shrink-0 animate-pulse text-danger" aria-label="Reproduciendo" />
+                        ) : (
+                          <Play className="size-4 shrink-0 text-primary" />
+                        )}
+                        <span className="truncate font-bold text-base">{r.title}</span>
+                      </span>
+                      {r.invite_only ? (
+                        <span className="shrink-0 inline-flex items-center gap-1 text-[0.68rem] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-semibold border border-amber-500/30">
+                          <Lock className="size-3" /> Solo Amigos
+                        </span>
                       ) : (
-                        <Play className="size-4 text-primary" />
+                        <span className="shrink-0 inline-flex items-center gap-1 text-[0.68rem] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold border border-emerald-500/30">
+                          <Globe className="size-3" /> Pública
+                        </span>
                       )}
-                      <span className="truncate font-bold text-base">{r.title}</span>
-                    </span>
+                    </div>
                     <span className="block text-xs text-muted">
                       Episodio {r.episode_id} · Anfitrión:{" "}
                       <strong className="text-fg">{r.host_id === me ? "Tú" : r.host?.display_name || r.host?.username || "Usuario"}</strong>
