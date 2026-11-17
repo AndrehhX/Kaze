@@ -17,6 +17,55 @@ export async function getCachedAnimeSeries(seriesId: string): Promise<CatalogSer
   return animeStreamingProvider.getSeries(seriesId);
 }
 
+const RESOLVER_ENDPOINT =
+  process.env.STREAM_RESOLVER_URL || "https://resolver.orunei.sbs/api/stream/resolve";
+
+/**
+ * Consulta el microservicio resolver en la VPS (alta velocidad en RAM vía Redis).
+ * Si la VPS no responde o da timeout, retorna null para activar el fallback local transparente.
+ */
+async function fetchFromVpsResolver(input: {
+  anilistId: number;
+  malId: number | null;
+  title: string;
+  titleRomaji: string;
+  episodeNumber: number;
+  preferredAudio: "latino" | "castellano" | "sub" | undefined;
+  preferredServer: "fast" | "clean" | undefined;
+  codecPreference: "av1" | "h264" | undefined;
+}): Promise<ResolvedStream | null> {
+  try {
+    const params = new URLSearchParams({
+      anilistId: String(input.anilistId || 0),
+      episodeNumber: String(input.episodeNumber || 1),
+      title: input.title || "",
+      romaji: input.titleRomaji || "",
+      audio: input.preferredAudio || "sub",
+      server: input.preferredServer || "fast",
+      codec: input.codecPreference || "av1",
+    });
+    if (input.malId) params.set("malId", String(input.malId));
+
+    const res = await fetch(`${RESOLVER_ENDPOINT}?${params.toString()}`, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+      },
+      signal: AbortSignal.timeout(4500),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.asset && data.asset.src) {
+        return data as ResolvedStream;
+      }
+    }
+  } catch (err) {
+    console.warn("[Hybrid Resolver] Fallback to local resolver due to VPS error/timeout:", err);
+  }
+  return null;
+}
+
 async function resolveCachedStreamOrThrow(input: {
   anilistId: number;
   malId: number | null;
@@ -30,6 +79,12 @@ async function resolveCachedStreamOrThrow(input: {
   "use cache";
   cacheLife("hours");
   cacheTag(`stream:${input.anilistId}:${input.episodeNumber}`);
+
+  // 1. Intento primario: Resolver en la VPS (Redis en RAM < 3ms)
+  const vpsStream = await fetchFromVpsResolver(input);
+  if (vpsStream) return vpsStream;
+
+  // 2. Fallback de emergencia en Vercel
   const res = await resolvePlayableStream(input);
   if (!res) throw new Error("STREAM_MISS");
   return res;
@@ -53,6 +108,8 @@ async function resolveCachedStream(input: {
     return await resolveCachedStreamOrThrow(input);
   } catch (err) {
     if (err instanceof Error && err.message === "STREAM_MISS") return null;
+    const vpsStream = await fetchFromVpsResolver(input);
+    if (vpsStream) return vpsStream;
     return resolvePlayableStream(input);
   }
 }
