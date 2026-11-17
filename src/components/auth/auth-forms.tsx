@@ -157,7 +157,25 @@ export function LoginForm() {
   );
 }
 
+const COMMON_TYPO_DOMAINS: Record<string, string> = {
+  "gmai.com": "gmail.com",
+  "gamil.com": "gmail.com",
+  "gmial.com": "gmail.com",
+  "gnail.com": "gmail.com",
+  "gmaill.com": "gmail.com",
+  "hotmial.com": "hotmail.com",
+  "hotmai.com": "hotmail.com",
+  "hotmaill.com": "hotmail.com",
+  "outlok.com": "outlook.com",
+  "outloo.com": "outlook.com",
+  "yaho.com": "yahoo.com",
+  "yahou.com": "yahoo.com",
+};
+
 export function RegisterForm() {
+  const sp = useSearchParams();
+  const router = useRouter();
+  const next = safeRedirectPath(sp.get("next"), "/");
   const [form, setForm] = useState({ username: "", displayName: "", email: "", password: "", confirmPassword: "" });
   const theme = useSettings((s) => s.theme);
   const setTheme = useSettings((s) => s.setTheme);
@@ -179,6 +197,12 @@ export function RegisterForm() {
     const parsed = registerSchema.safeParse(form);
     if (!parsed.success) return setErrors(Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])));
     setErrors({});
+
+    const domain = parsed.data.email.split("@")[1]?.toLowerCase();
+    if (domain && COMMON_TYPO_DOMAINS[domain]) {
+      return setErrors({ email: `¿Quisiste escribir @${COMMON_TYPO_DOMAINS[domain]}? Revisa tu correo.` });
+    }
+
     setBusy(true);
 
     const { data: taken } = await db.from("profiles").select("id").ilike("username", parsed.data.username).maybeSingle();
@@ -191,15 +215,39 @@ export function RegisterForm() {
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
-        emailRedirectTo: `${location.origin}/auth/callback?next=/`,
+        emailRedirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
         data: { username: parsed.data.username, display_name: parsed.data.displayName, theme },
       },
     });
 
-    setBusy(false);
-    if (error) return setErrors({ form: authMessage(error.message) });
+    if (error) {
+      setBusy(false);
+      return setErrors({ form: authMessage(error.message) });
+    }
 
-    // Siempre requerir validación de correo para evitar spam
+    // Al no requerir confirmación obligatoria, iniciamos sesión de inmediato
+    if (signUpData?.session) {
+      setBusy(false);
+      toast.success("¡Bienvenido a Orunei! Tu cuenta fue creada exitosamente.");
+      router.replace(next);
+      router.refresh();
+      return;
+    }
+
+    const { error: signInErr } = await db.auth.signInWithPassword({
+      email: parsed.data.email,
+      password: parsed.data.password,
+    });
+
+    setBusy(false);
+    if (!signInErr) {
+      toast.success("¡Bienvenido a Orunei! Tu cuenta fue creada exitosamente.");
+      router.replace(next);
+      router.refresh();
+      return;
+    }
+
+    // Fallback de cortesía por si requiriese confirmación manual
     setDone(true);
   };
 
@@ -254,7 +302,7 @@ export function RegisterForm() {
         </Field>
       </div>
 
-      <Field id="email" label="Correo electrónico" error={errors.email} hint="Te enviaremos un enlace de confirmación obligatorio">
+      <Field id="email" label="Correo electrónico" error={errors.email} hint="Tu correo para acceder y recuperar tu cuenta">
         <input
           id="email"
           type="email"
