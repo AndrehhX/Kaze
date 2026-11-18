@@ -172,6 +172,15 @@ const COMMON_TYPO_DOMAINS: Record<string, string> = {
   "yahou.com": "yahoo.com",
 };
 
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  "tempmail.com", "temp-mail.org", "10minutemail.com", "guerrillamail.com", "guerrillamail.net",
+  "guerrillamail.org", "guerrillamailblock.com", "sharklasers.com", "grr.la", "pokemail.net",
+  "yopmail.com", "yopmail.fr", "yopmail.net", "cool.fr.nf", "jetable.fr.nf",
+  "mailinator.com", "trashmail.com", "trashmail.net", "dispostable.com", "getairmail.com",
+  "mohmal.com", "inboxkitten.com", "burnermail.io", "crazymailing.com", "throwawaymail.com",
+  "fakeinbox.com", "nada.ltd", "getnada.com", "abcvg.com", "dropmail.me"
+]);
+
 export function RegisterForm() {
   const sp = useSearchParams();
   const router = useRouter();
@@ -202,6 +211,9 @@ export function RegisterForm() {
     if (domain && COMMON_TYPO_DOMAINS[domain]) {
       return setErrors({ email: `¿Quisiste escribir @${COMMON_TYPO_DOMAINS[domain]}? Revisa tu correo.` });
     }
+    if (domain && DISPOSABLE_EMAIL_DOMAINS.has(domain)) {
+      return setErrors({ email: "No se permiten correos temporales ni desechables. Usa un correo real (Gmail, Outlook, etc.)." });
+    }
 
     setBusy(true);
 
@@ -225,7 +237,7 @@ export function RegisterForm() {
       return setErrors({ form: authMessage(error.message) });
     }
 
-    // Al no requerir confirmación obligatoria, iniciamos sesión de inmediato
+    // Si Supabase devuelve sesión activa directa (cuando confirmación está desactivada)
     if (signUpData?.session) {
       setBusy(false);
       toast.success("¡Bienvenido a Orunei! Tu cuenta fue creada exitosamente.");
@@ -234,20 +246,8 @@ export function RegisterForm() {
       return;
     }
 
-    const { error: signInErr } = await db.auth.signInWithPassword({
-      email: parsed.data.email,
-      password: parsed.data.password,
-    });
-
+    // Al requerir confirmación por correo (vía Brevo SMTP), mostramos la pantalla de activación
     setBusy(false);
-    if (!signInErr) {
-      toast.success("¡Bienvenido a Orunei! Tu cuenta fue creada exitosamente.");
-      router.replace(next);
-      router.refresh();
-      return;
-    }
-
-    // Fallback de cortesía por si requiriese confirmación manual
     setDone(true);
   };
 
@@ -302,7 +302,7 @@ export function RegisterForm() {
         </Field>
       </div>
 
-      <Field id="email" label="Correo electrónico" error={errors.email} hint="Tu correo para acceder y recuperar tu cuenta">
+      <Field id="email" label="Correo electrónico" error={errors.email} hint="Te enviaremos un enlace de confirmación obligatorio">
         <input
           id="email"
           type="email"
