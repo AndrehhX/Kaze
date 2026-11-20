@@ -12,13 +12,12 @@ import { EmptyState, Skeleton } from "@/components/ui/primitives";
 import { MangaVault, type VaultItem } from "./vault";
 import { vaultItemFromCard, vaultItemFromDemo, vaultItemFromEntry } from "./items";
 
-type Shelf = "mine" | "trending" | "top" | "originals";
+type Shelf = "mine" | "trending" | "top";
 
 const SHELVES: { value: Shelf; label: string; jp: string }[] = [
   { value: "mine", label: "Mi colección", jp: "私の棚" },
   { value: "trending", label: "Tendencias", jp: "急上昇" },
   { value: "top", label: "Mejor valorados", jp: "名作" },
-  { value: "originals", label: "KAZE Originals", jp: "風" },
 ];
 
 export function ShelfPage() {
@@ -43,7 +42,6 @@ export function ShelfPage() {
   });
 
   const items: VaultItem[] = useMemo(() => {
-    if (shelf === "originals") return DEMO_SERIES.map(vaultItemFromDemo);
     if (shelf === "mine") {
       return Object.values(entries)
         .filter((e) => status === "ALL" || (status === "FAVORITES" ? e.favorite : e.status === status))
@@ -87,8 +85,8 @@ export function ShelfPage() {
       <div className="mt-6">
         {(shelf === "trending" || shelf === "top") && remote.isLoading ? (
           <Skeleton className="h-[460px]" />
-        ) : remote.isError && shelf !== "mine" && shelf !== "originals" ? (
-          <EmptyState title="No pudimos cargar esta estantería" body="AniList no respondió. Prueba de nuevo en un momento o abre KAZE Originals." />
+        ) : remote.isError && shelf !== "mine" ? (
+          <EmptyState title="No pudimos cargar esta estantería" body="AniList no respondió. Prueba de nuevo en un momento." />
         ) : (
           <MangaVault
             items={items}

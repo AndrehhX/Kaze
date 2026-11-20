@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { Dices, Library, Tv } from "lucide-react";
 import { getMangaHome } from "@/lib/anilist/manga-service";
 import { MangaHeroFeature } from "@/components/manga/home/hero";
-import { BasedOnYourAnime, ContinueReadingRail, FriendsReading, KazeOriginalsShelf } from "@/components/manga/home/personal";
+import { BasedOnYourAnime, ContinueReadingRail, FriendsReading } from "@/components/manga/home/personal";
 import { MangaRailSection } from "@/components/manga/cards";
 import { RailSkeleton } from "@/components/anime/skeletons";
 import { ErrorPanel } from "@/components/ui/primitives";
@@ -29,8 +29,7 @@ async function MangaHomeContent() {
   } catch {
     return (
       <div className="container-k mt-16 space-y-10">
-        <ErrorPanel title="AniList no responde ahora mismo" message="El catálogo de manga vuelve en unos minutos. Mientras tanto puedes leer las obras de demostración de KAZE." />
-        <KazeOriginalsShelf />
+        <ErrorPanel title="AniList no responde ahora mismo" message="El catálogo de manga vuelve en unos minutos. Puedes intentar recargar la página." />
       </div>
     );
   }

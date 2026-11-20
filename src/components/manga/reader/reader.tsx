@@ -502,7 +502,6 @@ export function MangaReader(props: ReaderProps) {
               <p className="truncate text-xs text-white/70">
                 {chapter.label}
                 {chapter.title ? ` · ${chapter.title}` : ""}
-                {demo && <span className="ml-2 rounded bg-white px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wider text-black">Demo · KAZE Originals</span>}
               </p>
             </div>
             {/* Control directo de modo: Libro vs Cascada */}
@@ -672,10 +671,20 @@ export function MangaReader(props: ReaderProps) {
         </div>
       ) : (
         <div ref={(el) => void ((scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = el, (stageRef as React.MutableRefObject<HTMLDivElement | null>).current = el)} className="absolute inset-0 overflow-auto overscroll-contain" onScroll={() => stamp(session.current)} onClick={(e) => !(e.target as HTMLElement).closest("button,a") && navigate("toggle-ui")}>
-          <div className="mx-auto flex flex-col items-center" style={{ width: Math.round(Math.min(stageBox.width, 850) * colScale), maxWidth: colScale <= 1 ? "100%" : undefined, gap: mode === "vertical" ? prefs.pageGap : 0, paddingTop: reserveSpace ? "4rem" : 0, paddingBottom: reserveSpace ? "6rem" : 0 }}>
+          <div className="mx-auto flex flex-col items-center" style={{ width: Math.round(Math.min(stageBox.width, strip ? 760 : 850) * colScale), maxWidth: colScale <= 1 ? "100%" : undefined, gap: mode === "vertical" ? prefs.pageGap : (strip ? 0 : 16), paddingTop: reserveSpace ? "4rem" : 0, paddingBottom: reserveSpace ? "6rem" : 0 }}>
             {pages.map((a, i) => (
-              <div key={a.src} data-index={i} ref={(el) => void (pageRefs.current[i] = el)} className="w-full">
-                <PageImage asset={{ ...a, width: sizeOf(i).w, height: sizeOf(i).h }} dataSaver={dataSaver} eager={Math.abs(i - page) <= prefs.preload} className="w-full [&_img]:w-full" onSize={(w, h) => reportSize(i, w, h)} />
+              <div key={a.src} data-index={i} ref={(el) => void (pageRefs.current[i] = el)} className={cn("w-full flex justify-center", !strip && prefs.fit !== "width" && "max-h-[calc(100dvh-5rem)]")}>
+                <PageImage
+                  asset={{ ...a, width: sizeOf(i).w, height: sizeOf(i).h }}
+                  dataSaver={dataSaver}
+                  eager={Math.abs(i - page) <= prefs.preload}
+                  className={cn(
+                    strip || prefs.fit === "width"
+                      ? "w-full [&_img]:w-full"
+                      : "h-auto max-h-[calc(100dvh-5rem)] w-auto max-w-full [&_img]:max-h-[calc(100dvh-5rem)] [&_img]:w-auto [&_img]:object-contain"
+                  )}
+                  onSize={(w, h) => reportSize(i, w, h)}
+                />
               </div>
             ))}
             <div className="w-full max-w-md p-8 text-center">

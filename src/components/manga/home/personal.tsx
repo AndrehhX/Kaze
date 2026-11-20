@@ -137,36 +137,5 @@ export function FriendsReading() {
 
 /** The bundled original demo series, labelled as such (never presented as editorial picks of commercial manga). */
 export function KazeOriginalsShelf() {
-  return (
-    <section aria-labelledby="mk-originals" className="container-k mt-16">
-      <div className="km-frame km-stage relative overflow-hidden p-6 sm:p-10">
-        <div aria-hidden className="km-tone km-tone-fade absolute inset-0 opacity-50" />
-        <div className="relative grid items-center gap-8 md:grid-cols-[1fr_auto]">
-          <div>
-            <p className="k-label text-primary-ink">Lector KAZE · contenido de demostración</p>
-            <h2 id="mk-originals" className="km-title mt-3 text-[clamp(1.8rem,1.2rem+2vw,3rem)]">
-              KAZE Originals
-            </h2>
-            <p className="mt-3 max-w-xl text-sm text-muted">Dos obras originales creadas para KAZE con las que puedes probar el lector completo: lectura de derecha a izquierda, doble página, modo webtoon, marcadores y progreso. No son mangas comerciales.</p>
-          </div>
-          <ul className="flex gap-4">
-            {DEMO_SERIES.map((d) => (
-              <li key={d.slug} className="w-32 sm:w-36">
-                <Link href={`/manga/read/${d.slug}/${sortChapters(d.chapters)[0].id}`} className="group block">
-                  <div className="km-book">
-                    <div className="k-poster aspect-[2/3]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={d.cover} alt="" className="size-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                    </div>
-                  </div>
-                  <p className="mt-2 text-sm font-semibold group-hover:text-primary-ink">{d.title}</p>
-                  <p className="text-xs text-muted">{d.readingDirection === "vertical" ? "Webtoon vertical" : "Manga · derecha a izquierda"}</p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </section>
-  );
+  return null;
 }

@@ -31,11 +31,10 @@ type Props = { params: Promise<{ id: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const r = await resolveManga((await params).id);
   if (!r) return { title: "Manga no encontrado" };
-  if (r.kind === "demo") return { title: `${r.demo.title} (demo KAZE Originals)`, description: r.demo.description.slice(0, 160) };
   const title = mangaTitle(r.media);
   return {
     title: `${title} — manga`,
-    description: cleanDescription(r.media.description).slice(0, 160) || `${title} en KAZE: dónde leerlo, volúmenes, adaptaciones al anime y más.`,
+    description: cleanDescription(r.media.description).slice(0, 160) || `${title} en KAZE: capítulos, volúmenes, adaptaciones al anime y más.`,
     openGraph: { title: `${title} · KAZE Manga`, images: r.media.coverImage.extraLarge ? [r.media.coverImage.extraLarge] : [] },
   };
 }
@@ -65,7 +64,6 @@ function DetailSkeleton() {
 async function MangaDetailContent({ params }: Props) {
   const r = await resolveManga((await params).id);
   if (!r) notFound();
-  if (r.kind === "demo") return <DemoDetail s={r.demo} />;
   const seriesKey = seriesKeyFor(r.media.id);
   const catalog = catalogFor(seriesKey);
   const chapters = catalog ? await catalog.listChapters(seriesKey) : [];
@@ -186,55 +184,4 @@ function AniListDetail({ m, chapters = [], volumes = [] }: { m: MangaDetail; cha
   );
 }
 
-function DemoDetail({ s }: { s: DemoSeries }) {
-  const ref = { id: s.id, snapshot: demoSnapshot(s) };
-  const first = sortChapters(s.chapters)[0];
-  return (
-    <article>
-      <header className="relative isolate overflow-hidden">
-        <div aria-hidden className="km-tone km-tone-fade absolute inset-0 -z-10 opacity-60" />
-        <div className="container-k grid gap-10 pb-6 pt-10 md:grid-cols-[minmax(220px,300px)_1fr]">
-          <div className="km-book mx-auto w-56 md:w-full">
-            <div className="k-poster aspect-[2/3]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={s.cover} alt={`Portada de ${s.title}`} className="size-full object-cover" />
-            </div>
-          </div>
-          <div>
-            <p className="k-label text-primary-ink">KAZE Originals · obra de demostración</p>
-            <h1 className="km-title mt-3 text-[clamp(2.2rem,1.2rem+3.6vw,4.6rem)]">{s.title}</h1>
-            <p className="k-jp mt-2 text-muted" lang="ja">
-              {s.titleNative}
-            </p>
-            <p className="mt-4 text-sm">
-              <span className="text-muted">Creada por</span> <span className="font-semibold">{s.author}</span> ·{" "}
-              {s.readingDirection === "rtl" ? "Se lee de derecha a izquierda" : s.readingDirection === "vertical" ? "Webtoon de lectura vertical" : "Se lee de izquierda a derecha"}
-            </p>
-            <ul className="mt-4 flex flex-wrap gap-1.5">
-              {s.genres.map((g) => (
-                <li key={g} className="k-chip">
-                  {genreLabel(g)}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-6">
-              <DetailActions manga={ref} firstChapterHref={`/manga/read/${s.slug}/${first.id}`} />
-            </div>
-            <p className="mt-8 max-w-3xl text-[0.9375rem] leading-relaxed">{s.description}</p>
-            <p className="mt-4 flex items-center gap-2 text-xs text-muted">
-              <BookOpen className="size-4" aria-hidden /> {DEMO_LICENSE}
-            </p>
-          </div>
-        </div>
-      </header>
-      <DetailSection id="chapters" title="Capítulos" jp="目次">
-        <ChapterCatalog mangaId={s.id} slug={s.slug} chapters={s.chapters} volumes={s.volumes} tab="chapters" />
-      </DetailSection>
-      <section className="container-k mt-10">
-        <div className="max-w-sm">
-          <YourMangaEntry manga={ref} />
-        </div>
-      </section>
-    </article>
-  );
-}
+

@@ -16,16 +16,11 @@ import { MangaReader, type ReaderChapter } from "@/components/manga/reader/reade
 type Props = { params: Promise<{ mangaId: string; chapterId: string }>; searchParams: Promise<{ page?: string }> };
 
 export function generateStaticParams() {
-  return DEMO_SERIES.flatMap((s) => s.chapters.map((c) => ({ mangaId: s.slug, chapterId: c.id })));
+  return [];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { mangaId, chapterId } = await params;
-  const s = demoBySlug(mangaId);
-  if (s) {
-    const c = s.chapters.find((x) => x.id === chapterId);
-    return { title: c ? `${s.title} · ${chapterLabel(c)} (demo)` : "Lector de manga", robots: { index: false } };
-  }
+  const { mangaId } = await params;
   const anilistId = Number.parseInt(mangaId, 10);
   if (Number.isInteger(anilistId) && anilistId > 0) {
     const m = await getMangaDetail(anilistId);
@@ -48,37 +43,6 @@ export default function ReadPage(props: Props) {
 
 async function ReadContent({ params, searchParams }: Props) {
   const { mangaId, chapterId } = await params;
-  const s = demoBySlug(mangaId);
-  if (s) {
-    const chapter = s.chapters.find((c) => c.id === chapterId);
-    if (!chapter) notFound();
-    const entitlement = await demoMangaProvider.canRead(chapter.id, { userId: null });
-    if (!entitlement.allowed) notFound();
-    const pages = await demoMangaProvider.getPages(chapter.id);
-    const ordered = sortChapters(s.chapters);
-    const { prev, next } = adjacentChapters(s.chapters, chapter.id);
-    return (
-      <Suspense fallback={<div className="fixed inset-0 z-[60] bg-black" />}>
-        <ReaderWithPage
-          searchParams={searchParams}
-          props={{
-            mangaId: s.id,
-            slug: s.slug,
-            seriesTitle: s.title,
-            snapshot: demoSnapshot(s),
-            readingDirection: s.readingDirection,
-            chapter: toReaderChapter(chapter),
-            pages,
-            chapters: ordered.map(toReaderChapter),
-            prev: prev ? toReaderChapter(prev) : null,
-            next: next ? toReaderChapter(next) : null,
-            demo: true,
-          }}
-        />
-      </Suspense>
-    );
-  }
-
   // AniList series lookup
   const anilistId = Number.parseInt(mangaId, 10);
   if (!Number.isInteger(anilistId) || anilistId <= 0) return <NotReadable param={mangaId} />;
