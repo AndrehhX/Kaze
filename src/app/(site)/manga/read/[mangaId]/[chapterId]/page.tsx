@@ -8,7 +8,8 @@ import { adjacentChapters, chapterLabel, sortChapters, type MangaChapter } from 
 import { demoMangaProvider } from "@/lib/manga/providers/demo";
 import { getMangaDetail } from "@/lib/anilist/manga-service";
 import { mangaTitle } from "@/lib/anilist/manga-types";
-import { availabilityFor, seriesKeyFor } from "@/lib/manga/providers";
+import { availabilityFor, catalogFor, contentFor, seriesKeyFor } from "@/lib/manga/providers";
+import { snapshotFromManga } from "@/lib/manga/types";
 import { AvailabilityList } from "@/components/manga/detail/interactive";
 import { MangaReader, type ReaderChapter } from "@/components/manga/reader/reader";
 
@@ -21,8 +22,18 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { mangaId, chapterId } = await params;
   const s = demoBySlug(mangaId);
-  const c = s?.chapters.find((x) => x.id === chapterId);
-  return { title: s && c ? `${s.title} · ${chapterLabel(c)} (demo)` : "Lector de manga", robots: { index: false } };
+  if (s) {
+    const c = s.chapters.find((x) => x.id === chapterId);
+    return { title: c ? `${s.title} · ${chapterLabel(c)} (demo)` : "Lector de manga", robots: { index: false } };
+  }
+  const anilistId = Number.parseInt(mangaId, 10);
+  if (Number.isInteger(anilistId) && anilistId > 0) {
+    const m = await getMangaDetail(anilistId);
+    if (m) {
+      return { title: `${mangaTitle(m)} · Leer manga en KAZE`, robots: { index: false } };
+    }
+  }
+  return { title: "Lector de manga", robots: { index: false } };
 }
 
 const toReaderChapter = (c: MangaChapter): ReaderChapter => ({ id: c.id, label: chapterLabel(c), title: c.title, number: c.number, regular: c.kind === "regular" });
@@ -38,31 +49,73 @@ export default function ReadPage(props: Props) {
 async function ReadContent({ params, searchParams }: Props) {
   const { mangaId, chapterId } = await params;
   const s = demoBySlug(mangaId);
-  if (!s) return <NotReadable param={mangaId} />;
-  const chapter = s.chapters.find((c) => c.id === chapterId);
-  if (!chapter) notFound();
-  // Entitlement check goes through the provider contract, exactly as a licensed source would.
-  const entitlement = await demoMangaProvider.canRead(chapter.id, { userId: null });
-  if (!entitlement.allowed) notFound();
-  const pages = await demoMangaProvider.getPages(chapter.id);
-  const ordered = sortChapters(s.chapters);
-  const { prev, next } = adjacentChapters(s.chapters, chapter.id);
+  if (s) {
+    const chapter = s.chapters.find((c) => c.id === chapterId);
+    if (!chapter) notFound();
+    const entitlement = await demoMangaProvider.canRead(chapter.id, { userId: null });
+    if (!entitlement.allowed) notFound();
+    const pages = await demoMangaProvider.getPages(chapter.id);
+    const ordered = sortChapters(s.chapters);
+    const { prev, next } = adjacentChapters(s.chapters, chapter.id);
+    return (
+      <Suspense fallback={<div className="fixed inset-0 z-[60] bg-black" />}>
+        <ReaderWithPage
+          searchParams={searchParams}
+          props={{
+            mangaId: s.id,
+            slug: s.slug,
+            seriesTitle: s.title,
+            snapshot: demoSnapshot(s),
+            readingDirection: s.readingDirection,
+            chapter: toReaderChapter(chapter),
+            pages,
+            chapters: ordered.map(toReaderChapter),
+            prev: prev ? toReaderChapter(prev) : null,
+            next: next ? toReaderChapter(next) : null,
+            demo: true,
+          }}
+        />
+      </Suspense>
+    );
+  }
+
+  // AniList series lookup
+  const anilistId = Number.parseInt(mangaId, 10);
+  if (!Number.isInteger(anilistId) || anilistId <= 0) return <NotReadable param={mangaId} />;
+  const media = await getMangaDetail(anilistId);
+  if (!media || media.isAdult) return <NotReadable param={mangaId} />;
+
+  const seriesKey = seriesKeyFor(media.id);
+  const catalog = catalogFor(seriesKey);
+  const content = contentFor(seriesKey);
+  if (!catalog || !content) return <NotReadable param={mangaId} />;
+
+  const chapters = await catalog.listChapters(seriesKey);
+  const chapter = chapters.find((c) => c.id === chapterId);
+  if (!chapter) return <NotReadable param={mangaId} />;
+
+  const pages = await content.getPages(chapter.id);
+  if (!pages || pages.length === 0) return <NotReadable param={mangaId} />;
+
+  const ordered = sortChapters(chapters);
+  const { prev, next } = adjacentChapters(chapters, chapter.id);
+
   return (
     <Suspense fallback={<div className="fixed inset-0 z-[60] bg-black" />}>
       <ReaderWithPage
         searchParams={searchParams}
         props={{
-          mangaId: s.id,
-          slug: s.slug,
-          seriesTitle: s.title,
-          snapshot: demoSnapshot(s),
-          readingDirection: s.readingDirection,
+          mangaId: media.id,
+          slug: String(media.id),
+          seriesTitle: mangaTitle(media),
+          snapshot: snapshotFromManga(media),
+          readingDirection: "rtl",
           chapter: toReaderChapter(chapter),
           pages,
           chapters: ordered.map(toReaderChapter),
           prev: prev ? toReaderChapter(prev) : null,
           next: next ? toReaderChapter(next) : null,
-          demo: true,
+          demo: false,
         }}
       />
     </Suspense>
@@ -75,7 +128,7 @@ async function ReaderWithPage({ searchParams, props }: { searchParams: Props["se
   return <MangaReader key={props.chapter.id} {...props} initialPage={initialPage} />;
 }
 
-/** AniList titles: KAZE holds no rights to their pages, so the reader points to official platforms instead. */
+/** Fallback notice when chapters cannot be resolved */
 async function NotReadable({ param }: { param: string }) {
   const id = Number.parseInt(param, 10);
   if (!Number.isInteger(id) || id <= 0 || String(id) !== param) notFound();

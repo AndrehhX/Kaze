@@ -9,8 +9,8 @@ import { cleanDescription } from "@/lib/utils";
 import { genreLabel } from "@/lib/anilist/browse-params";
 import { snapshotFromManga } from "@/lib/manga/types";
 import { demoSnapshot, DEMO_LICENSE, type DemoSeries } from "@/lib/manga/demo/series";
-import { availabilityFor, seriesKeyFor } from "@/lib/manga/providers";
-import { sortChapters } from "@/lib/manga/catalog";
+import { availabilityFor, catalogFor, seriesKeyFor } from "@/lib/manga/providers";
+import { sortChapters, type MangaChapter, type MangaVolume } from "@/lib/manga/catalog";
 import { mappingsForManga } from "@/lib/manga/continuity/engine";
 import { VERIFICATION_META } from "@/lib/manga/continuity/types";
 import type { MediaSnapshot } from "@/lib/library/types";
@@ -65,15 +65,22 @@ function DetailSkeleton() {
 async function MangaDetailContent({ params }: Props) {
   const r = await resolveManga((await params).id);
   if (!r) notFound();
-  return r.kind === "demo" ? <DemoDetail s={r.demo} /> : <AniListDetail m={r.media} />;
+  if (r.kind === "demo") return <DemoDetail s={r.demo} />;
+  const seriesKey = seriesKeyFor(r.media.id);
+  const catalog = catalogFor(seriesKey);
+  const chapters = catalog ? await catalog.listChapters(seriesKey) : [];
+  const volumes = catalog ? await catalog.listVolumes(seriesKey) : [];
+  return <AniListDetail m={r.media} chapters={chapters} volumes={volumes} />;
 }
 
-function AniListDetail({ m }: { m: MangaDetail }) {
+function AniListDetail({ m, chapters = [], volumes = [] }: { m: MangaDetail; chapters?: MangaChapter[]; volumes?: MangaVolume[] }) {
   const title = mangaTitle(m);
   const snapshot = snapshotFromManga(m);
   const ref = { id: m.id, snapshot };
   const availability = availabilityFor({ seriesKey: seriesKeyFor(m.id), externalLinks: m.externalLinks });
   const official = availability.find((a) => a.kind === "external");
+  const firstChapter = chapters[0];
+  const readHref = firstChapter ? `/manga/read/${m.id}/${firstChapter.id}` : (official?.url ?? null);
   const adaptations = animeAdaptations(m);
   const mappings = mappingsForManga(m.id);
   const recs = m.recommendations.nodes.map((n) => n.mediaRecommendation).filter((x): x is NonNullable<typeof x> => Boolean(x && x.type === "MANGA" && !x.isAdult));
@@ -82,7 +89,7 @@ function AniListDetail({ m }: { m: MangaDetail }) {
 
   return (
     <article>
-      <MangaDetailHero m={m} actions={<DetailActions manga={ref} readHref={official?.url ?? null} />} />
+      <MangaDetailHero m={m} actions={<DetailActions manga={ref} readHref={readHref} />} />
       <SectionNavManga
         items={[
           { id: "overview", label: "Resumen" },
@@ -123,10 +130,24 @@ function AniListDetail({ m }: { m: MangaDetail }) {
       </section>
 
       <DetailSection id="read" title="Dónde leer" jp="読む">
-        <AvailabilityList options={availability} mangaTitle={title} />
-        <div className="mt-4">
-          <NoCatalogNotice chapters={m.chapters} volumes={m.volumes} status={m.status} />
-        </div>
+        {chapters.length > 0 ? (
+          <div className="space-y-8">
+            <ChapterCatalog mangaId={m.id} slug={String(m.id)} chapters={chapters} volumes={volumes} tab="chapters" />
+            {availability.length > 0 && (
+              <div className="border-t border-line pt-6">
+                <h3 className="k-label mb-3 text-muted">Destinos oficiales externos</h3>
+                <AvailabilityList options={availability} mangaTitle={title} />
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            <AvailabilityList options={availability} mangaTitle={title} />
+            <div className="mt-4">
+              <NoCatalogNotice chapters={m.chapters} volumes={m.volumes} status={m.status} />
+            </div>
+          </div>
+        )}
       </DetailSection>
 
       <DetailSection id="anime" title="Anime y continuidad" jp="物語は続く">
