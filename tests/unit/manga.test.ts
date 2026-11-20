@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mangaBrowseVariables, parseMangaParams, serializeMangaParams } from "@/lib/anilist/manga-params";
 import { creditsOf, originLabel, type MangaCard } from "@/lib/anilist/manga-types";
 import { adjacentChapters, chapterLabel, compareChapters, parseChapterNumber, sortChapters, type MangaChapter } from "@/lib/manga/catalog";
-import { buildViews, fitSize, isChapterComplete, keyToIntent, preloadWindow, progressPercent, resolveReader, sanitizeReaderPrefs, step, swipeToIntent, tapToIntent, visualOrder, DEFAULT_READER_PREFS } from "@/lib/manga/reader/engine";
+import { boxesExtent, buildViews, clampPan, fitSize, isChapterComplete, isStripChapter, layoutView, zoomAt, keyToIntent, preloadWindow, progressPercent, resolveReader, sanitizeReaderPrefs, step, swipeToIntent, tapToIntent, visualOrder, DEFAULT_READER_PREFS } from "@/lib/manga/reader/engine";
 import { ADAPTATION_DATASET } from "@/lib/manga/continuity/dataset";
 import { detectIssues, episodeCoverage, loadDataset, lookupContinuity, presentRecommendation, strongest, validateMapping, validateSubmission } from "@/lib/manga/continuity/engine";
 import { DEFAULT_RANDOM_FILTERS, eligibility, eligiblePool, pickRandom, poolQuery, randomPage } from "@/lib/manga/random";
@@ -304,5 +304,34 @@ describe("authorized demo content", () => {
     expect(external).toHaveLength(1);
     expect(external[0]).toMatchObject({ kind: "external", official: true, label: "MANGA Plus (Shueisha)" });
     expect(availabilityFor({ seriesKey: "kaze:viento-de-papel" })[0].kind).toBe("embedded");
+  });
+});
+
+describe("reader: book layout, strips and zoom", () => {
+  it("detects webtoon strips only from measured sizes", () => {
+    expect(isStripChapter([])).toBe(false);
+    expect(isStripChapter([{ w: 800, h: 1200 }, { w: 800, h: 1150 }])).toBe(false);
+    expect(isStripChapter([{ w: 720, h: 9000 }])).toBe(true);
+    expect(isStripChapter([{ w: 720, h: 9000 }, { w: 800, h: 1200 }])).toBe(true);
+  });
+
+  it("lays two pages out as an open book around the centre spine", () => {
+    const boxes = layoutView([0, 1], () => ({ w: 1000, h: 1500 }), { width: 1600, height: 900 }, "contain");
+    expect(boxes).toHaveLength(2);
+    expect(boxes[0].left + boxes[0].width).toBeCloseTo(800);
+    expect(boxes[1].left).toBe(800);
+    expect(boxes[0].height).toBe(900);
+  });
+
+  it("keeps the zoom point under the cursor and never pans past the page edges", () => {
+    const stage = { width: 1000, height: 800 };
+    const z = zoomAt({ scale: 1, x: 0, y: 0 }, 2, 750, 400, stage);
+    expect(z.scale).toBe(2);
+    expect(500 + (750 - 500) * 2 + z.x).toBeCloseTo(750);
+    const extent = boxesExtent(layoutView([0], () => ({ w: 1000, h: 1500 }), stage, "contain"));
+    const clamped = clampPan({ scale: 2, x: 5000, y: -5000 }, extent, stage);
+    expect(clamped.x).toBeLessThan(5000);
+    expect(clamped.y).toBeGreaterThan(-5000);
+    expect(clampPan({ scale: 1, x: 40, y: 0 }, extent, stage).x).toBe(0);
   });
 });

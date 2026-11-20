@@ -17,6 +17,7 @@ export function PageImage({
   style,
   eager,
   onLoad,
+  onSize,
 }: {
   asset: ReadingAsset;
   dataSaver: boolean;
@@ -24,6 +25,8 @@ export function PageImage({
   style?: React.CSSProperties;
   eager?: boolean;
   onLoad?: () => void;
+  /** Real pixel size once decoded (providers such as MangaDex do not report page sizes up-front). */
+  onSize?: (width: number, height: number) => void;
 }) {
   const [state, setState] = useState<"loading" | "ok" | "error">("loading");
   const [attempt, setAttempt] = useState(0);
@@ -65,6 +68,7 @@ export function PageImage({
               if (img.naturalWidth > 0 && img.naturalHeight > 0) {
                 setAspect(`${img.naturalWidth} / ${img.naturalHeight}`);
                 setState("ok");
+                onSize?.(img.naturalWidth, img.naturalHeight);
                 onLoad?.();
               } else setState("error");
             }
@@ -78,6 +82,7 @@ export function PageImage({
             const img = e.currentTarget;
             if (img.naturalWidth > 0 && img.naturalHeight > 0) {
               setAspect(`${img.naturalWidth} / ${img.naturalHeight}`);
+              onSize?.(img.naturalWidth, img.naturalHeight);
             }
             setState("ok");
             onLoad?.();

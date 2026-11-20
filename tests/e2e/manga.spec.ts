@@ -8,6 +8,11 @@ import { expect, test, type Page } from "@playwright/test";
 const readerRegion = (page: Page) => page.getByRole("region", { name: /Viento de Papel, Cap\. 1/ });
 
 test.describe("KAZE MANGA", () => {
+  // The one-time manga launch announcement would cover the page; mark it as already seen.
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("kaze_manga_announcement_v2", "1"));
+  });
+
   test("manga home shows real AniList data and is reachable from the main navigation", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Manga" }).click();

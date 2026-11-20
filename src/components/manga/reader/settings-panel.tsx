@@ -74,6 +74,7 @@ export function ReaderSettingsPanel({ open, onOpenChange }: { open: boolean; onO
           </label>
         </Group>
         <Group title="Animación">
+          <Toggle label="Pasar página como un libro" description="En modo paginado la hoja gira en 3D sobre el lomo, como un tomo impreso." checked={p.bookFlip} onChange={up("bookFlip")} />
           <Segmented
             label="Experiencia"
             value={p.animation}

@@ -8,12 +8,13 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import type { ReadingAsset } from "@/lib/manga/catalog";
 import type { MangaSnapshot } from "@/lib/manga/types";
-import { buildViews, isChapterComplete, keyToIntent, preloadWindow, progressPercent, resolveReader, step, swipeToIntent, tapToIntent, transitionMs, viewIndexOf, visualOrder, type NavIntent } from "@/lib/manga/reader/engine";
+import { boxesExtent, buildViews, clampPan, flipMs, isChapterComplete, isStripChapter, keyToIntent, layoutView, preloadWindow, progressPercent, resolveReader, step, swipeToIntent, tapToIntent, transitionMs, viewIndexOf, visualOrder, zoomAt, type NavIntent, type ZoomState } from "@/lib/manga/reader/engine";
 import { useSettings } from "@/stores/settings";
 import { progressKey, useMangaLibrary } from "@/stores/manga";
 import { useKazeMotion } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { PageImage } from "./page-image";
+import { BookStage, Spread, type Flip } from "./book-stage";
 import { ReaderSettingsPanel } from "./settings-panel";
 
 export type ReaderChapter = { id: string; label: string; title: string | null; number: string | null; regular: boolean };
@@ -64,8 +65,22 @@ export function MangaReader(props: ReaderProps) {
   const settingsHydrated = useSettings((s) => s.hydrated);
   const { reduced } = useKazeMotion();
   const viewport = useSyncExternalStore(subscribeResize, viewportSnapshot, serverViewport);
-  const { mode, direction, layout } = resolveReader(prefs, { readingDirection }, viewport);
-  const views = buildViews(pages, layout, { coverAlone: prefs.coverAlone });
+  // Real page sizes, measured as images decode. Providers like MangaDex report placeholder sizes, and a
+  // webtoon strip laid out as if it were a printed page ends up as an unreadable sliver.
+  const [sizes, setSizes] = useState<Record<number, { w: number; h: number }>>({});
+  const reportSize = (i: number, w: number, h: number) => setSizes((s) => (s[i]?.w === w && s[i]?.h === h ? s : { ...s, [i]: { w, h } }));
+  const sizeOf = (i: number) => sizes[i] ?? { w: pages[i]?.width || 800, h: pages[i]?.height || 1200 };
+  const strip = isStripChapter(Object.values(sizes));
+  const resolved = resolveReader(prefs, { readingDirection }, viewport);
+  // Strips are read in cascade even when the book mode is selected: as pages they would be unreadable.
+  const mode = strip && resolved.mode === "paged" ? "webtoon" : resolved.mode;
+  const direction = resolved.direction;
+  const layout = mode === "paged" ? resolved.layout : "single";
+  const views = buildViews(
+    pages.map((p, i) => ({ ...p, width: sizeOf(i).w, height: sizeOf(i).h })),
+    layout,
+    { coverAlone: prefs.coverAlone },
+  );
 
   const record = useMangaLibrary((s) => s.recordChapterProgress);
   const recordSession = useMangaLibrary((s) => s.recordSession);
@@ -83,7 +98,13 @@ export function MangaReader(props: ReaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [end, setEnd] = useState(false);
-  const [zoom, setZoom] = useState({ scale: 1, x: 0, y: 0 });
+  const [zoom, setZoom] = useState<ZoomState>({ scale: 1, x: 0, y: 0 });
+  const [panning, setPanning] = useState(false);
+  const [flip, setFlip] = useState<Flip | null>(null);
+  const flipSeq = useRef(0);
+  // Cascade (webtoon) zoom: the column width, as a multiple of the normal reading width.
+  const [colScale, setColScale] = useState(1);
+  const stripToasted = useRef(false);
   const [fullscreen, setFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -102,6 +123,42 @@ export function MangaReader(props: ReaderProps) {
   const pageBookmarked = chapterBookmarks.find((b) => currentView.includes(b.page));
   const animation = reduced ? "classic" : prefs.animation;
   const dur = reduced ? 0 : transitionMs(prefs.transitionSpeed, animation) / 1000;
+  const bookFlip = prefs.bookFlip && !reduced;
+  const flipDur = flipMs(prefs.transitionSpeed) / 1000;
+  const dataSaver = prefs.dataSaver || prefs.quality === "data-saver";
+
+  // Stage geometry for paged mode: page boxes, and what zoom / pan may do with them.
+  const stageBox = { width: stage.width || viewport.width, height: stage.height || Math.max(200, viewport.height - 140) };
+  const extentOf = (view: number[]) => boxesExtent(layoutView(visualOrder(view, direction), sizeOf, stageBox, prefs.fit));
+  const extent = extentOf(currentView);
+  const overflows = extent.right - extent.left > stageBox.width + 1 || extent.bottom - extent.top > stageBox.height + 1;
+  const pannable = zoom.scale > 1.001 || overflows;
+  /** Zoom/pan for a freshly shown view: no zoom, and long pages (fit to width) start at their top. */
+  const startZoom = (view: number[]): ZoomState => clampPan({ scale: 1, x: 0, y: 1e6 }, extentOf(view), stageBox);
+  const applyZoom = (z: ZoomState) => setZoom(clampPan(z.scale <= 1.001 ? { ...z, scale: 1 } : z, extent, stageBox));
+  /** Cascade zoom keeps the reading position: same fraction of the chapter before and after. */
+  const zoomColumn = (factor: number | "reset") => {
+    const el = scrollRef.current;
+    const ratio = el ? el.scrollTop / Math.max(1, el.scrollHeight) : 0;
+    setColScale((s) => (factor === "reset" ? 1 : Math.min(3, Math.max(0.5, Math.round(s * factor * 100) / 100))));
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.scrollTop = ratio * el.scrollHeight;
+      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+    });
+  };
+  const zoomBy = (factor: number) => {
+    if (mode !== "paged") return zoomColumn(factor);
+    applyZoom(zoomAt(zoom, zoom.scale * factor, stageBox.width / 2, stageBox.height / 2, stageBox));
+  };
+  const resetZoom = () => setZoom(startZoom(currentView));
+  const zoomPct = Math.round((mode === "paged" ? zoom.scale : colScale) * 100);
+
+  useEffect(() => {
+    if (!strip || stripToasted.current || resolved.mode !== "paged") return;
+    stripToasted.current = true;
+    toast("Este capítulo viene en tiras verticales (webtoon): se lee en cascada.", { duration: 5000 });
+  }, [strip, resolved.mode]);
 
   // Resume from stored progress once (unless the URL asked for a specific page).
   useEffect(() => {
@@ -200,8 +257,11 @@ export function MangaReader(props: ReaderProps) {
         if (prev) toast("Estás en la primera página", { action: { label: `Ir a ${prev.label}`, onClick: () => goToChapter(prev) } });
         return;
       }
-      setDirSign(intent === "prev" ? -1 : 1);
-      setZoom({ scale: 1, x: 0, y: 0 });
+      if (r.view === viewIndex) return;
+      const dir = r.view > viewIndex ? 1 : -1;
+      setDirSign(dir);
+      if (bookFlip) setFlip({ from: currentView, to: views[r.view], dir, key: ++flipSeq.current });
+      setZoom(startZoom(views[r.view]));
       setPage(views[r.view][0]);
   };
 
@@ -226,10 +286,20 @@ export function MangaReader(props: ReaderProps) {
     if (k === "f" || k === "F") return toggleFullscreen();
     if (k === "b" || k === "B") return toggleBookmark();
     if (k === "s" || k === "S") return setSettingsOpen(true);
-    if (k === "+" || k === "=") return setZoom((z) => ({ ...z, scale: Math.min(4, z.scale + 0.5) }));
-    if (k === "-") return setZoom((z) => (z.scale - 0.5 <= 1 ? { scale: 1, x: 0, y: 0 } : { ...z, scale: z.scale - 0.5 }));
-    if (k === "Escape" && zoom.scale > 1) return setZoom({ scale: 1, x: 0, y: 0 });
-    if (zoom.scale > 1 && k.startsWith("Arrow")) return; // arrows pan nothing while zoomed; avoid accidental page turns
+    if (k === "+" || k === "=") return zoomBy(1.25);
+    if (k === "-") return zoomBy(0.8);
+    if (k === "0") return mode === "paged" ? resetZoom() : zoomColumn("reset");
+    if (k === "Escape" && mode === "paged" && zoom.scale > 1) return resetZoom();
+    if (mode === "paged" && pannable && k.startsWith("Arrow")) {
+      // While zoomed (or on a page taller than the screen) arrows move around the page instead of turning it.
+      const d = 140;
+      const dx = k === "ArrowLeft" ? d : k === "ArrowRight" ? -d : 0, dy = k === "ArrowUp" ? d : k === "ArrowDown" ? -d : 0;
+      const nextZ = clampPan({ ...zoom, x: zoom.x + dx, y: zoom.y + dy }, extent, stageBox);
+      if (nextZ.x !== zoom.x || nextZ.y !== zoom.y || zoom.scale > 1.001) {
+        e.preventDefault();
+        return setZoom(nextZ);
+      }
+    }
     const intent = keyToIntent(k, direction, mode);
     if (intent !== "none") {
       e.preventDefault();
@@ -237,13 +307,19 @@ export function MangaReader(props: ReaderProps) {
     }
   };
 
-  // Pointer gestures: tap zones, swipes, pinch-zoom and pan (paged mode).
+  // Pointer gestures (paged mode): tap zones, swipes, pinch-zoom around the fingers and drag-to-pan.
+  const tapTimer = useRef(0);
+  const stagePoint = (x: number, y: number) => {
+    const r = stageRef.current?.getBoundingClientRect();
+    return r ? { x: x - r.left, y: y - r.top } : { x, y };
+  };
   const onPointerDown = (e: React.PointerEvent) => {
     stamp(session.current);
+    if ((e.target as HTMLElement).closest("button,a,input,select")) return;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()];
-      gesture.current = { x: e.clientX, y: e.clientY, pinch0: Math.hypot(a.x - b.x, a.y - b.y), scale0: zoom.scale, moved: true };
+      gesture.current = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, pinch0: Math.hypot(a.x - b.x, a.y - b.y), scale0: zoom.scale, panX: zoom.x, panY: zoom.y, moved: true };
     } else gesture.current = { x: e.clientX, y: e.clientY, panX: zoom.x, panY: zoom.y, moved: false };
   };
   const onPointerMove = (e: React.PointerEvent) => {
@@ -253,34 +329,90 @@ export function MangaReader(props: ReaderProps) {
     if (!g) return;
     if (pointers.current.size === 2 && g.pinch0) {
       const [a, b] = [...pointers.current.values()];
-      const scale = Math.min(4, Math.max(1, (g.scale0 ?? 1) * (Math.hypot(a.x - b.x, a.y - b.y) / g.pinch0)));
-      setZoom((z) => (scale === 1 ? { scale: 1, x: 0, y: 0 } : { ...z, scale }));
+      const p = stagePoint(g.x, g.y);
+      const from = { scale: g.scale0 ?? 1, x: g.panX ?? 0, y: g.panY ?? 0 };
+      setPanning(true);
+      applyZoom(zoomAt(from, from.scale * (Math.hypot(a.x - b.x, a.y - b.y) / g.pinch0), p.x, p.y, stageBox));
       return;
     }
     const dx = e.clientX - g.x, dy = e.clientY - g.y;
-    if (Math.hypot(dx, dy) > 8) g.moved = true;
-    if (zoom.scale > 1 && g.moved) setZoom((z) => ({ ...z, x: (g.panX ?? 0) + dx, y: (g.panY ?? 0) + dy }));
+    if (!g.moved && Math.hypot(dx, dy) > 8) {
+      g.moved = true;
+      // Keep receiving the drag even if the pointer leaves the stage.
+      if (pannable) (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    }
+    if (pannable && g.moved) {
+      setPanning(true);
+      setZoom(clampPan({ scale: zoom.scale, x: (g.panX ?? 0) + dx, y: (g.panY ?? 0) + dy }, extent, stageBox));
+    }
   };
   const onPointerUp = (e: React.PointerEvent) => {
     const g = gesture.current;
     pointers.current.delete(e.pointerId);
     if (pointers.current.size > 0) return;
     gesture.current = null;
-    if (!g || g.pinch0 || mode !== "paged" || zoom.scale > 1) return;
+    setPanning(false);
+    if (!g || g.pinch0 || mode !== "paged") return;
     const dx = e.clientX - g.x, dy = e.clientY - g.y;
     if (g.moved) {
-      navigate(swipeToIntent(dx, dy, direction));
+      if (!pannable) navigate(swipeToIntent(dx, dy, direction));
       return;
     }
-    if ((e.target as HTMLElement).closest("button,a,input,select")) return;
+    if (zoom.scale > 1.001) return;
     const rect = containerRef.current!.getBoundingClientRect();
-    navigate(tapToIntent((e.clientX - rect.left) / rect.width, direction));
+    const intent = tapToIntent((e.clientX - rect.left) / rect.width, direction);
+    window.clearTimeout(tapTimer.current);
+    if (!prefs.zoomOnDoubleClick) return navigate(intent);
+    // Wait a moment: a second tap means "zoom here", not "turn the page".
+    tapTimer.current = window.setTimeout(() => navigate(intent), 230);
   };
   const onDoubleClick = (e: React.MouseEvent) => {
     if (!prefs.zoomOnDoubleClick || mode !== "paged") return;
-    const rect = containerRef.current!.getBoundingClientRect();
-    setZoom((z) => (z.scale > 1 ? { scale: 1, x: 0, y: 0 } : { scale: 2.2, x: (rect.width / 2 - (e.clientX - rect.left)) * 1.2, y: (rect.height / 2 - (e.clientY - rect.top)) * 1.2 }));
+    window.clearTimeout(tapTimer.current);
+    const p = stagePoint(e.clientX, e.clientY);
+    if (zoom.scale > 1.001) resetZoom();
+    else applyZoom(zoomAt(zoom, 2.5, p.x, p.y, stageBox));
   };
+
+  // Mouse wheel / trackpad. Ctrl + wheel (and trackpad pinch) zooms at the cursor in both modes. In paged
+  // mode a plain wheel moves around a zoomed or long page and turns the page once that page is used up.
+  const wheel = useRef({ acc: 0, last: 0 });
+  const onWheelRef = useRef<(e: WheelEvent) => void>(() => {});
+  useEffect(() => {
+    onWheelRef.current = (e: WheelEvent) => {
+      if (settingsOpen || listOpen) return;
+      stamp(session.current);
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const factor = Math.exp(-e.deltaY * 0.0045);
+        if (mode !== "paged") return zoomColumn(factor);
+        const p = stagePoint(e.clientX, e.clientY);
+        return applyZoom(zoomAt(zoom, zoom.scale * factor, p.x, p.y, stageBox));
+      }
+      if (mode !== "paged" || end) return;
+      e.preventDefault();
+      if (pannable) {
+        const nextZ = clampPan({ ...zoom, x: zoom.x - e.deltaX, y: zoom.y - e.deltaY }, extent, stageBox);
+        if (Math.abs(nextZ.y - zoom.y) > 0.5 || Math.abs(nextZ.x - zoom.x) > 0.5) return setZoom(nextZ);
+        if (zoom.scale > 1.001) return;
+      }
+      const now = Date.now();
+      const w = wheel.current;
+      if (now - w.last < 450) return;
+      w.acc += e.deltaY + e.deltaX;
+      if (Math.abs(w.acc) < 60) return;
+      navigate(w.acc > 0 ? "next" : "prev");
+      w.acc = 0;
+      w.last = now;
+    };
+  });
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const fn = (e: WheelEvent) => onWheelRef.current(e);
+    el.addEventListener("wheel", fn, { passive: false });
+    return () => el.removeEventListener("wheel", fn);
+  }, []);
 
   // Vertical modes: track the most visible page to update progress.
   useEffect(() => {
@@ -310,9 +442,10 @@ export function MangaReader(props: ReaderProps) {
       if (i === page) continue;
       const img = new Image();
       img.decoding = "async";
-      img.src = pages[i].src;
+      img.onload = () => reportSize(i, img.naturalWidth, img.naturalHeight);
+      img.src = dataSaver && pages[i].srcLow ? pages[i].srcLow : pages[i].src;
     }
-  }, [mode, page, pages, preloadAhead]);
+  }, [mode, page, pages, preloadAhead, dataSaver]);
 
   // Outside Focus mode the bars get their own space, so they never sit on top of a panel or a balloon.
   const reserveSpace = animation !== "focus";
@@ -322,23 +455,6 @@ export function MangaReader(props: ReaderProps) {
   const pct = progressPercent(lastVisiblePage, pages.length);
   const bg = prefs.background;
   const showUi = (animation === "focus" ? focusUi : ui) || end;
-  const pageW = (asset: ReadingAsset, count: number) => {
-    // Size each page inside the viewport, honouring the fit preference. Never crops.
-    const availW = (stage.width || viewport.width) / count;
-    const availH = stage.height || viewport.height;
-    const fit = prefs.fit;
-    if (fit === "original") return { width: asset.width, height: asset.height };
-    // Detección de tira vertical (típica en manhwa / webtoon): asegurar ancho de lectura óptimo
-    const isTallStrip = asset.height / Math.max(1, asset.width) > 1.6;
-    if (isTallStrip) {
-      const targetW = Math.min(availW, count > 1 ? 550 : 850);
-      return { width: Math.floor(targetW), height: "auto" as unknown as number };
-    }
-    const sw = availW / asset.width, sh = availH / asset.height;
-    const s = fit === "width" ? sw : fit === "height" ? sh : Math.min(sw, sh);
-    return { width: Math.floor(asset.width * s), height: Math.floor(asset.height * s) };
-  };
-
   const enterVariants = {
     classic: { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } },
     focus: { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } },
@@ -392,8 +508,9 @@ export function MangaReader(props: ReaderProps) {
             {/* Control directo de modo: Libro vs Cascada */}
             <button
               type="button"
-              className="k-btn k-btn-sm !bg-white/10 !text-white flex items-center gap-1.5 px-2.5 text-xs font-medium"
-              title={mode === "paged" ? "Cambiar a modo Cascada (Webtoon)" : "Cambiar a modo Libro (Paginado)"}
+              className="k-btn k-btn-sm !bg-white/10 !text-white flex items-center gap-1.5 px-2.5 text-xs font-medium disabled:opacity-60"
+              disabled={strip}
+              title={strip ? "Este capítulo viene en tiras verticales: solo se puede leer en cascada" : mode === "paged" ? "Cambiar a modo Cascada (Webtoon)" : "Cambiar a modo Libro (Paginado)"}
               onClick={() => setReader({ mode: mode === "paged" ? "webtoon" : "paged" })}
             >
               {mode === "paged" ? <BookOpen className="size-3.5" /> : <ScrollText className="size-3.5" />}
@@ -431,11 +548,17 @@ export function MangaReader(props: ReaderProps) {
             <button type="button" className="k-btn k-btn-icon k-btn-sm !bg-white/10 !text-white" aria-label={pageBookmarked ? "Quitar marcador" : "Añadir marcador"} aria-pressed={Boolean(pageBookmarked)} onClick={toggleBookmark}>
               {pageBookmarked ? <BookmarkCheck className="size-4" aria-hidden /> : <Bookmark className="size-4" aria-hidden />}
             </button>
-            {mode === "paged" && (
-              <button type="button" className="k-btn k-btn-icon k-btn-sm !bg-white/10 !text-white max-sm:hidden" aria-label={zoom.scale > 1 ? "Quitar zoom" : "Ampliar"} onClick={() => setZoom((z) => (z.scale > 1 ? { scale: 1, x: 0, y: 0 } : { scale: 2, x: 0, y: 0 }))}>
-                {zoom.scale > 1 ? <ZoomOut className="size-4" aria-hidden /> : <ZoomIn className="size-4" aria-hidden />}
+            <div className="flex items-center rounded-full bg-white/10" role="group" aria-label="Zoom">
+              <button type="button" className="k-btn k-btn-icon k-btn-sm !bg-transparent !text-white" aria-label="Alejar" onClick={() => zoomBy(0.8)} disabled={mode === "paged" ? zoom.scale <= 1.001 : colScale <= 0.5}>
+                <ZoomOut className="size-4" aria-hidden />
               </button>
-            )}
+              <button type="button" className="min-w-[3.25rem] px-1 text-center font-mono text-xs tabular-nums text-white/90 hover:text-white" aria-label={`Zoom al ${zoomPct}%. Restablecer`} onClick={() => (mode === "paged" ? resetZoom() : zoomColumn("reset"))}>
+                {zoomPct}%
+              </button>
+              <button type="button" className="k-btn k-btn-icon k-btn-sm !bg-transparent !text-white" aria-label="Ampliar" onClick={() => zoomBy(1.25)} disabled={mode === "paged" ? zoom.scale >= 4.99 : colScale >= 3}>
+                <ZoomIn className="size-4" aria-hidden />
+              </button>
+            </div>
             <button type="button" className="k-btn k-btn-icon k-btn-sm !bg-white/10 !text-white" aria-label={fullscreen ? "Salir de pantalla completa" : "Pantalla completa"} onClick={toggleFullscreen}>
               {fullscreen ? <Minimize className="size-4" aria-hidden /> : <Expand className="size-4" aria-hidden />}
             </button>
@@ -486,7 +609,16 @@ export function MangaReader(props: ReaderProps) {
 
       {/* stage */}
       {mode === "paged" ? (
-        <div ref={stageRef} className="absolute inset-x-0 touch-none select-none overflow-hidden" style={{ ...reserve, perspective: animation === "cinematic" ? 1800 : undefined }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onDoubleClick={onDoubleClick}>
+        <div
+          ref={stageRef}
+          className="absolute inset-x-0 touch-none select-none overflow-hidden"
+          style={{ ...reserve, cursor: pannable ? (panning ? "grabbing" : "grab") : undefined }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          onDoubleClick={onDoubleClick}
+        >
           <AnimatePresence initial={false} mode="popLayout">
             {end ? (
               <motion.div key="end" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 grid place-items-center p-6 text-center">
@@ -511,37 +643,39 @@ export function MangaReader(props: ReaderProps) {
                   </div>
                 </div>
               </motion.div>
+            ) : bookFlip ? (
+              <motion.div key="book" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
+                <div className={cn("absolute inset-0 origin-center", !panning && "transition-transform duration-200 ease-out")} style={{ transform: `translate3d(${zoom.x}px, ${zoom.y}px, 0) scale(${zoom.scale})` }}>
+                  <BookStage
+                    view={currentView}
+                    flip={flip}
+                    direction={direction}
+                    duration={flipDur}
+                    onFlipDone={(key) => setFlip((f) => (f?.key === key ? null : f))}
+                    pages={pages}
+                    size={sizeOf}
+                    stage={stageBox}
+                    fit={prefs.fit}
+                    dataSaver={dataSaver}
+                    onSize={reportSize}
+                  />
+                </div>
+              </motion.div>
             ) : (
-              <motion.div key={currentView.join("-")} {...enterVariants} transition={{ duration: dur, ease: [0.22, 1, 0.36, 1] }} className="absolute inset-0 flex items-center justify-center" style={{ transformStyle: animation === "cinematic" ? "preserve-3d" : undefined }}>
-                <div className="flex items-center justify-center gap-2 transition-transform duration-200 h-full max-h-[calc(100vh-6rem)]" style={{ transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`, cursor: zoom.scale > 1 ? "grab" : undefined }}>
-                  {visualOrder(currentView, direction).map((i) => {
-                    const a = pages[i];
-                    const s = pageW(a, currentView.length);
-                    return (
-                      <PageImage
-                        key={a.src}
-                        asset={a}
-                        dataSaver={prefs.dataSaver || prefs.quality === "data-saver"}
-                        eager
-                        className="max-h-[calc(100vh-6.5rem)] max-w-full"
-                        style={{
-                          width: s.width,
-                          maxWidth: prefs.fit === "original" ? undefined : currentView.length > 1 ? "48vw" : "96vw",
-                        }}
-                      />
-                    );
-                  })}
+              <motion.div key={currentView.join("-")} {...enterVariants} transition={{ duration: dur, ease: [0.22, 1, 0.36, 1] }} className="absolute inset-0" style={{ transformStyle: animation === "cinematic" ? "preserve-3d" : undefined, perspective: animation === "cinematic" ? 1800 : undefined }}>
+                <div className={cn("absolute inset-0 origin-center", !panning && "transition-transform duration-200 ease-out")} style={{ transform: `translate3d(${zoom.x}px, ${zoom.y}px, 0) scale(${zoom.scale})` }}>
+                  <Spread view={currentView} direction={direction} pages={pages} size={sizeOf} stage={stageBox} fit={prefs.fit} dataSaver={dataSaver} onSize={reportSize} />
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       ) : (
-        <div ref={(el) => void ((scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = el, (stageRef as React.MutableRefObject<HTMLDivElement | null>).current = el)} className="absolute inset-0 overflow-y-auto overscroll-contain" onScroll={() => stamp(session.current)} onClick={(e) => !(e.target as HTMLElement).closest("button,a") && navigate("toggle-ui")}>
-          <div className="mx-auto flex flex-col items-center" style={{ maxWidth: 850, width: "100%", gap: 0, paddingTop: reserveSpace ? "4rem" : 0, paddingBottom: reserveSpace ? "6rem" : 0 }}>
+        <div ref={(el) => void ((scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = el, (stageRef as React.MutableRefObject<HTMLDivElement | null>).current = el)} className="absolute inset-0 overflow-auto overscroll-contain" onScroll={() => stamp(session.current)} onClick={(e) => !(e.target as HTMLElement).closest("button,a") && navigate("toggle-ui")}>
+          <div className="mx-auto flex flex-col items-center" style={{ width: Math.round(Math.min(stageBox.width, 850) * colScale), maxWidth: colScale <= 1 ? "100%" : undefined, gap: mode === "vertical" ? prefs.pageGap : 0, paddingTop: reserveSpace ? "4rem" : 0, paddingBottom: reserveSpace ? "6rem" : 0 }}>
             {pages.map((a, i) => (
               <div key={a.src} data-index={i} ref={(el) => void (pageRefs.current[i] = el)} className="w-full">
-                <PageImage asset={a} dataSaver={prefs.dataSaver || prefs.quality === "data-saver"} eager={Math.abs(i - page) <= prefs.preload} className="w-full" />
+                <PageImage asset={{ ...a, width: sizeOf(i).w, height: sizeOf(i).h }} dataSaver={dataSaver} eager={Math.abs(i - page) <= prefs.preload} className="w-full [&_img]:w-full" onSize={(w, h) => reportSize(i, w, h)} />
               </div>
             ))}
             <div className="w-full max-w-md p-8 text-center">
@@ -607,7 +741,7 @@ export function MangaReader(props: ReaderProps) {
             </div>
             {prefs.showKeyboardHints && (
               <p className="mx-auto mt-1.5 max-w-4xl text-center text-[0.625rem] text-white/50 max-md:hidden">
-                {mode === "paged" ? (direction === "rtl" ? "← siguiente · → anterior" : "→ siguiente · ← anterior") : "Espacio / RePág para desplazarte"} · F pantalla completa · B marcador · S ajustes · doble clic para zoom
+                {mode === "paged" ? (direction === "rtl" ? "← siguiente · → anterior" : "→ siguiente · ← anterior") : "Espacio / RePág para desplazarte"} · F pantalla completa · B marcador · S ajustes · Ctrl + rueda o doble clic para zoom
               </p>
             )}
           </motion.footer>
