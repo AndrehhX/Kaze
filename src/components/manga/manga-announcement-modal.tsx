@@ -79,7 +79,7 @@ export function MangaAnnouncementModal() {
             {/* Banner de imagen limpio */}
             <div className="relative aspect-[2/1] w-full overflow-hidden bg-surface-elevated">
               <Image
-                src="/announcements/manga-banner.png"
+                src="/announcements/manga-banner.jpg"
                 alt="KAZE Manga"
                 fill
                 priority
