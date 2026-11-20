@@ -99,11 +99,21 @@ export type Suggestion = Pick<MediaCard, "id" | "title" | "format" | "seasonYear
   coverImage: { large: string | null; color: string | null };
 };
 
+const suggestMemoryCache = new Map<string, { expires: number; data: Suggestion[] }>();
+
 export async function suggestMedia(search: string): Promise<Suggestion[]> {
-  "use cache";
-  cacheLife("minutes");
+  const key = search.trim().toLowerCase();
+  const cached = suggestMemoryCache.get(key);
+  if (cached && cached.expires > Date.now()) {
+    return cached.data;
+  }
   type R = { Page: { media: Suggestion[] } };
-  const d = await anilistRequest<R>(SUGGEST_QUERY, { search });
+  const d = await anilistRequest<R>(SUGGEST_QUERY, { search: key });
+  if (suggestMemoryCache.size > 200) {
+    const firstKey = suggestMemoryCache.keys().next().value;
+    if (firstKey) suggestMemoryCache.delete(firstKey);
+  }
+  suggestMemoryCache.set(key, { expires: Date.now() + 10 * 60 * 1000, data: d.Page.media });
   return d.Page.media;
 }
 
