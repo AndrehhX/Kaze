@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { BookOpen, Tv } from "lucide-react";
-import { resolveManga, STATIC_MANGA_PARAMS } from "./load";
+import { resolveManga } from "./load";
 import { animeAdaptations, mangaTitle, type MangaDetail } from "@/lib/anilist/manga-types";
 import { cleanDescription } from "@/lib/utils";
 import { genreLabel } from "@/lib/anilist/browse-params";
@@ -22,9 +22,6 @@ import { Rail } from "@/components/ui/rail";
 import { MediaReviews } from "@/components/social/reviews";
 import { DiscussionList } from "@/components/social/discussions";
 
-export function generateStaticParams() {
-  return STATIC_MANGA_PARAMS;
-}
 
 type Props = { params: Promise<{ id: string }> };
 

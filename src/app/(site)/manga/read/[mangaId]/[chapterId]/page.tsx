@@ -15,10 +15,6 @@ import { MangaReader, type ReaderChapter } from "@/components/manga/reader/reade
 
 type Props = { params: Promise<{ mangaId: string; chapterId: string }>; searchParams: Promise<{ page?: string }> };
 
-export function generateStaticParams() {
-  return [];
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { mangaId } = await params;
   const anilistId = Number.parseInt(mangaId, 10);

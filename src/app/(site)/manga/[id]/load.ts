@@ -9,5 +9,3 @@ export async function resolveManga(param: string) {
   if (!media || media.isAdult) return null;
   return { kind: "anilist" as const, media };
 }
-
-export const STATIC_MANGA_PARAMS: { id: string }[] = [];
