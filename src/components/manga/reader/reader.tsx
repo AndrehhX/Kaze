@@ -671,7 +671,7 @@ export function MangaReader(props: ReaderProps) {
         </div>
       ) : (
         <div ref={(el) => void ((scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = el, (stageRef as React.MutableRefObject<HTMLDivElement | null>).current = el)} className="absolute inset-0 overflow-auto overscroll-contain" onScroll={() => stamp(session.current)} onClick={(e) => !(e.target as HTMLElement).closest("button,a") && navigate("toggle-ui")}>
-          <div className="mx-auto flex flex-col items-center" style={{ width: Math.round(Math.min(stageBox.width, strip ? 760 : 850) * colScale), maxWidth: colScale <= 1 ? "100%" : undefined, gap: mode === "vertical" ? prefs.pageGap : (strip ? 0 : 16), paddingTop: reserveSpace ? "4rem" : 0, paddingBottom: reserveSpace ? "6rem" : 0 }}>
+          <div className="mx-auto flex flex-col items-center" style={{ width: Math.round(Math.min(stageBox.width, strip ? 920 : 960) * colScale), maxWidth: colScale <= 1 ? "100%" : undefined, gap: mode === "vertical" ? prefs.pageGap : (strip ? 0 : 16), paddingTop: reserveSpace ? "4rem" : 0, paddingBottom: reserveSpace ? "6rem" : 0 }}>
             {pages.map((a, i) => (
               <div key={a.src} data-index={i} ref={(el) => void (pageRefs.current[i] = el)} className={cn("w-full flex justify-center", !strip && prefs.fit !== "width" && "max-h-[calc(100dvh-5rem)]")}>
                 <PageImage

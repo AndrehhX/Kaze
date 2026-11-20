@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { X, ArrowRight } from "lucide-react";
 import { useKazeMotion } from "@/lib/motion";
 
-const STORAGE_KEY = "kaze_manga_announcement_v2";
+const STORAGE_KEY = "kaze_manga_announcement_v3";
 
 export function MangaAnnouncementModal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -77,16 +77,16 @@ export function MangaAnnouncementModal() {
             className="k-panel relative w-full max-w-[460px] overflow-hidden !bg-surface !p-0 shadow-2xl"
           >
             {/* Banner de imagen limpio */}
-            <div className="relative aspect-[22/8] w-full overflow-hidden bg-surface-elevated">
+            <div className="relative aspect-[2/1] w-full overflow-hidden bg-surface-elevated">
               <Image
-                src="/announcements/manga-banner.jpg"
+                src="/announcements/manga-banner.png"
                 alt="KAZE Manga"
                 fill
                 priority
                 className="object-cover object-center"
                 sizes="(max-width: 640px) 100vw, 460px"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/20 to-transparent" />
 
               {/* Botón de cierre nativo k-btn */}
               <button

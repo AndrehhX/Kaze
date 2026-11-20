@@ -31,9 +31,27 @@ export function PageImage({
   const [state, setState] = useState<"loading" | "ok" | "error">("loading");
   const [attempt, setAttempt] = useState(0);
   const [aspect, setAspect] = useState<string | null>(null);
+  // Auto fallback to compressed data-saver version if original uncompressed fails (common on MangaDex@Home nodes)
+  const [useSaverFallback, setUseSaverFallback] = useState(false);
 
-  const base = dataSaver && asset.srcLow ? asset.srcLow : asset.src;
-  const src = attempt ? `${base}${base.includes("?") ? "&" : "?"}retry=${attempt}` : base;
+  const activeSrc = (dataSaver || useSaverFallback) && asset.srcLow ? asset.srcLow : asset.src;
+  const src = attempt ? `${activeSrc}${activeSrc.includes("?") ? "&" : "?"}retry=${attempt}` : activeSrc;
+
+  const handleError = () => {
+    // Tier 1 fallback: if high-res failed and low-res/saver exists, try low-res automatically without error UI
+    if (!useSaverFallback && !dataSaver && asset.srcLow) {
+      setUseSaverFallback(true);
+      setState("loading");
+      return;
+    }
+    // Tier 2: one automatic cache-busting retry before showing error banner
+    if (attempt === 0) {
+      setAttempt(1);
+      setState("loading");
+      return;
+    }
+    setState("error");
+  };
 
   return (
     <div
@@ -52,6 +70,7 @@ export function PageImage({
             className="k-btn k-btn-primary k-btn-sm"
             onClick={(e) => {
               e.stopPropagation();
+              setUseSaverFallback(false);
               setState("loading");
               setAttempt((a) => a + 1);
             }}
@@ -70,7 +89,9 @@ export function PageImage({
                 setState("ok");
                 onSize?.(img.naturalWidth, img.naturalHeight);
                 onLoad?.();
-              } else setState("error");
+              } else {
+                handleError();
+              }
             }
           }}
           src={src}
@@ -87,7 +108,7 @@ export function PageImage({
             setState("ok");
             onLoad?.();
           }}
-          onError={() => setState("error")}
+          onError={handleError}
           className={cn("km-page-img max-h-full max-w-full object-contain transition-opacity duration-300", state === "ok" ? "opacity-100" : "opacity-0")}
         />
       )}

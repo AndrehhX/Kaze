@@ -16,7 +16,8 @@ const pagesCache = new Map<string, { pages: ReadingAsset[]; expires: number }>()
 
 const CACHE_TTL_SERIES = 24 * 60 * 60 * 1000; // 24 hours
 const CACHE_TTL_CHAPTERS = 60 * 60 * 1000;     // 1 hour
-const CACHE_TTL_PAGES = 2 * 60 * 60 * 1000;     // 2 hours
+// MangaDex@Home base URLs are ephemeral tokens valid for ~15 minutes; cache pages for 10 minutes max
+const CACHE_TTL_PAGES = 10 * 60 * 1000;        // 10 minutes
 
 interface MangaDexMangaItem {
   id: string;
@@ -70,7 +71,8 @@ async function findMangaDexId(anilistId: number): Promise<string | null> {
 
     for (const title of queryTitles) {
       if (matchedId) break;
-      const url = `https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=15&order[relevance]=desc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
+      // Exclude doujinshis (UUID b13b2a48-c720-44a9-9c77-39c9979373fb) so official serializations match first
+      const url = `https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=25&order[relevance]=desc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&excludedTags[]=b13b2a48-c720-44a9-9c77-39c9979373fb`;
       const res = await fetch(url, {
         headers: { "User-Agent": "Kaze/1.0" },
         signal: AbortSignal.timeout(6000),
@@ -152,26 +154,47 @@ export const mangaDexProvider: ChapterCatalogProvider & ChapterContentProvider &
       const url = `https://api.mangadex.org/manga/${mangadexId}/feed?translatedLanguage[]=es-la&translatedLanguage[]=es&translatedLanguage[]=en&order[chapter]=asc&limit=500&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
       const res = await fetch(url, {
         headers: { "User-Agent": "Kaze/1.0" },
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(8000),
         next: { revalidate: 3600 },
       }).catch(() => null);
       if (!res || !res.ok) return [];
 
-      const json = (await res.json()) as { data?: MangaDexChapterItem[] };
-      const rawChapters = json.data ?? [];
+      const json = (await res.json()) as { data?: MangaDexChapterItem[]; total?: number };
+      let rawChapters = json.data ?? [];
+
+      // If manga has more than 500 chapters across languages, fetch page 2 to avoid missing scans
+      if (json.total && json.total > 500) {
+        const p2Url = `https://api.mangadex.org/manga/${mangadexId}/feed?translatedLanguage[]=es-la&translatedLanguage[]=es&translatedLanguage[]=en&order[chapter]=asc&limit=500&offset=500&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
+        const p2Res = await fetch(p2Url, {
+          headers: { "User-Agent": "Kaze/1.0" },
+          signal: AbortSignal.timeout(8000),
+          next: { revalidate: 3600 },
+        }).catch(() => null);
+        if (p2Res && p2Res.ok) {
+          const p2Json = (await p2Res.json()) as { data?: MangaDexChapterItem[] };
+          rawChapters = rawChapters.concat(p2Json.data ?? []);
+        }
+      }
 
       // Filter only readable chapters that have pages and no external redirect
       const readable = rawChapters.filter((c) => c.attributes.pages > 0 && !c.attributes.externalUrl);
 
-      // Deduplicate chapters per (language + chapter number) choosing the scan with highest page count
+      // Deduplicate chapters per chapter number:
+      // Priority: es-la (3) > es (2) > en (1). If same priority, pick the scan with highest page count
+      const langPriority: Record<string, number> = { "es-la": 3, es: 2, en: 1 };
       const deduped = new Map<string, MangaDexChapterItem>();
       for (const c of readable) {
-        const lang = c.attributes.translatedLanguage || "es";
         const chNum = c.attributes.chapter ?? "0";
-        const groupKey = `${lang}:${chNum}`;
-        const existing = deduped.get(groupKey);
-        if (!existing || existing.attributes.pages < c.attributes.pages) {
-          deduped.set(groupKey, c);
+        const lang = c.attributes.translatedLanguage || "es";
+        const existing = deduped.get(chNum);
+        if (!existing) {
+          deduped.set(chNum, c);
+        } else {
+          const pExisting = langPriority[existing.attributes.translatedLanguage] || 0;
+          const pNew = langPriority[lang] || 0;
+          if (pNew > pExisting || (pNew === pExisting && c.attributes.pages > existing.attributes.pages)) {
+            deduped.set(chNum, c);
+          }
         }
       }
 
@@ -246,11 +269,11 @@ export const mangaDexProvider: ChapterCatalogProvider & ChapterContentProvider &
     }
 
     try {
-      const url = `https://api.mangadex.org/at-home/server/${chapterId}`;
+      const url = `https://api.mangadex.org/at-home/server/${chapterId}?forcePort443=true`;
       const res = await fetch(url, {
         headers: { "User-Agent": "Kaze/1.0" },
-        signal: AbortSignal.timeout(6000),
-        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(8000),
+        next: { revalidate: 600 },
       }).catch(() => null);
       if (!res || !res.ok) return [];
 
