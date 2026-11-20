@@ -26,6 +26,12 @@ export function MangaAnnouncementModal() {
       if (p.startsWith("/watch/") || p.startsWith("/manga/read/")) {
         return;
       }
+      // Si el modal de Discord está pendiente y no estamos en la sección de manga,
+      // priorizamos Discord en la página principal para evitar colisión de modales.
+      const discordSeen = localStorage.getItem("kaze_discord_community_modal_v1");
+      if (!discordSeen && !p.startsWith("/manga")) {
+        return;
+      }
     }
 
     const timer = setTimeout(() => {

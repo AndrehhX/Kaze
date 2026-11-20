@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { Compass, Download, Home, Library, LayoutGrid, Paintbrush, Search, Settings, Smartphone, UserRound } from "lucide-react";
+import { Compass, Download, Home, Library, LayoutGrid, Paintbrush, Search, Settings, Smartphone, UserRound, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
-import { APK_DOWNLOAD_URL, PRIMARY_NAV, isActive } from "./nav-config";
+import { APK_DOWNLOAD_URL, DISCORD_INVITE_URL, PRIMARY_NAV, isActive } from "./nav-config";
 import { usePalette } from "./command-palette";
 import { ThemePreviewCard, useThemeSwitch } from "./theme-switcher";
 import { THEME_IDS } from "@/lib/themes";
@@ -16,6 +16,7 @@ import { Avatar } from "./user-menu";
 import { cn } from "@/lib/utils";
 import { useCurrentPath } from "@/stores/route";
 import { useKazeMotion } from "@/lib/motion";
+import { DiscordIcon } from "./discord-announcement-modal";
 
 export function MobileNav() {
   const path = useCurrentPath();
@@ -123,7 +124,7 @@ export function MobileNav() {
             href={APK_DOWNLOAD_URL}
             rel="noopener noreferrer"
             download="kaze.apk"
-            className="mb-4 flex items-center justify-between rounded-xl border border-line bg-surface/90 p-3 shadow-sm transition-colors hover:bg-surface"
+            className="mb-2 flex items-center justify-between rounded-xl border border-line bg-surface/90 p-3 shadow-sm transition-colors hover:bg-surface"
           >
             <div className="flex items-center gap-3">
               <div className="grid size-9 place-items-center rounded-lg bg-primary/15 text-primary">
@@ -136,6 +137,31 @@ export function MobileNav() {
             </div>
             <span className="k-btn k-btn-ghost k-btn-icon k-btn-sm text-primary">
               <Download className="size-4" aria-hidden />
+            </span>
+          </a>
+
+          {/* Tarjeta de Discord Oficial */}
+          <a
+            href={DISCORD_INVITE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={closeAndClear}
+            className="mb-4 flex items-center justify-between rounded-xl border border-[#5865F2]/30 bg-[#5865F2]/5 p-3 shadow-sm transition-colors hover:bg-[#5865F2]/10"
+          >
+            <div className="flex items-center gap-3">
+              <div className="grid size-9 place-items-center rounded-lg bg-[#5865F2]/20 text-[#5865F2]">
+                <DiscordIcon className="size-5 fill-[#5865F2]" aria-hidden />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-fg flex items-center gap-1.5">
+                  Comunidad de Discord
+                  <span className="text-[10px] text-[#5865F2] font-mono">公式</span>
+                </p>
+                <p className="text-[0.6875rem] text-muted">Watch Parties, anime y debates</p>
+              </div>
+            </div>
+            <span className="k-btn k-btn-ghost k-btn-icon k-btn-sm text-[#5865F2]">
+              <ArrowRight className="size-4" aria-hidden />
             </span>
           </a>
 

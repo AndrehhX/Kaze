@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Logo } from "./logo";
-import { APK_DOWNLOAD_URL } from "./nav-config";
+import { APK_DOWNLOAD_URL, DISCORD_INVITE_URL } from "./nav-config";
 import { Coffee, Smartphone } from "lucide-react";
+import { DiscordIcon } from "./discord-announcement-modal";
 
 export function SiteFooter() {
   return (
@@ -33,6 +34,17 @@ export function SiteFooter() {
               >
                 <Coffee className="size-3.5 text-[#FF5E5B]" aria-hidden />
                 <span>Apoyar en Ko-fi</span>
+              </a>
+            </li>
+            <li>
+              <a
+                className="hover:text-[#5865F2] flex items-center gap-1.5 transition-colors"
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <DiscordIcon className="size-3.5 fill-[#5865F2]" aria-hidden />
+                <span className="font-medium text-fg">Discord Comunidad</span>
               </a>
             </li>
           </ul>

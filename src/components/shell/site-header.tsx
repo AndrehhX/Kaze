@@ -6,7 +6,7 @@ import { motion, useMotionValueEvent, useScroll } from "motion/react";
 import { Coffee, MoreHorizontal, Search, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "./logo";
-import { APK_DOWNLOAD_URL, PRIMARY_NAV, isActive } from "./nav-config";
+import { APK_DOWNLOAD_URL, DISCORD_INVITE_URL, PRIMARY_NAV, isActive } from "./nav-config";
 import { ThemeSwitcher } from "./theme-switcher";
 import { UserMenu } from "./user-menu";
 import { NotificationBell } from "./notifications";
@@ -15,6 +15,7 @@ import { useSettings } from "@/stores/settings";
 import { cn } from "@/lib/utils";
 import { useCurrentPath } from "@/stores/route";
 import { useKazeMotion } from "@/lib/motion";
+import { DiscordIcon } from "./discord-announcement-modal";
 
 export function SiteHeader() {
   const path = useCurrentPath();
@@ -123,6 +124,26 @@ export function SiteHeader() {
             title="Apoyar en Ko-fi"
           >
             <Coffee className="size-[18px] text-[#FF5E5B]" aria-hidden />
+          </a>
+          <a
+            href={DISCORD_INVITE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="k-btn k-btn-ghost k-btn-sm hidden items-center gap-1.5 !px-2.5 text-xs text-[#5865F2] hover:text-[#5865F2] sm:inline-flex border border-[#5865F2]/30 hover:border-[#5865F2] bg-[#5865F2]/5 hover:bg-[#5865F2]/10 transition-colors"
+            title="Únete a nuestro Discord oficial (Pan con mantequilla × Orunei)"
+          >
+            <DiscordIcon className="size-3.5 fill-[#5865F2]" aria-hidden />
+            <span className="font-medium text-fg">Discord</span>
+          </a>
+          <a
+            href={DISCORD_INVITE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="k-btn k-btn-ghost k-btn-icon k-btn-sm sm:hidden text-[#5865F2] border border-[#5865F2]/25"
+            aria-label="Discord Oficial"
+            title="Discord Oficial"
+          >
+            <DiscordIcon className="size-[18px] fill-[#5865F2]" aria-hidden />
           </a>
           <NotificationBell />
           <ThemeSwitcher />

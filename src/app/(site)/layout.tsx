@@ -9,6 +9,7 @@ import { ThemeBackdrop } from "@/components/shell/backdrop";
 import { OfflineBanner } from "@/components/shell/offline-banner";
 import { CompletionCelebration } from "@/components/anime/completion-celebration";
 import { MangaAnnouncementModal } from "@/components/manga/manga-announcement-modal";
+import { DiscordAnnouncementModal } from "@/components/shell/discord-announcement-modal";
 
 export default function SiteLayout({ children }: LayoutProps<"/">) {
   return (
@@ -32,6 +33,9 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
       <CompletionCelebration />
       <Suspense fallback={null}>
         <MangaAnnouncementModal />
+      </Suspense>
+      <Suspense fallback={null}>
+        <DiscordAnnouncementModal />
       </Suspense>
     </>
   );
