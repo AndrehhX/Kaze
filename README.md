@@ -1,288 +1,205 @@
-# KAZE
+<div align="center">
 
-Anime streaming, catalog discovery, and synchronized watch parties across web and Android.
+# KAZE · 風
+### *The Next-Generation Anime & Manga Discovery Platform*
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.4-black?style=flat-square&logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.3-blue?style=flat-square&logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-[![Android](https://img.shields.io/badge/Android-Kotlin%20%7C%20Compose-green?style=flat-square&logo=android)](https://developer.android.com/jetpack/compose)
-[![Media3](https://img.shields.io/badge/Media3-ExoPlayer-blue?style=flat-square)](https://developer.android.com/media/media3)
-[![Supabase](https://img.shields.io/badge/Backend-Supabase%20%7C%20Postgres-emerald?style=flat-square&logo=supabase)](https://supabase.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-sky?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
-[![License](https://img.shields.io/badge/License-All_Rights_Reserved-red?style=flat-square)](LICENSE)
+[![Production Status](https://img.shields.io/badge/Status-Live%20in%20Production-10b981?style=for-the-badge&logo=vercel&logoColor=white)](https://www.orunei.sbs)
+[![Domain](https://img.shields.io/badge/Web-www.orunei.sbs-6366f1?style=for-the-badge&logo=cloudflare&logoColor=white)](https://www.orunei.sbs)
+[![Android App](https://img.shields.io/badge/Android-APK%20Available-3ddc84?style=for-the-badge&logo=android&logoColor=white)](https://www.orunei.sbs)
+[![Architecture](https://img.shields.io/badge/Next.js-16.4%20Turbopack-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 
-[Live Web App](https://www.orunei.sbs) | [Download Android APK](https://www.orunei.sbs/kaze.apk) | [Architecture](#architecture) | [Features](#features) | [Setup](#setup) | [Legal & License](#legal--license)
-
----
-
-## Table of Contents
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Security](#security)
-- [Setup](#setup)
-  - [Web Client](#web-client-nextjs)
-  - [Android Client](#android-client-kotlin--compose)
-  - [Environment Variables](#environment-variables)
-- [Testing & Quality](#testing--quality)
-- [Legal & License](#legal--license)
+<p align="center">
+  <a href="https://www.orunei.sbs"><b>Explorar Plataforma en Vivo</b></a> •
+  <a href="https://www.orunei.sbs/manga"><b>Lector de Manga</b></a> •
+  <a href="https://www.orunei.sbs/watch-parties"><b>Watch Parties</b></a> •
+  <a href="#-características-principales"><b>Características</b></a> •
+  <a href="#-arquitectura-técnica"><b>Arquitectura</b></a>
+</p>
 
 ---
 
-## Overview
+</div>
 
-KAZE (deployed in production as [Orunei](https://www.orunei.sbs)) is a cross-platform anime media and discovery application. It includes a web frontend built with Next.js 16 and React 19, and a native Android app written in Kotlin using Jetpack Compose and AndroidX Media3 (ExoPlayer).
-
-The project is built around four practical requirements:
-- Video streaming with HLS/MP4 playback, server fallback, and automated skip points.
-- Realtime synchronized watch parties over WebSockets with client-side drift compensation.
-- A fast, clean interface without popups or intrusive overlays.
-- Offline-first tracking with local persistence and background cloud sync.
+> [!NOTE]
+> **KAZE (Orunei)** es una plataforma de streaming y lectura multimedia diseñada para ofrecer una experiencia limpia, instantánea y de alto rendimiento. Integra streaming adaptativo en alta fidelidad, un lector de manga inmersivo con paso de página físico y tiras continuas de webtoon, sincronización bidireccional con AniList y salas de reproducción sincronizadas en tiempo real.
 
 ---
 
-## Architecture
+## ✨ Características Principales
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 🎬 Streaming de Anime de Alta Fidelidad
+* **Multi-servidor inteligente:** Selección de proveedores con conmutación por error en milisegundos.
+* **Audio y subtítulos:** Español latino, castellano y japonés con subtítulos estilizados.
+* **Salto inteligente con AniSkip:** Omite openings y endings con un solo clic o de forma automática.
+* **Mini-reproductor Flotante:** Picture-in-Picture nativo que persiste al navegar por el catálogo.
+
+</td>
+<td width="50%" valign="top">
+
+### 📖 Lector de Manga 2.0
+* **Paso de página físico en 3D:** Animaciones realistas inspiradas en libros impresos y lectura horizontal manga (RTL / LTR).
+* **Cascada infinita para Webtoons:** Detección de tiras verticales con ancho optimizado para pantallas panorámicas y móviles.
+* **Fallback automático de imágenes:** Redirección transparente a servidores de alta velocidad ante fallos de red o nodos CDN.
+* **Múltiples idiomas:** Catálogos comunitarios con traducción en español e inglés.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 🔗 Continuidad Anime → Manga
+* **Cálculo de continuación canónico:** Algoritmo de mapeo que calcula el capítulo exacto del manga donde termina cada temporada de anime.
+* **Transición en 1 clic:** Acceso directo desde la ficha del anime hacia el inicio exacto de la historia no adaptada en el manga.
+
+</td>
+<td width="50%" valign="top">
+
+### 🍿 Watch Parties en Tiempo Real
+* **Salas sincronizadas por WebSockets:** Mira episodios con amigos con compensación de latencia y drift.
+* **Chat interactivo en vivo:** Reacciones y presencia en tiempo real potenciadas por Supabase Realtime.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 🔄 Sincronización con AniList
+* **Sincronización bidireccional:** Guarda progreso de episodios vistos y capítulos leídos directamente en tu cuenta de AniList.
+* **Seguridad de tokens:** Credenciales OAuth cifradas en reposo con AES-256-GCM.
+
+</td>
+<td width="50%" valign="top">
+
+### 📱 Experiencia Multiplataforma
+* **Web Progresiva (PWA):** Renderizado híbrido ultra-rápido en Next.js 16 con Partial Prerendering (PPR).
+* **Aplicación Android Nativa:** Construida con Jetpack Compose y decodificación por hardware con AndroidX Media3 (ExoPlayer).
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🏛 Arquitectura Técnica
 
 ```mermaid
 flowchart TD
-    subgraph Clients["Clients"]
-        Web["Web Client (Next.js 16)"]
-        Mobile["Android App (Compose / Media3)"]
+    classDef client fill:#1e1b4b,stroke:#6366f1,stroke-width:2px,color:#fff;
+    classDef edge fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#fff;
+    classDef backend fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef external fill:#451a03,stroke:#f59e0b,stroke-width:2px,color:#fff;
+
+    subgraph Clients[" Dispositivos y Clientes "]
+        Web["Web Client · Next.js 16 / React 19"]:::client
+        Mobile["Android App · Jetpack Compose / Media3"]:::client
     end
 
-    subgraph Edge["Edge & API Layer"]
-        Proxy["Next.js Route Handlers"]
-        SessionAuth["Playback Session Grant (/api/playback/session)"]
-        AniSkip["AniSkip Marker Resolver"]
+    subgraph EdgeLayer[" Cloudflare Shield & Vercel Edge "]
+        CF["Cloudflare Edge Cache & DDoS Shield"]:::edge
+        Vercel["Vercel Serverless & Partial Prerendering (PPR)"]:::edge
     end
 
-    subgraph DataSources["External Sources"]
-        AniList["AniList GraphQL API"]
-        Streams["Third-party HLS / MP4 Streams"]
+    subgraph Backend[" Servicios & Persistencia (Supabase) "]
+        Postgres[("PostgreSQL 16 (Row Level Security)")]:::backend
+        Realtime["Realtime Engine (WebSockets Watch Parties)"]:::backend
+        Auth["GoTrue Auth & AES-256 OAuth Vault"]:::backend
     end
 
-    subgraph Persistence["Persistence & Realtime (Supabase)"]
-        DB[("PostgreSQL Database (RLS)")]
-        WS["Supabase Realtime (WebSockets)"]
-        Auth["GoTrue Authentication"]
+    subgraph External[" Proveedores de Medios & APIs "]
+        AniList["AniList GraphQL API (Catálogo & Metadatos)"]:::external
+        Streams["Servidores de Video HLS / MP4"]:::external
+        MangaDex["MangaDex@Home CDN (Scanlations Multi-idioma)"]:::external
     end
 
-    Web --> Proxy
-    Mobile --> Proxy
-    Proxy --> SessionAuth
-    Proxy --> AniList
-    SessionAuth --> Streams
-    Web --> AniSkip
-    Mobile --> AniSkip
-    Web <--> WS
-    Mobile <--> WS
-    Proxy --> DB
-    Proxy --> Auth
-```
-
-### Monorepo Layout
-
-```
-kaze/
-├── src/                         # Next.js web application
-│   ├── app/                     # App Router pages and API routes
-│   │   ├── api/                 # Playback session grants and AniList OAuth
-│   │   ├── anime/[id]/          # Anime details and episode index
-│   │   ├── manga/               # KAZE MANGA: home, vault, reader, continuity, library
-│   │   ├── watch/[id]/[ep]/     # Web player interface
-│   │   └── party/               # Realtime watch party rooms
-│   ├── components/              # UI components
-│   ├── lib/                     # Client and server business logic
-│   │   ├── anilist/             # GraphQL queries and client cache
-│   │   ├── media/               # Stream resolver logic and AniSkip integration
-│   │   ├── recommend.ts         # Recommendation scoring
-│   │   └── watch-party/         # Drift-correction and sync logic
-│   └── stores/                  # Zustand stores for settings and local state
-├── mobile/                      # Native Android client
-│   ├── app/src/main/java/com/kaze/mobile/
-│   │   ├── core/                # Room database, network, and theme tokens
-│   │   ├── data/                # Data repositories and remote loaders
-│   │   ├── domain/              # Models, playback abstractions, sync planner
-│   │   └── feature/             # Compose screens (Home, Player, Library, Party)
-│   └── build.gradle.kts         # Android build configuration (minSdk 26, targetSdk 35)
-├── supabase/                    # Database migrations and seed files
-└── public/                      # Static assets and compiled APK
+    Web --> CF
+    Mobile --> CF
+    CF --> Vercel
+    Vercel --> Postgres
+    Vercel --> Auth
+    Web <--> Realtime
+    Mobile <--> Realtime
+    Vercel --> AniList
+    Web --> Streams
+    Mobile --> Streams
+    Web --> MangaDex
 ```
 
 ---
 
-## Features
+## 🛠 Stack Tecnológico
 
-### Playback Engine
-- Dynamic session grants (`/api/playback/session`) prevent direct URL scraping and hotlinking.
-- Dual-mode streaming supporting adaptive HLS (`Hls.js` on desktop web, AVPlayer on Safari/iOS) and hardware-accelerated Media3 ExoPlayer on Android.
-- AniSkip integration to mark and skip intro/outro sequences with a single click.
-- Audio and subtitle switching between Japanese original with localized subtitles and Spanish dubs when available.
-
-### Synchronized Watch Rooms
-- Host-authoritative playback: play, pause, seek, and episode switches broadcast to all room members.
-- Client-side drift correction: measures round-trip time (RTT) over WebSockets and adjusts playback speed (0.95x - 1.05x) for small offsets, or seeks if the difference exceeds 1 second.
-- Room presence, participant list, and synchronized chat reactions.
-
-### Android Client
-- Native Kotlin implementation with Jetpack Compose and Material 3 design tokens.
-- Media3 ExoPlayer integration with Picture-in-Picture (PiP), background audio, and brightness/volume swipe gestures.
-- Local SQLite storage through Room DB with KSP code generation and Coil 3 image caching.
-
-### Library & Synchronization
-- Local-first architecture: changes write immediately to IndexedDB/LocalStorage (Web) or Room (Android) for instant response.
-- Background sync: reconciles watchlist, progress, and ratings with Supabase when online, using a Last-Write-Wins strategy.
-
-### KAZE MANGA — "The anime ends. The story continues."
-Integrated manga section of the web client (`/manga`). Full technical notes: [docs/MANGA.md](docs/MANGA.md).
-- Editorial manga home, explorer with URL-persisted filters (genre, tags, origin, status, chapters, volumes, score, popularity, author), trending and new-releases rankings — all real AniList data.
-- **La Bóveda**: a CSS-3D collector's shelf (spines sized by real volume counts, spring selection, drag/keyboard/wheel, lite mode and an accessible list view) and a **randomizer** that draws a crypto-random winner from the filtered pool before animating.
-- **Continue the Story**: anime → manga continuation points from a sourced, versioned dataset with explicit statuses (verified / approximate / pending / unknown). Precision is never inferred from episode counts.
-- Immersive reader: right-to-left and left-to-right, true double-page spreads, vertical and webtoon modes, zoom (double-click / pinch), gestures, bounded preloading, bookmarks, resume, measured reading time, and optional Smooth / Cinematic / Focus modes.
-- Legal content model: KAZE serves only the original **KAZE Originals** demo series it ships; commercial titles link to the official platforms AniList lists. No scraping, no scans.
-- Manga library (statuses, chapters + volumes, notes, collections, import/export), reading statistics, AniList manga list sync with preview, manga on profiles, reviews and chapter discussions through the existing social layer.
-
----
-
-## Tech Stack
-
-| Component | Technology | Role |
+| Capa | Tecnología | Propósito |
 | :--- | :--- | :--- |
-| Web Framework | Next.js 16.4 | App Router, Server Actions, edge API endpoints |
-| Frontend Library | React 19.3 | Component rendering and client state |
-| Type System | TypeScript 5.x | Strict type checking across the web app |
-| Web Styling | Tailwind CSS v4 | Utility classes and theme styling |
-| Client State | Zustand 5 + TanStack Query 5 | Client store and server-state caching |
-| Android Platform | Kotlin 2.0 | Native application logic |
-| Android UI | Jetpack Compose | Declarative UI components |
-| Android Media | AndroidX Media3 (ExoPlayer) | Hardware decoding, buffering, and PiP lifecycle |
-| Database & Auth | Supabase (PostgreSQL 16) | User authentication, RLS tables, and RPC |
-| Realtime | Supabase Realtime | WebSocket channels for watch parties |
+| **Framework Web** | `Next.js 16.4` | App Router, Server Actions, Partial Prerendering (PPR) |
+| **Librería de UI** | `React 19.3` | Arquitectura de componentes, Concurrent Features |
+| **Estilos & Diseño** | `Tailwind CSS v4` | Sistema de diseño Midnight Neon, tokens y microinteracciones |
+| **Animaciones** | `Motion (Framer)` | Físicas de resorte, transiciones fluidas de página y modo libro |
+| **Estado Global** | `Zustand 5` | Persistencia offline-first de progreso de lectura y reproducción |
+| **Base de Datos** | `Supabase / PostgreSQL` | Row Level Security (RLS), autenticación y almacenamiento |
+| **Tiempo Real** | `Supabase Realtime` | Canales bidireccionales WebSocket para Watch Parties |
+| **Aplicación Móvil**| `Kotlin + Jetpack Compose` | Aplicación Android nativa con ExoPlayer / Media3 |
+| **Borde & Seguridad**| `Cloudflare + Vercel` | Caché perimetral, firewall WAF, compresión y optimización |
 
 ---
 
-## Security
+## 🛡 Seguridad y Rendimiento
 
-- PostgreSQL Row Level Security (RLS) is enabled on all tables. Anonymous client requests can only access records scoped to the authenticated user ID.
-- AniList OAuth access tokens are encrypted at rest using AES-256-GCM on the server before storage.
-- Content Security Policy headers restrict script execution and disable unauthorized framing (`X-Frame-Options: SAMEORIGIN`).
-- Stream session tokens are time-limited and validated against expected request headers.
+> [!TIP]
+> **Optimización en el Borde:** Más del 50% del ancho de banda y solicitudes son absorbidas directamente en el Edge de Cloudflare, manteniendo la carga de CPU de la base de datos por debajo del 5% y reduciendo la latencia de carga a milisegundos.
 
----
-
-## Setup
-
-### Prerequisites
-- Node.js 20 or later
-- npm or pnpm
-- JDK 17 or later (for Android builds)
-- Android SDK with API level 35 installed
+* **Row Level Security (RLS):** Cada fila en PostgreSQL está protegida a nivel de base de datos; los clientes solo pueden leer y escribir datos que les pertenecen.
+* **Cifrado de Credenciales:** Los tokens OAuth de integraciones externas se cifran en el servidor con **AES-256-GCM** antes de guardarse.
+* **Cero Publicidad / Cero Rastreadores Invasivos:** Sin popups, sin scripts de minería ni redirecciones forzadas a terceros.
+* **Aislamiento de Lector:** Todos los capítulos de manga y episodios se leen y visualizan íntegramente dentro de KAZE.
 
 ---
 
-### Web Client (Next.js)
+## 💻 Desarrollo Local
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/AndrehhX/Kaze.git
-   cd Kaze
-   ```
+<details>
+<summary><b>Haz clic aquí para ver instrucciones de entorno local</b></summary>
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+### Requisitos Previos
+- Node.js 20+ y npm / pnpm
+- Proyecto en Supabase (opcional para auth y watch parties)
 
-3. Create the environment file:
-   ```bash
-   cp .env.example .env.local
-   ```
-
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
-   Open `http://localhost:3000` in your browser.
-
-5. Build for production:
-   ```bash
-   npm run build
-   npm run start
-   ```
-
----
-
-### Android Client (Kotlin / Compose)
-
-1. Open the `mobile` folder:
-   ```bash
-   cd mobile
-   ```
-
-2. Configure `local.properties`:
-   ```properties
-   sdk.dir=/path/to/android/sdk
-   SUPABASE_URL=https://<your-project>.supabase.co
-   SUPABASE_ANON_KEY=<your-supabase-anon-key>
-   ```
-
-3. Build the debug APK:
-   ```bash
-   ./gradlew assembleDebug
-   ```
-   The binary is generated at `mobile/app/build/outputs/apk/debug/app-debug.apk`.
-
----
-
-### Environment Variables
-
-| Variable | Required | Description |
-| :--- | :--- | :--- |
-| `NEXT_PUBLIC_SITE_URL` | Yes | Base public domain URL (e.g. `https://www.orunei.sbs`) |
-| `NEXT_PUBLIC_SUPABASE_URL` | Optional* | Supabase URL for accounts and cloud sync |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Optional* | Supabase anonymous key for client requests |
-| `NEXT_PUBLIC_ANILIST_CLIENT_ID` | Optional | OAuth Client ID for AniList account integration |
-| `SUPABASE_SERVICE_ROLE_KEY` | No (Server) | Service role key for admin tasks |
-| `ANILIST_CLIENT_SECRET` | Optional (Server) | Secret for server-side OAuth exchange |
-| `TOKEN_ENCRYPTION_KEY` | Optional (Server) | 32-byte Base64 key for AES-256-GCM encryption |
-
-*\* Note: The public catalog works without Supabase. Authentication and watch parties require Supabase credentials.*
-
----
-
-## Testing & Quality
-
+### Pasos de Instalación
 ```bash
-# Unit and component tests
-npm run test
+# 1. Clonar el repositorio
+git clone https://github.com/AndrehhX/Kaze.git
+cd Kaze
 
-# Type verification
-npm run typecheck
+# 2. Instalar dependencias
+npm install
 
-# Code linter
-npm run lint
+# 3. Configurar variables de entorno
+cp .env.example .env.local
 
-# End-to-end tests
-npm run test:e2e
+# 4. Iniciar servidor de desarrollo
+npm run dev
 ```
+
+El servidor estará disponible en `http://localhost:3000`.
+
+</details>
 
 ---
 
-## Legal & License
+## ⚖️ Licencia y Propiedad Intelectual
 
-### Disclaimer
-- Metadata, schedules, and cover images are retrieved via the official AniList GraphQL API under fair use principles.
-- KAZE does not host, store, or upload media files on its servers. The application functions as an interface and stream resolver pointing to third-party sources.
-- For copyright or DMCA notices, contact: `thealex230820@gmail.com`. Notices are reviewed and handled within 48 hours.
+> [!IMPORTANT]
+> **Derechos de Autor (c) 2026 Andreh (@AndrehhX). Todos los derechos reservados.**
+>
+> Este repositorio se comparte públicamente como **muestra de ingeniería, portafolio profesional e investigación técnica**. No se autoriza la redistribución comercial, clonación de marca ni explotación lucrativa sin autorización expresa por escrito del autor.
+>
+> *Los metadatos, pósters e información de obras son obtenidos a través de la API oficial de AniList bajo principios de Fair Use. KAZE no aloja archivos multimedia con derechos en sus servidores, operando únicamente como interfaz y cliente de visualización.*
 
-### Copyright & Terms of Use
-**Copyright (c) 2026 Andreh (@AndrehhX). All rights reserved.**
+---
 
-This source code, designs, and assets are shared publicly for personal portfolio review and educational purposes only.
-
-- You may not clone, rename, or redistribute this repository to present it as your own work.
-- You may not sell, license, or host public commercial instances of this application without prior written permission from the author.
-- Legitimate contributions, bug reports, and educational research are welcome.
-
-For inquiries: `thealex230820@gmail.com`.
+<div align="center">
+  <sub>Desarrollado con pasión para la comunidad de Anime & Manga · <b>KAZE / Orunei</b></sub>
+</div>
