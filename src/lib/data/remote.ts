@@ -297,14 +297,14 @@ export class RemoteStore {
       const { data, error } = await this.db.from("user_settings").select("*").eq("user_id", this.userId).maybeSingle();
       if (error || !data) return null;
       return data as
-        | { theme: string; motion: string; ambient_effects: boolean; gamification_enabled: boolean; player: Record<string, unknown>; updated_at: string }
+        | { theme: string; motion: string; ambient_effects: boolean; gamification_enabled: boolean; player: Record<string, unknown>; reader?: Record<string, unknown> | null; updated_at: string }
         | null;
     } catch {
       return null;
     }
   }
 
-  async saveSettings(s: { theme: string; motion: string; ambientEffects: boolean; gamification: boolean; player: unknown }) {
+  async saveSettings(s: { theme: string; motion: string; ambientEffects: boolean; gamification: boolean; player: unknown; reader?: unknown }) {
     try {
       await this.db.from("user_settings").upsert({
         user_id: this.userId,
@@ -315,5 +315,12 @@ export class RemoteStore {
         player: s.player,
       });
     } catch {}
+    // Reader prefs live in a column added by the manga migration. Written separately so the core settings
+    // above keep syncing even on databases where that migration has not been applied yet.
+    if (s.reader !== undefined) {
+      try {
+        await this.db.from("user_settings").update({ reader: s.reader }).eq("user_id", this.userId);
+      } catch {}
+    }
   }
 }

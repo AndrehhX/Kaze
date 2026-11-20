@@ -1,7 +1,10 @@
 /** Typed subset of the AniList GraphQL schema used by KAZE. */
 
 export type MediaSeason = "WINTER" | "SPRING" | "SUMMER" | "FALL";
-export type MediaFormat = "TV" | "TV_SHORT" | "MOVIE" | "SPECIAL" | "OVA" | "ONA" | "MUSIC";
+export type AnimeFormat = "TV" | "TV_SHORT" | "MOVIE" | "SPECIAL" | "OVA" | "ONA" | "MUSIC";
+/** Print formats AniList uses for MANGA-type media. */
+export type MangaFormat = "MANGA" | "NOVEL" | "ONE_SHOT";
+export type MediaFormat = AnimeFormat | MangaFormat;
 export type MediaStatus = "FINISHED" | "RELEASING" | "NOT_YET_RELEASED" | "CANCELLED" | "HIATUS";
 export type MediaSource =
   | "ORIGINAL"

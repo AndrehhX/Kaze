@@ -25,20 +25,23 @@ export type RemoteEntry = {
   repeat: number;
 };
 
-export type SyncDecision =
+/** Anything with the reconcilable fields — anime LibraryEntry, or a manga entry adapted to `mediaId`. */
+export type Reconcilable = Pick<LibraryEntry, "mediaId" | "status" | "progress" | "score" | "notes" | "updatedAt" | "startedAt" | "completedAt" | "repeat">;
+
+export type SyncDecision<L extends Reconcilable = LibraryEntry> =
   | { kind: "import"; mediaId: number; remote: RemoteEntry }
-  | { kind: "export"; mediaId: number; local: LibraryEntry }
+  | { kind: "export"; mediaId: number; local: L }
   | { kind: "pull"; mediaId: number; remote: RemoteEntry }
-  | { kind: "push"; mediaId: number; local: LibraryEntry }
+  | { kind: "push"; mediaId: number; local: L }
   | { kind: "merge"; mediaId: number; merged: RemoteEntry; pushRemote: boolean; conflict: string[] }
   | { kind: "noop"; mediaId: number };
 
-export function reconcile(local: LibraryEntry[], remote: RemoteEntry[], lastSyncAt: number | null): SyncDecision[] {
+export function reconcile<L extends Reconcilable = LibraryEntry>(local: L[], remote: RemoteEntry[], lastSyncAt: number | null): SyncDecision<L>[] {
   const localMap = new Map(local.map((e) => [e.mediaId, e]));
   const remoteMap = new Map(remote.map((e) => [e.mediaId, e]));
   const ids = new Set([...localMap.keys(), ...remoteMap.keys()]);
   const since = lastSyncAt ?? 0;
-  const out: SyncDecision[] = [];
+  const out: SyncDecision<L>[] = [];
 
   for (const id of ids) {
     const l = localMap.get(id);
@@ -101,7 +104,7 @@ function earliest(a: string | null, b: string | null) {
   return a < b ? a : b;
 }
 
-function sameContent(l: Pick<LibraryEntry, "status" | "progress" | "score" | "notes">, r: Pick<RemoteEntry, "status" | "progress" | "score" | "notes">) {
+function sameContent(l: Pick<Reconcilable, "status" | "progress" | "score" | "notes">, r: Pick<RemoteEntry, "status" | "progress" | "score" | "notes">) {
   return l.status === r.status && l.progress === r.progress && (l.score ?? null) === (r.score ?? null) && (l.notes || "") === (r.notes || "");
 }
 

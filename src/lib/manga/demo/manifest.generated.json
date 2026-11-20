@@ -1,0 +1,143 @@
+{
+  "generatedBy": "scripts/manga-demo/generate.mjs",
+  "license": "Original artwork and story created for KAZE as demonstration content. © KAZE. Not affiliated with any commercial manga.",
+  "series": {
+    "viento-de-papel": {
+      "cover": "/manga-demo/viento-de-papel/cover.svg",
+      "chapters": {
+        "c1": [
+          {
+            "src": "/manga-demo/viento-de-papel/c1/01.svg",
+            "alt": "Página de título. Hana, una cartera con bufanda, contempla de espaldas el pueblo de Kazamachi desde una colina. El viento arrastra nubes y un avión de papel cruza el cielo. Título: Viento de Papel, Capítulo 1, La carta sin remitente.",
+            "width": 1000,
+            "height": 1500,
+            "spread": false
+          },
+          {
+            "src": "/manga-demo/viento-de-papel/c1/02.svg",
+            "alt": "Viñeta 1: vista del pueblo en la colina con el texto «En Kazamachi, el viento nunca descansa». Viñeta 2: el señor Ito, el jefe de correos con gafas y bigote, junto al letrero CORREO, dice «¡Hana! Llegas tarde otra vez». Viñeta 3: Hana, sorprendida, grita «¡El viento cambió de dirección!». Viñeta 4: Hana sonríe con sobres en la mano: «Pero entregué todas las cartas... casi todas».",
+            "width": 1000,
+            "height": 1500,
+            "spread": false
+          },
+          {
+            "src": "/manga-demo/viento-de-papel/c1/03.svg",
+            "alt": "Viñeta 1: el señor Ito sostiene un sobre: «Esta no tiene remitente ni dirección». Viñeta 2: primer plano del sobre, que solo tiene una pluma dibujada. Viñeta 3: Hana piensa: «¿A quién se la entrego, entonces?».",
+            "width": 1000,
+            "height": 1500,
+            "spread": false
+          },
+          {
+            "src": "/manga-demo/viento-de-papel/c1/04.svg",
+            "alt": "Viñeta 1: el señor Ito explica: «Las cartas perdidas se doblan en avión y se le dan al viento. Es la costumbre». Viñeta 2: las manos de Hana doblan el sobre con el sonido «pata». Viñeta 3: el avión de papel terminado, con el texto «Lista para volar».",
+            "width": 1000,
+            "height": 1500,
+            "spread": false
+          },
+          {
+            "src": "/manga-demo/viento-de-papel/c1/05.svg",
+            "alt": "Viñeta 1, grande y con líneas de velocidad: Hana lanza el avión de papel al cielo gritando «¡Llévala a donde tenga que ir!» con el sonido del viento «byuuu». Viñeta 2: el avión se aleja entre ráfagas de viento. Viñeta 3: el señor Ito, intrigado: «Hmm... qué extraño».",
+            "width": 1000,
+            "height": 1500,
+            "spread": false
+          },
+          {
+            "src": "/manga-demo/viento-de-papel/c1/06-07.svg",
+            "alt": "Doble página: panorámica del cielo sobre Kazamachi. El avión de papel planea por encima de los tejados empujado por largas corrientes de viento mientras Hana, diminuta, corre detrás por la colina. Texto: «Y el viento, por primera vez, eligió un camino».",
+            "width": 2000,
+            "height": 1500,
+            "spread": true
+          },
+          {
+            "src": "/manga-demo/viento-de-papel/c1/08.svg",
+            "alt": "Viñeta 1: el avión de papel se dirige hacia un faro junto al mar. Viñeta 2: Hana, sorprendida: «¿El faro?». Viñeta 3: Hana corre tras él gritando «¡Espera!». Viñeta 4, sobre fondo negro: una mano atrapa el avión. Texto: «Alguien la atrapó. Continuará...».",
+            "width": 1000,
+            "height": 1500,
+            "spread": false
+          }
+        ],
+        "c1-5": [
+          {
+            "src": "/manga-demo/viento-de-papel/c1-5/01.svg",
+            "alt": "Página extra con instrucciones ilustradas en seis pasos para doblar el avión de papel de Hana: doblar a lo largo, llevar las esquinas al centro, volver a doblar los bordes, doblar por la mitad, bajar las alas y escribir el destino en el ala.",
+            "width": 1000,
+            "height": 1500,
+            "spread": false
+          }
+        ],
+        "c2": [
+          {
+            "src": "/manga-demo/viento-de-papel/c2/01.svg",
+            "alt": "Viñeta 1: el faro al atardecer sobre las rocas, con el título «Capítulo 2: Corriente ascendente». Viñeta 2: Hana sube las escaleras del faro con el sonido de pasos «kotsu kotsu». Viñeta 3: su voz resuena: «¿Hola? ¿Hay alguien?».",
+            "width": 1000,
+            "height": 1500,
+            "spread": false
+          },
+          {
+            "src": "/manga-demo/viento-de-papel/c2/02.svg",
+            "alt": "Viñeta 1: Sora, un chico con gorra, sostiene el avión de papel: «¿Esto es tuyo? Aquí llegan muchos». Viñeta 2: Hana, sorprendida: «¿Muchos?». Viñeta 3: Sora sonríe: «Ven, te enseño».",
+            "width": 1000,
+            "height": 1500,
+            "spread": false
+          },
+          {
+            "src": "/manga-demo/viento-de-papel/c2/03.svg",
+            "alt": "Viñeta grande: una pared entera cubierta de aviones de papel colgados. Texto: «Cientos de cartas que nadie reclamó, guardadas en la cima del faro».",
+            "width": 1000,
+            "height": 1500,
+            "spread": false
+          },
+          {
+            "src": "/manga-demo/viento-de-papel/c2/04.svg",
+            "alt": "Viñeta 1: Sora explica: «Mi abuelo decía que el viento las trae a quien debe leerlas». Viñeta 2: Hana pregunta: «Entonces... ¿esta es para ti?». Viñeta 3: el sobre con la pluma, en primer plano, mientras Sora rompe el sello con cuidado.",
+            "width": 1000,
+            "height": 1500,
+            "spread": false
+          },
+          {
+            "src": "/manga-demo/viento-de-papel/c2/05.svg",
+            "alt": "Viñeta 1: la carta abierta dice: «Para quien encuentre esta carta: gracias por cuidar el faro y todas las palabras perdidas. — Kazamachi». Viñetas 2 y 3: Sora y Hana sonríen. Texto final: «Fin de la demo».",
+            "width": 1000,
+            "height": 1500,
+            "spread": false
+          }
+        ]
+      }
+    },
+    "senal-nocturna": {
+      "cover": "/manga-demo/senal-nocturna/cover.svg",
+      "chapters": {
+        "e1": [
+          {
+            "src": "/manga-demo/senal-nocturna/e1/01.svg",
+            "alt": "Tira 1: panorámica nocturna de una ciudad lluviosa llena de rascacielos con ventanas iluminadas. Texto: «Ciudad Hikari. 2:47 a. m. La lluvia no ha parado en tres días». Abajo, Ren, con auriculares rojos, mira su teléfono iluminado: «No puedo dormir. Otra vez».",
+            "width": 800,
+            "height": 2000,
+            "spread": false
+          },
+          {
+            "src": "/manga-demo/senal-nocturna/e1/02.svg",
+            "alt": "Tira 2: primer plano de la pantalla del teléfono de Ren, con una app de radio que sintoniza 88.0 FM y muestra «Señal desconocida» con barras de ecualizador. Una voz distorsionada dice: «...si alguien escucha esto... la torre del puerto... a las tres...». Ren piensa: «¿Una radio pirata? Esta frecuencia lleva años muerta».",
+            "width": 800,
+            "height": 2000,
+            "spread": false
+          },
+          {
+            "src": "/manga-demo/senal-nocturna/e1/03.svg",
+            "alt": "Tira 3: una torre de comunicaciones solitaria bajo la lluvia, con luces rojas parpadeantes y ondas de radio que se expanden desde la antena. Texto: «2:58 a. m. La torre del puerto. Ninguna luz debería estar encendida».",
+            "width": 800,
+            "height": 2000,
+            "spread": false
+          },
+          {
+            "src": "/manga-demo/senal-nocturna/e1/04.svg",
+            "alt": "Tira 4: Ren habla hacia la oscuridad: «¿Hola? Escuché tu señal». Desde una luz tenue responde una voz: «Por fin. Te estaba esperando». Texto final: «Fin del episodio demo».",
+            "width": 800,
+            "height": 2000,
+            "spread": false
+          }
+        ]
+      }
+    }
+  }
+}

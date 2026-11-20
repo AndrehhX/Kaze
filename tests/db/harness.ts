@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { citext } from "@electric-sql/pglite/contrib/citext";
@@ -42,7 +42,10 @@ export async function createDb() {
   const db = new PGlite({ extensions: { citext, pgcrypto } });
   const root = join(__dirname, "..", "..", "supabase");
   await db.exec(SHIM);
-  await db.exec(readFileSync(join(root, "migrations", "20261029000000_kaze_schema.sql"), "utf8"));
+  // Apply every migration in order, exactly as `supabase db push` would.
+  for (const file of readdirSync(join(root, "migrations")).filter((f) => f.endsWith(".sql")).sort()) {
+    await db.exec(readFileSync(join(root, "migrations", file), "utf8"));
+  }
   await db.exec(GRANTS);
   await db.exec(readFileSync(join(root, "seed.sql"), "utf8"));
   return db;

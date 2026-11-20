@@ -8,6 +8,7 @@ import { useSettings } from "@/stores/settings";
 import { useLibrary } from "@/stores/library";
 import { useProgress } from "@/stores/progress";
 import { useLocal } from "@/stores/local";
+import { useMangaLibrary } from "@/stores/manga";
 import { AuthProvider } from "./auth-provider";
 import { THEMES } from "@/lib/themes";
 
@@ -32,6 +33,7 @@ export function Providers({ children }: { children: ReactNode }) {
     void useLibrary.persist.rehydrate();
     void useProgress.persist.rehydrate();
     void useLocal.persist.rehydrate();
+    void useMangaLibrary.persist.rehydrate();
   }, []);
 
   const motion = useSettings((s) => s.motion);

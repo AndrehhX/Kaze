@@ -8,6 +8,9 @@ import { useAuth, type Profile } from "@/stores/auth";
 import { useLibrary } from "@/stores/library";
 import { useProgress } from "@/stores/progress";
 import { useSettings, type MotionPref, type PlayerPrefs } from "@/stores/settings";
+import type { ReaderPrefs } from "@/lib/manga/reader/engine";
+import { useMangaLibrary } from "@/stores/manga";
+import { MangaRemoteStore } from "@/lib/data/manga-remote";
 import { isThemeId } from "@/lib/themes";
 import type { LibraryEntry } from "@/lib/library/types";
 import { readGuestProfile } from "@/lib/profile/guest";
@@ -146,6 +149,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         useLibrary.getState().attachRemote(remote, userId);
         useProgress.getState().setRemote(remote);
+        // Manga persistence is independent: if its tables are missing, the manga store stays device-local.
+        void useMangaLibrary.getState().connect(new MangaRemoteStore(db, userId), userId);
         if (progress.length > 0) {
           useProgress.getState().mergeRemote(progress);
         }
@@ -156,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ambientEffects: settings.ambient_effects,
             gamification: settings.gamification_enabled,
             player: settings.player as Partial<PlayerPrefs>,
+            reader: (settings.reader ?? null) as Partial<ReaderPrefs> | null,
             updatedAt: new Date(settings.updated_at).getTime(),
           });
         }
@@ -187,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuth({ status: "signed-out", user: null, profile: null });
       useProgress.getState().setRemote(null);
       useLibrary.getState().attachRemote(null, "guest");
+      useMangaLibrary.getState().disconnect();
       // Preservar siempre la biblioteca e historial local del usuario en este dispositivo
     }
 
@@ -231,7 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (t) clearTimeout(t);
       t = setTimeout(() => {
         remote
-          .saveSettings({ theme: s.theme, motion: s.motion, ambientEffects: s.ambientEffects, gamification: s.gamification, player: s.player })
+          .saveSettings({ theme: s.theme, motion: s.motion, ambientEffects: s.ambientEffects, gamification: s.gamification, player: s.player, reader: s.reader })
           .catch((err) => console.warn("[kaze] settings sync failed", err));
       }, 1200);
     });

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1500" width="1000" height="1500" role="img">
+<title>Viento de Papel — portada del volumen 1</title>
+<defs>
+  <pattern id="tone-dots" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><circle cx="4.5" cy="4.5" r="1.9" fill="#141414"/></pattern>
+  <pattern id="tone-light" width="11" height="11" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><circle cx="5.5" cy="5.5" r="1.2" fill="#141414"/></pattern>
+  <pattern id="tone-dense" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><circle cx="3.5" cy="3.5" r="2.4" fill="#141414"/></pattern>
+  <pattern id="tone-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><line x1="0" y1="0" x2="0" y2="8" stroke="#141414" stroke-width="1.6"/></pattern>
+  <linearGradient id="sky-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9c9c9"/><stop offset="0.55" stop-color="#efefef"/><stop offset="1" stop-color="#fbfaf6"/></linearGradient>
+  <linearGradient id="dusk-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f6f6f"/><stop offset="1" stop-color="#e9e9e9"/></linearGradient>
+  <radialGradient id="glow-grad" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="c-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f4e79"/><stop offset="0.55" stop-color="#5fa8c9"/><stop offset="1" stop-color="#f6c99a"/></linearGradient>
+    <linearGradient id="c-hill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d6a4f"/><stop offset="1" stop-color="#1b4332"/></linearGradient></defs>
+<rect width="1000" height="1500" fill="#fbfaf6"/>
+
+  <rect width="1000" height="1500" fill="url(#c-sky)"/>
+  <circle cx="770" cy="420" r="150" fill="#ffe8b8" opacity="0.55"/>
+  <g transform="translate(240 300) scale(1.4)" stroke="#141414" stroke-width="3" fill="#ffffff">
+  <path d="M-110 30 C -130 -10 -80 -40 -55 -20 C -45 -65 15 -70 30 -30 C 60 -55 110 -30 100 10 C 135 15 130 50 100 52 L -95 52 C -130 52 -135 30 -110 30 Z"/></g><g transform="translate(780 640) scale(1.1)" stroke="#141414" stroke-width="3" fill="#ffffff">
+  <path d="M-110 30 C -130 -10 -80 -40 -55 -20 C -45 -65 15 -70 30 -30 C 60 -55 110 -30 100 10 C 135 15 130 50 100 52 L -95 52 C -130 52 -135 30 -110 30 Z"/></g>
+  <g opacity="0.9"><g opacity="0.8"><path d="M294.6881687242798 564.1067386831276 C 510.18556241426614 556.1067386831276, 671.8086076817558 572.1067386831276, 833.4316529492455 564.1067386831276 q 34.27854938271605 -4 20.56712962962963 -23.994984567901234" fill="none" stroke="#ffffff" stroke-width="3.101423182441701" stroke-linecap="round"/><path d="M65.39135802469136 609.798311042524 C 215.79787379972566 601.798311042524, 328.6027606310014 617.798311042524, 441.40764746227705 609.798311042524 q 37.65860768175583 -4 22.595164609053498 -26.36102537722908" fill="none" stroke="#ffffff" stroke-width="2.893647119341564" stroke-linecap="round"/><path d="M258.1007201646091 653.1724965706447 C 471.02541152263376 645.1724965706447, 630.7189300411521 661.1724965706447, 790.4124485596708 653.1724965706447 q 35.10759602194787 -4 21.06455761316872 -24.57531721536351" fill="none" stroke="#ffffff" stroke-width="2.197702331961591" stroke-linecap="round"/><path d="M267.4088477366255 704.2601594650206 C 468.9299039780521 696.2601594650206, 620.070696159122 712.2601594650206, 771.211488340192 704.2601594650206 q 22.242798353909464 -4 13.345679012345679 -15.569958847736624" fill="none" stroke="#ffffff" stroke-width="2.6493912894375855" stroke-linecap="round"/><path d="M240.79722222222222 746.0551268861454 C 520.4990054869684 738.0551268861454, 730.275342935528 754.0551268861454, 940.0516803840877 746.0551268861454 q 33.94075788751715 -4 20.36445473251029 -23.758530521262003" fill="none" stroke="#ffffff" stroke-width="2.9215534979423867" stroke-linecap="round"/><path d="M227.96954732510287 798.9586334019205 C 519.5351851851852 790.9586334019205, 738.2094135802469 806.9586334019205, 956.8836419753087 798.9586334019205 q 33.226165980795614 -4 19.935699588477366 -23.25831618655693" fill="none" stroke="#ffffff" stroke-width="2.2796210562414267" stroke-linecap="round"/><path d="M298.18508230452676 841.8904320987655 C 548.8779492455418 833.8904320987655, 736.8975994513031 849.8904320987655, 924.9172496570644 841.8904320987655 q 33.494084362139915 -4 20.09645061728395 -23.44585905349794" fill="none" stroke="#ffffff" stroke-width="3.4705075445816185" stroke-linecap="round"/></g></g>
+  <path d="M0 1180 C 260 1080 640 1100 1000 1160 L 1000 1500 L 0 1500 Z" fill="url(#c-hill)"/>
+  <g transform="translate(0 0)"><g transform="translate(520 860) scale(2.1 2.1)"><path d="M-70 200 C -70 130 -40 104 0 104 C 40 104 70 130 70 200 Z" fill="#ffffff" stroke="#141414" stroke-width="3.5"/>
+    <path d="M-30 112 L -50 200 M30 112 L 50 200" stroke="#141414" stroke-width="3" fill="none"/>
+      <path d="M40 130 C 80 90 110 40 120 -40" stroke="#141414" stroke-width="26" fill="none" stroke-linecap="round"/>
+      <path d="M40 130 C 80 90 110 40 120 -40" stroke="#ffffff" stroke-width="19" fill="none" stroke-linecap="round"/>
+      <circle cx="122" cy="-52" r="16" fill="#ffffff" stroke="#141414" stroke-width="3"/>
+      <path d="M-46 92 C -10 112 20 112 50 92 L 56 112 C 20 134 -16 134 -50 112 Z" fill="url(#tone-dots)" stroke="#141414" stroke-width="3"/>
+    <path d="M40 104 C 110 90 150 120 220 96 C 200 128 150 150 92 140 C 70 136 54 128 44 120 Z" fill="url(#tone-dots)" stroke="#141414" stroke-width="3"/>
+    <path d="M-12 62 L -14 96 L 14 96 L 12 62 Z" fill="#ffffff" stroke="#141414" stroke-width="3"/>
+    <ellipse cx="0" cy="8" rx="58" ry="66" fill="#ffffff" stroke="#141414" stroke-width="3.5"/>
+    <path d="M-36 6 Q -24 -6 -12 6" fill="none" stroke="#141414" stroke-width="5" stroke-linecap="round"/><path d="M12 6 Q 24 -6 36 6" fill="none" stroke="#141414" stroke-width="5" stroke-linecap="round"/><path d="M-12 36 Q 0 50 12 36" fill="none" stroke="#141414" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M-30 30 l 8 -3 M30 30 l -8 -3" stroke="#141414" stroke-width="2" opacity="0.6"/>
+    <path d="M-74 22 C -86 -64 -42 -100 2 -100 C 50 -100 88 -62 74 22 L 66 52 C 60 18 56 -6 44 -28 C 26 -6 -6 -12 -30 -34 C -42 -8 -52 18 -62 52 Z" fill="#141414"/>
+    <path d="M-40 -70 C -20 -86 22 -88 40 -72" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
+    <path d="M52 -40 l 26 -18 l -6 22 z" fill="#141414"/></g></g>
+  <g transform="translate(830 300) rotate(-18) scale(1.6)" stroke="#141414" stroke-width="3" stroke-linejoin="round">
+  <path d="M-60 0 L 70 -22 L -20 26 Z" fill="#ffffff"/>
+  <path d="M-20 26 L 70 -22 L -12 6 Z" fill="url(#tone-light)"/>
+  <path d="M-60 0 L -12 6" fill="none"/></g><g transform="translate(170 720) rotate(-6) scale(1.1)" stroke="#141414" stroke-width="3" stroke-linejoin="round">
+  <path d="M-60 0 L 70 -22 L -20 26 Z" fill="#ffffff"/>
+  <path d="M-20 26 L 70 -22 L -12 6 Z" fill="url(#tone-light)"/>
+  <path d="M-60 0 L -12 6" fill="none"/></g><g transform="translate(640 180) rotate(-26) scale(0.8)" stroke="#141414" stroke-width="3" stroke-linejoin="round">
+  <path d="M-60 0 L 70 -22 L -20 26 Z" fill="#ffffff"/>
+  <path d="M-20 26 L 70 -22 L -12 6 Z" fill="url(#tone-light)"/>
+  <path d="M-60 0 L -12 6" fill="none"/></g>
+  <rect x="0" y="1260" width="1000" height="240" fill="#0d1b2a" opacity="0.82"/>
+  <text x="70" y="1350" font-family="'Trebuchet MS', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="86" font-weight="900" fill="#ffffff" letter-spacing="4">VIENTO DE PAPEL</text>
+  <text x="72" y="1410" font-family="'Trebuchet MS', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="30" fill="#f6c99a" letter-spacing="6">VOLUMEN 1 · KAZE ORIGINALS</text>
+  <text x="72" y="1452" font-family="'Trebuchet MS', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#9fb3c8" letter-spacing="3">OBRA ORIGINAL DE DEMOSTRACIÓN</text>
+  <text x="900" y="160" font-family="'Yu Gothic', 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif" font-size="96" font-weight="900" fill="#ffffff" writing-mode="tb" letter-spacing="10">紙の風</text>
+</svg>

@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { DEFAULT_THEME, THEME_STORAGE_KEY, THEMES, type ThemeId } from "@/lib/themes";
+import { DEFAULT_READER_PREFS, sanitizeReaderPrefs, type ReaderPrefs } from "@/lib/manga/reader/engine";
 
 export type SubtitleStyle = {
   size: "s" | "m" | "l" | "xl";
@@ -32,6 +33,8 @@ type SettingsState = {
   ambientEffects: boolean;
   gamification: boolean;
   player: PlayerPrefs;
+  /** Manga reader preferences (same persistence path as the player: device + account). */
+  reader: ReaderPrefs;
   updatedAt: number;
   hydrated: boolean;
   setTheme: (t: ThemeId) => void;
@@ -39,8 +42,10 @@ type SettingsState = {
   setAmbientEffects: (v: boolean) => void;
   setGamification: (v: boolean) => void;
   setPlayer: (patch: Partial<PlayerPrefs>) => void;
+  setReader: (patch: Partial<ReaderPrefs>) => void;
+  resetReader: () => void;
   /** Apply settings fetched from the account (cross-device persistence). */
-  applyRemote: (s: { theme?: ThemeId; motion?: MotionPref; ambientEffects?: boolean; gamification?: boolean; player?: Partial<PlayerPrefs>; updatedAt: number }) => void;
+  applyRemote: (s: { theme?: ThemeId; motion?: MotionPref; ambientEffects?: boolean; gamification?: boolean; player?: Partial<PlayerPrefs>; reader?: Partial<ReaderPrefs> | null; updatedAt: number }) => void;
 };
 
 export const DEFAULT_PLAYER: PlayerPrefs = {
@@ -85,6 +90,7 @@ export const useSettings = create<SettingsState>()(
       ambientEffects: true,
       gamification: true,
       player: DEFAULT_PLAYER,
+      reader: DEFAULT_READER_PREFS,
       updatedAt: 0,
       hydrated: false,
       setTheme: (theme) => {
@@ -98,6 +104,8 @@ export const useSettings = create<SettingsState>()(
       setAmbientEffects: (ambientEffects) => set({ ambientEffects, updatedAt: Date.now() }),
       setGamification: (gamification) => set({ gamification, updatedAt: Date.now() }),
       setPlayer: (patch) => set((s) => ({ player: { ...s.player, ...patch, subtitleStyle: { ...s.player.subtitleStyle, ...patch.subtitleStyle } }, updatedAt: Date.now() })),
+      setReader: (patch) => set((s) => ({ reader: sanitizeReaderPrefs({ ...s.reader, ...patch }), updatedAt: Date.now() })),
+      resetReader: () => set({ reader: DEFAULT_READER_PREFS, updatedAt: Date.now() }),
       applyRemote: (r) =>
         set((s) => {
           if (r.updatedAt <= s.updatedAt) return s;
@@ -109,6 +117,7 @@ export const useSettings = create<SettingsState>()(
             ambientEffects: r.ambientEffects ?? s.ambientEffects,
             gamification: r.gamification ?? s.gamification,
             player: { ...s.player, ...r.player, subtitleStyle: { ...s.player.subtitleStyle, ...r.player?.subtitleStyle } },
+            reader: r.reader ? sanitizeReaderPrefs({ ...s.reader, ...r.reader }) : s.reader,
             updatedAt: r.updatedAt,
           };
         }),
@@ -128,7 +137,8 @@ export const useSettings = create<SettingsState>()(
           if (t && t in THEMES && t !== state.theme) state.theme = t;
         } catch {}
         state.player = { ...DEFAULT_PLAYER, ...state.player, subtitleStyle: { ...DEFAULT_PLAYER.subtitleStyle, ...state.player?.subtitleStyle } };
-        useSettings.setState({ hydrated: true, theme: state.theme, player: state.player });
+        state.reader = sanitizeReaderPrefs(state.reader);
+        useSettings.setState({ hydrated: true, theme: state.theme, player: state.player, reader: state.reader });
       },
     },
   ),
