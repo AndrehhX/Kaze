@@ -5,7 +5,8 @@ import { motion } from "motion/react";
 import { Star } from "lucide-react";
 import type { ReactNode } from "react";
 import { creditsOf, mangaTitle, originLabel, type MangaCard } from "@/lib/anilist/manga-types";
-import { cn, statusLabel } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { lengthLabel, mangaStatusLabel } from "@/lib/manga/format";
 import { genreLabel } from "@/lib/anilist/browse-params";
 import { SafeImage, SectionHeader } from "@/components/ui/primitives";
 import { Rail } from "@/components/ui/rail";
@@ -13,17 +14,7 @@ import { useKazeMotion } from "@/lib/motion";
 import { useMangaLibrary } from "@/stores/manga";
 import { mangaHref, mangaStatusMeta } from "@/lib/manga/types";
 
-export function mangaStatusLabel(status: string | null | undefined) {
-  if (status === "RELEASING") return "En publicación";
-  return statusLabel(status);
-}
-
-/** Chapter/volume counts exactly as AniList knows them — unknown stays unknown. */
-export function lengthLabel(m: { chapters: number | null; volumes: number | null; status?: string | null }) {
-  const parts = [m.chapters ? `${m.chapters} cap.` : null, m.volumes ? `${m.volumes} vol.` : null].filter(Boolean);
-  if (parts.length) return parts.join(" · ");
-  return m.status === "RELEASING" ? "En curso" : "Extensión desconocida";
-}
+export { lengthLabel, mangaStatusLabel };
 
 export function InkScore({ score, className }: { score: number | null; className?: string }) {
   if (!score) return null;

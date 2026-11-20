@@ -66,7 +66,7 @@ export function ShelfPage() {
           {SHELVES.map((s) => (
             <button key={s.value} role="tab" type="button" aria-selected={shelf === s.value} className="k-chip" data-active={shelf === s.value} onClick={() => setShelf(s.value)}>
               {s.label}
-              <span className="k-jp text-[0.625rem] text-muted" lang="ja">
+              <span className="k-jp text-[0.625rem] opacity-80" lang="ja">
                 {s.jp}
               </span>
             </button>

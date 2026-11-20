@@ -131,7 +131,7 @@ export function MangaHeroFeature({ items }: { items: MangaHero[] }) {
         <ol className="scrollbar-none flex gap-3 overflow-x-auto pb-2" aria-label="Elegir manga destacado">
           {items.map((it, idx) => (
             <li key={it.id} className="shrink-0">
-              <button type="button" onClick={() => setI(idx)} aria-current={idx === i} aria-label={`Destacado ${idx + 1}: ${mangaTitle(it)}`} className={cn("group flex w-56 items-center gap-3 border-t-2 pt-3 text-left transition-colors", idx === i ? "border-primary" : "border-line hover:border-muted")}>
+              <button type="button" onClick={() => setI(idx)} aria-current={idx === i} className={cn("group flex w-56 items-center gap-3 border-t-2 pt-3 text-left transition-colors", idx === i ? "border-primary" : "border-line hover:border-muted")}>
                 <span className="km-number text-2xl text-muted">{String(idx + 1).padStart(2, "0")}</span>
                 <span className={cn("clamp-2 text-sm font-semibold leading-snug", idx === i ? "text-fg" : "text-muted group-hover:text-fg")}>{mangaTitle(it)}</span>
               </button>

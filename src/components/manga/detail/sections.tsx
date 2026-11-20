@@ -4,7 +4,8 @@ import { Tv } from "lucide-react";
 import { creditsOf, mangaTitle, originLabel, type MangaDetail } from "@/lib/anilist/manga-types";
 import { genreLabel } from "@/lib/anilist/browse-params";
 import { cleanDescription, formatLabel, formatNumber } from "@/lib/utils";
-import { InkScore, lengthLabel, mangaStatusLabel } from "../cards";
+import { InkScore } from "../cards";
+import { lengthLabel, mangaStatusLabel } from "@/lib/manga/format";
 
 export const RELATION_LABELS: Record<string, string> = {
   ADAPTATION: "Adaptación",

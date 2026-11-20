@@ -2,7 +2,8 @@ import Link from "next/link";
 import { creditsOf, mangaTitle, originLabel, type MangaCard } from "@/lib/anilist/manga-types";
 import { genreLabel } from "@/lib/anilist/browse-params";
 import { mangaHref } from "@/lib/manga/types";
-import { InkScore, lengthLabel, mangaStatusLabel } from "./cards";
+import { InkScore } from "./cards";
+import { lengthLabel, mangaStatusLabel } from "@/lib/manga/format";
 
 /** Editorial ranked list: big outlined numerals, cover, credits — server-rendered from real AniList data. */
 export function MangaRanking({ title, jp, kicker, explanation, media }: { title: string; jp: string; kicker: string; explanation: string; media: MangaCard[] }) {

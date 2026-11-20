@@ -240,20 +240,17 @@ export function MangaVault({ items, label, selected, onSelect, spinning, actions
           <motion.div aria-hidden className="pointer-events-none absolute inset-x-0 -top-10 h-[115%]" animate={{ backgroundColor: tone.bg }} transition={{ duration: reduced ? 0 : 0.9 }} style={{ opacity: theme === "zen" ? 0.12 : 0.2, filter: lite ? undefined : "blur(70px)", borderRadius: "50%" }} />
           <div
             ref={stage}
-            role="listbox"
-            aria-label={`${label}. Usa las flechas para recorrer la estantería, Intro para abrir y Espacio para examinar.`}
-            aria-activedescendant={current ? `${listId}-${sel}` : undefined}
-            tabIndex={0}
-            onKeyDown={onKeyDown}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
             onPointerLeave={onPointerUp}
             onWheel={onWheel}
-            className="km-stage relative mx-auto touch-pan-y select-none overflow-hidden outline-none"
+            className="km-stage relative mx-auto touch-pan-y select-none overflow-hidden"
             style={{ height: H + (compact ? 120 : 150), perspective: compact ? 1100 : 1500, perspectiveOrigin: "50% 38%", cursor: spinning ? "progress" : "grab" }}
           >
+            {/* The listbox holds only the volumes; controls and decoration live beside it. */}
+            <div role="listbox" aria-label={`${label}. Usa las flechas para recorrer la estantería, Intro para abrir y Espacio para examinar.`} aria-activedescendant={current ? `${listId}-${sel}` : undefined} tabIndex={0} onKeyDown={onKeyDown} className="absolute inset-0 z-[110] outline-none">
             <div className="km-3d absolute left-1/2 top-[44px]" style={{ height: H }}>
               {positions.map(({ i, d, x, z, rotateY, scale, T, h }) => {
                 const it = items[i];
@@ -265,7 +262,6 @@ export function MangaVault({ items, label, selected, onSelect, spinning, actions
                     id={`${listId}-${i}`}
                     role="option"
                     aria-selected={d === 0}
-                    aria-label={`${it.title}${it.author ? `, de ${it.author}` : ""}`}
                     className="km-3d absolute bottom-0"
                     style={{ width: W, height: h, left: -W / 2, zIndex: 100 - Math.abs(d) }}
                     initial={false}
@@ -280,14 +276,16 @@ export function MangaVault({ items, label, selected, onSelect, spinning, actions
                       else onSelect(i);
                     }}
                   >
+                    <span className="sr-only">{`${it.title}${it.author ? `, de ${it.author}` : ""}`}</span>
                     {/* cover */}
-                    <div className="km-face inset-0 overflow-hidden" style={{ transform: `translateZ(${T / 2}px)`, background: sp.bg, boxShadow: d === 0 ? "0 40px 60px -24px rgb(0 0 0 / 0.75)" : undefined, borderRadius: theme === "sakura" ? 6 : theme === "midnight" ? 3 : 0 }}>
+                    <div aria-hidden className="km-face inset-0 overflow-hidden" style={{ transform: `translateZ(${T / 2}px)`, background: sp.bg, boxShadow: d === 0 ? "0 40px 60px -24px rgb(0 0 0 / 0.75)" : undefined, borderRadius: theme === "sakura" ? 6 : theme === "midnight" ? 3 : 0 }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       {(near ? it.cover : it.coverSmall) && <img src={(near ? it.cover : it.coverSmall)!} alt="" draggable={false} loading={near ? "eager" : "lazy"} decoding="async" className="size-full object-cover" />}
                       <span aria-hidden className="absolute inset-y-0 left-0 w-[8%]" style={{ background: "var(--km-spine-shade)" }} />
                     </div>
                     {/* spine (faces the viewer on the shelf) */}
                     <div
+                      aria-hidden
                       className="km-face top-0 flex flex-col items-center justify-between overflow-hidden py-3"
                       style={{ width: T, height: h, left: W / 2 - T / 2, transform: `rotateY(-90deg) translateZ(${W / 2}px)`, background: `linear-gradient(90deg, rgb(0 0 0 / 0.28), transparent 30%, transparent 70%, rgb(0 0 0 / 0.32)), ${sp.bg}`, color: sp.fg }}
                     >
@@ -301,14 +299,15 @@ export function MangaVault({ items, label, selected, onSelect, spinning, actions
                     {!lite && (
                       <>
                         {/* page block */}
-                        <div className="km-face top-[3px]" style={{ width: T - 4, height: h - 6, left: W / 2 - (T - 4) / 2, transform: `rotateY(90deg) translateZ(${W / 2 - 2}px)`, background: "var(--km-page-edge)" }} />
+                        <div aria-hidden className="km-face top-[3px]" style={{ width: T - 4, height: h - 6, left: W / 2 - (T - 4) / 2, transform: `rotateY(90deg) translateZ(${W / 2 - 2}px)`, background: "var(--km-page-edge)" }} />
                         {/* top edge */}
-                        <div className="km-face left-0" style={{ width: W, height: T, top: -T / 2, transform: `rotateX(90deg)`, background: "var(--km-page-edge)", opacity: 0.85 }} />
+                        <div aria-hidden className="km-face left-0" style={{ width: W, height: T, top: -T / 2, transform: `rotateX(90deg)`, background: "var(--km-page-edge)", opacity: 0.85 }} />
                       </>
                     )}
                   </motion.div>
                 );
               })}
+            </div>
             </div>
             {/* the shelf plank */}
             <div aria-hidden className="km-shelf absolute inset-x-0" style={{ top: 44 + H, height: compact ? 70 : 90 }}>

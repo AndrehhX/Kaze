@@ -379,7 +379,7 @@ export function MangaReader(props: ReaderProps) {
               <p className="truncate text-xs text-white/70">
                 {chapter.label}
                 {chapter.title ? ` · ${chapter.title}` : ""}
-                {demo && <span className="ml-2 rounded bg-white/15 px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wider">Demo · KAZE Originals</span>}
+                {demo && <span className="ml-2 rounded bg-white px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wider text-black">Demo · KAZE Originals</span>}
               </p>
             </div>
             <button type="button" className="k-btn k-btn-icon k-btn-sm !bg-white/10 !text-white" aria-label="Lista de capítulos" aria-expanded={listOpen} onClick={() => setListOpen((v) => !v)}>
@@ -516,7 +516,7 @@ export function MangaReader(props: ReaderProps) {
         {showUi && (
           <motion.footer initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }} transition={{ duration: reduced ? 0 : 0.2 }} className="absolute inset-x-0 bottom-0 z-20 bg-black/75 px-3 pt-2 text-white backdrop-blur-md pb-[max(0.5rem,env(safe-area-inset-bottom))]">
             <div className="mx-auto flex max-w-4xl items-center gap-3">
-              <button type="button" className="k-btn k-btn-sm !bg-white/10 !text-white" disabled={!(direction === "rtl" ? next : prev)} onClick={() => goToChapter(direction === "rtl" ? next : prev)} aria-label={direction === "rtl" ? "Capítulo siguiente" : "Capítulo anterior"}>
+              <button type="button" className="k-btn k-btn-sm !bg-white/10 !text-white" disabled={!(direction === "rtl" ? next : prev)} onClick={() => goToChapter(direction === "rtl" ? next : prev)} aria-label={direction === "rtl" ? "Sig. capítulo" : "Ant. capítulo"}>
                 <ChevronLeft className="size-4" aria-hidden />
                 <span className="max-sm:hidden">{direction === "rtl" ? "Sig." : "Ant."}</span>
               </button>
@@ -542,7 +542,7 @@ export function MangaReader(props: ReaderProps) {
               <span className="w-20 text-center font-mono text-xs tabular-nums">
                 {currentView.length > 1 ? `${Math.min(...currentView) + 1}-${lastVisiblePage + 1}` : lastVisiblePage + 1} / {pages.length}
               </span>
-              <button type="button" className="k-btn k-btn-sm !bg-white/10 !text-white" disabled={!(direction === "rtl" ? prev : next)} onClick={() => goToChapter(direction === "rtl" ? prev : next)} aria-label={direction === "rtl" ? "Capítulo anterior" : "Capítulo siguiente"}>
+              <button type="button" className="k-btn k-btn-sm !bg-white/10 !text-white" disabled={!(direction === "rtl" ? prev : next)} onClick={() => goToChapter(direction === "rtl" ? prev : next)} aria-label={direction === "rtl" ? "Ant. capítulo" : "Sig. capítulo"}>
                 <span className="max-sm:hidden">{direction === "rtl" ? "Ant." : "Sig."}</span>
                 <ChevronRight className="size-4" aria-hidden />
               </button>

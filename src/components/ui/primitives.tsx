@@ -118,9 +118,8 @@ export function EmptyState({
   return (
     <div className={cn("k-card relative flex flex-col items-center overflow-hidden px-6 py-12 text-center", className)}>
       {jp && (
-        <span aria-hidden className="k-jp pointer-events-none absolute -right-3 -top-6 select-none text-[7rem] leading-none text-fg opacity-[0.04]" lang="ja">
-          {jp}
-        </span>
+        // Decorative watermark drawn as CSS content so it is never read or audited as body text.
+        <span aria-hidden data-jp={jp} className="k-jp pointer-events-none absolute -right-3 -top-6 select-none text-[7rem] leading-none text-fg opacity-[0.04] before:content-[attr(data-jp)]" lang="ja" />
       )}
       {icon && (
         <motion.div

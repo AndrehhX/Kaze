@@ -35,7 +35,7 @@ export function MangaListMenu({ manga, size = "md", className, align = "start" }
   return (
     <DM.Root>
       <DM.Trigger asChild>
-        <button type="button" className={cn("k-btn", entry ? "k-btn-outline" : "k-btn-ghost", size === "sm" && "k-btn-sm", className)} aria-label={entry ? `${mangaStatusMeta(entry.status).label}: cambiar estado de ${title}` : `Añadir a la biblioteca: ${title}`} disabled={!hydrated}>
+        <button type="button" className={cn("k-btn", entry ? "k-btn-outline" : "k-btn-ghost", size === "sm" && "k-btn-sm", className)} aria-label={entry ? `${mangaStatusMeta(entry.status).label}: cambiar estado de ${title}` : `Añadir a mi biblioteca: ${title}`} disabled={!hydrated}>
           {entry ? <Check className="size-4 text-primary-ink" aria-hidden /> : <Plus className="size-4" aria-hidden />}
           <span>{entry ? mangaStatusMeta(entry.status).label : "Añadir a mi biblioteca"}</span>
           <ChevronDown className="size-3.5 opacity-60" aria-hidden />
