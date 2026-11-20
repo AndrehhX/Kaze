@@ -29,6 +29,7 @@ export const MANGA_HERO_FIELDS = /* GraphQL */ `
     ...MangaCard
     description(asHtml: false)
     tags { id name rank isMediaSpoiler }
+    relations { edges { relationType(version: 2) node { id type format title { romaji english userPreferred } } } }
   }
 `;
 

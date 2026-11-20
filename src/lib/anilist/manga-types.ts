@@ -36,14 +36,20 @@ export type MangaCard = {
 export type MangaHero = MangaCard & {
   description: string | null;
   tags: Pick<MediaTag, "id" | "name" | "rank" | "isMediaSpoiler">[];
+  relations?: { edges: { relationType: string; node: { id: number; type: "ANIME" | "MANGA"; format: string | null; title: Pick<MediaTitle, "romaji" | "english" | "userPreferred"> } }[] };
 };
+
+/** Anime that adapt this manga (AniList relation "ADAPTATION" seen from the manga side). */
+export function animeAdaptations<N extends { id: number; type: string }>(m: { relations?: { edges: { relationType: string; node: N }[] } }): N[] {
+  return (m.relations?.edges ?? []).filter((e) => e.node.type === "ANIME" && e.relationType === "ADAPTATION").map((e) => e.node);
+}
 
 export type MangaRelationEdge = {
   relationType: string;
   node: (MediaCard | MangaCard) & { type: "ANIME" | "MANGA"; format: string | null };
 };
 
-export type MangaDetail = MangaHero & {
+export type MangaDetail = Omit<MangaHero, "relations" | "tags"> & {
   synonyms: string[];
   source: string | null;
   siteUrl: string;

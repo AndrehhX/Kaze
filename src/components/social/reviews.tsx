@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { mediaHref } from "@/lib/media-href";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Heart, MessageSquare, PenLine, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -180,13 +181,13 @@ export function ReviewCard({ r, liked, showMedia }: { r: Review; liked: boolean;
     <article id={r.id} className="k-card scroll-mt-32 p-5">
       <header className="flex items-start gap-3">
         {showMedia && (
-          <Link href={`/anime/${r.media_id}`} className="k-poster relative h-20 w-14 shrink-0">
+          <Link href={mediaHref(r.media_id, r.media_snapshot)} className="k-poster relative h-20 w-14 shrink-0">
             <SafeImage src={r.media_snapshot.cover ?? ""} alt="" fill sizes="56px" className="object-cover" fallbackLabel={r.media_snapshot.title} />
           </Link>
         )}
         <div className="min-w-0 flex-1">
           {showMedia && (
-            <Link href={`/anime/${r.media_id}`} className="k-label text-primary-ink hover:underline">
+            <Link href={mediaHref(r.media_id, r.media_snapshot)} className="k-label text-primary-ink hover:underline">
               {r.media_snapshot.title}
             </Link>
           )}

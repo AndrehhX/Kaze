@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { mediaHref } from "@/lib/media-href";
 import { useQuery } from "@tanstack/react-query";
 import { Users } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
@@ -44,7 +45,7 @@ export function ActivityItem({ e, now }: { e: ActivityEvent; now: number | null 
           </Link>{" "}
           <span className="text-muted">{activityParts(e).before}</span>{" "}
           {e.media_id ? (
-            <Link href={`/anime/${e.media_id}`} className="font-medium hover:text-primary-ink">
+            <Link href={mediaHref(e.media_id, e.media_snapshot)} className="font-medium hover:text-primary-ink">
               {e.media_snapshot?.title ?? "an anime"}
             </Link>
           ) : (
@@ -55,7 +56,7 @@ export function ActivityItem({ e, now }: { e: ActivityEvent; now: number | null 
         <p className="text-xs text-muted">{now ? relativeTime(new Date(e.created_at).getTime(), now) : ""}</p>
       </div>
       {e.media_snapshot?.cover && (
-        <Link href={`/anime/${e.media_id}`} className="k-poster relative h-14 w-10 shrink-0">
+        <Link href={mediaHref(e.media_id, e.media_snapshot)} className="k-poster relative h-14 w-10 shrink-0">
           <SafeImage src={e.media_snapshot.cover} alt="" fill sizes="40px" className="object-cover" />
         </Link>
       )}
@@ -109,7 +110,7 @@ export function FriendsActivityRail() {
       {watching.map((e) => {
         const name = e.user?.display_name || e.user?.username || "Friend";
         return (
-          <Link key={e.id} href={`/anime/${e.media_id}`} className="k-card flex h-full gap-3 p-2.5">
+          <Link key={e.id} href={mediaHref(e.media_id, e.media_snapshot)} className="k-card flex h-full gap-3 p-2.5">
             <div className="k-poster relative aspect-[2/3] w-16 shrink-0">
               <SafeImage src={e.media_snapshot?.cover ?? ""} alt="" fill sizes="64px" className="object-cover" fallbackLabel={e.media_snapshot?.title} />
             </div>

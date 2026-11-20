@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { mediaHref } from "@/lib/media-href";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Lock, MessageSquare, MessagesSquare, Plus, Trash2 } from "lucide-react";
@@ -192,7 +193,7 @@ export function DiscussionThread({ id }: { id: string }) {
     <article className="space-y-6">
       <header className="k-card p-6">
         {data.media_id && (
-          <Link href={`/anime/${data.media_id}`} className="k-label text-primary-ink hover:underline">
+          <Link href={mediaHref(data.media_id, data.media_snapshot)} className="k-label text-primary-ink hover:underline">
             {data.media_snapshot?.title ?? "Anime"}
           </Link>
         )}

@@ -930,3 +930,203 @@ html[data-motion="reduce"] *::after {
   content-visibility: auto;
   contain-intrinsic-size: 0 380px;
 }
+
+/* ──────────────────────────────────────────────────────────────
+   KAZE MANGA — editorial layer
+   Extends the four themes with print-inspired tokens: ink, paper,
+   screentone, panel frames and the physical shelf of the Vault.
+   ────────────────────────────────────────────────────────────── */
+:root,
+[data-theme="midnight"] {
+  --km-ink: #f7f5ff;
+  --km-paper: #0e0e1a;
+  --km-tone: rgb(168 85 247 / 0.26);
+  --km-tone-size: 7px;
+  --km-frame: 1px solid rgb(168 85 247 / 0.32);
+  --km-frame-w: 1px;
+  --km-shelf: linear-gradient(180deg, #24203d 0%, #120f22 60%, #07060d 100%);
+  --km-shelf-edge: linear-gradient(90deg, transparent, rgb(255 79 216 / 0.85), rgb(168 85 247 / 0.9), transparent);
+  --km-shelf-glow: 0 -18px 60px -12px rgb(255 79 216 / 0.45);
+  --km-stage: radial-gradient(120% 80% at 50% 0%, rgb(168 85 247 / 0.18), transparent 60%);
+  --km-spine-shade: linear-gradient(90deg, rgb(0 0 0 / 0.45), rgb(255 255 255 / 0.08) 45%, rgb(0 0 0 / 0.35));
+  --km-page-edge: repeating-linear-gradient(0deg, #e9e6f5 0 1px, #c9c4dd 1px 2px);
+  --km-title-shadow: 0 0 40px rgb(168 85 247 / 0.35);
+}
+[data-theme="sakura"] {
+  --km-ink: #342a39;
+  --km-paper: #fffaf6;
+  --km-tone: rgb(232 106 154 / 0.28);
+  --km-tone-size: 8px;
+  --km-frame: 1.5px solid rgb(184 62 112 / 0.28);
+  --km-frame-w: 1.5px;
+  --km-shelf: linear-gradient(180deg, #f6dfe6 0%, #ecc6d2 55%, #d9a9b9 100%);
+  --km-shelf-edge: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.95), transparent);
+  --km-shelf-glow: 0 -14px 40px -14px rgb(184 62 112 / 0.35);
+  --km-stage: radial-gradient(120% 80% at 50% 0%, rgb(247 183 210 / 0.45), transparent 62%);
+  --km-spine-shade: linear-gradient(90deg, rgb(120 40 80 / 0.22), rgb(255 255 255 / 0.35) 45%, rgb(120 40 80 / 0.18));
+  --km-page-edge: repeating-linear-gradient(0deg, #fffdfb 0 1px, #f0dfe4 1px 2px);
+  --km-title-shadow: 0 10px 30px rgb(232 106 154 / 0.25);
+}
+[data-theme="cyber"] {
+  --km-ink: #eafbff;
+  --km-paper: #071522;
+  --km-tone: rgb(0 217 255 / 0.3);
+  --km-tone-size: 6px;
+  --km-frame: 1px solid rgb(0 217 255 / 0.45);
+  --km-frame-w: 1px;
+  --km-shelf: repeating-linear-gradient(90deg, rgb(0 217 255 / 0.08) 0 1px, transparent 1px 28px), linear-gradient(180deg, #0f2a3d 0%, #061420 70%);
+  --km-shelf-edge: linear-gradient(90deg, transparent, #b3ff39, #00d9ff, transparent);
+  --km-shelf-glow: 0 -10px 40px -10px rgb(0 217 255 / 0.6);
+  --km-stage: radial-gradient(120% 80% at 50% 0%, rgb(0 217 255 / 0.16), transparent 60%);
+  --km-spine-shade: linear-gradient(90deg, rgb(0 0 0 / 0.5), rgb(0 217 255 / 0.12) 45%, rgb(0 0 0 / 0.45));
+  --km-page-edge: repeating-linear-gradient(0deg, #bff6ff 0 1px, #5fb9cc 1px 2px);
+  --km-title-shadow: 0 0 24px rgb(0 217 255 / 0.55);
+}
+[data-theme="zen"] {
+  --km-ink: #1d1d1d;
+  --km-paper: #faf7ef;
+  --km-tone: rgb(29 29 29 / 0.3);
+  --km-tone-size: 6px;
+  --km-frame: 3px solid #1d1d1d;
+  --km-frame-w: 3px;
+  --km-shelf: linear-gradient(180deg, #e7dfcf 0%, #d8cdb7 100%);
+  --km-shelf-edge: linear-gradient(90deg, #1d1d1d, #1d1d1d);
+  --km-shelf-glow: none;
+  --km-stage: none;
+  --km-spine-shade: linear-gradient(90deg, rgb(0 0 0 / 0.25), rgb(255 255 255 / 0.25) 45%, rgb(0 0 0 / 0.2));
+  --km-page-edge: repeating-linear-gradient(0deg, #ffffff 0 1px, #e3dccb 1px 2px);
+  --km-title-shadow: none;
+}
+
+@layer components {
+  /* Screentone: the dot texture of printed manga */
+  .km-tone {
+    background-image: radial-gradient(var(--km-tone) 1.15px, transparent 1.35px);
+    background-size: var(--km-tone-size) var(--km-tone-size);
+  }
+  .km-tone-fade {
+    -webkit-mask-image: linear-gradient(180deg, black, transparent 85%);
+    mask-image: linear-gradient(180deg, black, transparent 85%);
+  }
+  /* Panel frame: thin neon line, soft pink rule, scanline wire or a thick ink border */
+  .km-frame {
+    border: var(--km-frame);
+    border-radius: min(var(--k-radius-card), 10px);
+  }
+  [data-theme="cyber"] .km-frame {
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  }
+  [data-theme="zen"] .km-frame {
+    border-radius: 0;
+  }
+  .km-vertical {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+  .km-title {
+    font-family: var(--k-font-display);
+    font-weight: var(--k-display-weight);
+    letter-spacing: var(--k-display-tracking);
+    text-transform: var(--k-display-transform);
+    text-shadow: var(--km-title-shadow);
+    line-height: 0.95;
+  }
+  .km-number {
+    font-family: var(--k-font-display);
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    line-height: 0.85;
+  }
+  /* A printed tankōbon: cover + spine edge + page block */
+  .km-book {
+    position: relative;
+    isolation: isolate;
+  }
+  .km-book::before {
+    content: "";
+    position: absolute;
+    inset: 2px -5px 2px auto;
+    width: 6px;
+    background: var(--km-page-edge);
+    border-radius: 0 2px 2px 0;
+    z-index: -1;
+    box-shadow: 2px 0 6px rgb(0 0 0 / 0.25);
+  }
+  [data-theme="cyber"] .km-book::before,
+  [data-theme="zen"] .km-book::before {
+    border-radius: 0;
+  }
+  .km-book .k-poster::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 9%;
+    background: var(--km-spine-shade);
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    z-index: 3;
+  }
+  /* Vault shelf */
+  .km-stage {
+    background: var(--km-stage);
+  }
+  .km-shelf {
+    background: var(--km-shelf);
+    box-shadow: var(--km-shelf-glow);
+  }
+  .km-shelf-edge {
+    background: var(--km-shelf-edge);
+  }
+  .km-3d {
+    transform-style: preserve-3d;
+  }
+  .km-face {
+    position: absolute;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  /* Reader surfaces */
+  .km-reader[data-bg="paper"] {
+    background: #f4f1e8;
+    color: #1d1d1d;
+  }
+  .km-reader[data-bg="black"] {
+    background: #000;
+    color: #f2f2f2;
+  }
+  .km-reader[data-bg="gray"] {
+    background: #2a2a2e;
+    color: #f2f2f2;
+  }
+  .km-reader[data-bg="theme"] {
+    background: var(--k-bg);
+    color: var(--k-text);
+  }
+  .km-page-img {
+    user-select: none;
+    -webkit-user-drag: none;
+    image-rendering: auto;
+  }
+}
+
+@keyframes km-turn-in-next {
+  from {
+    opacity: 0;
+    transform: perspective(1600px) rotateY(calc(var(--km-dir, 1) * -10deg)) translateX(calc(var(--km-dir, 1) * -4%));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes km-spin-blur {
+  0% {
+    filter: blur(0);
+  }
+  50% {
+    filter: blur(1.5px);
+  }
+  100% {
+    filter: blur(0);
+  }
+}
