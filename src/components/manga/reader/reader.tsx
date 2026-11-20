@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Expand, List, Minimize, Settings2, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Bookmark, BookmarkCheck, BookOpen, ChevronLeft, ChevronRight, Columns2, Expand, List, Minimize, ScrollText, Settings2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import type { ReadingAsset } from "@/lib/manga/catalog";
@@ -60,6 +60,7 @@ export function MangaReader(props: ReaderProps) {
   const { mangaId, slug, seriesTitle, snapshot, readingDirection, chapter, pages, chapters, prev, next, initialPage, demo } = props;
   const router = useRouter();
   const prefs = useSettings((s) => s.reader);
+  const setReader = useSettings((s) => s.setReader);
   const settingsHydrated = useSettings((s) => s.hydrated);
   const { reduced } = useKazeMotion();
   const viewport = useSyncExternalStore(subscribeResize, viewportSnapshot, serverViewport);
@@ -327,6 +328,12 @@ export function MangaReader(props: ReaderProps) {
     const availH = stage.height || viewport.height;
     const fit = prefs.fit;
     if (fit === "original") return { width: asset.width, height: asset.height };
+    // Detección de tira vertical (típica en manhwa / webtoon): asegurar ancho de lectura óptimo
+    const isTallStrip = asset.height / Math.max(1, asset.width) > 1.6;
+    if (isTallStrip) {
+      const targetW = Math.min(availW, count > 1 ? 550 : 850);
+      return { width: Math.floor(targetW), height: "auto" as unknown as number };
+    }
     const sw = availW / asset.width, sh = availH / asset.height;
     const s = fit === "width" ? sw : fit === "height" ? sh : Math.min(sw, sh);
     return { width: Math.floor(asset.width * s), height: Math.floor(asset.height * s) };
@@ -382,6 +389,42 @@ export function MangaReader(props: ReaderProps) {
                 {demo && <span className="ml-2 rounded bg-white px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wider text-black">Demo · KAZE Originals</span>}
               </p>
             </div>
+            {/* Control directo de modo: Libro vs Cascada */}
+            <button
+              type="button"
+              className="k-btn k-btn-sm !bg-white/10 !text-white flex items-center gap-1.5 px-2.5 text-xs font-medium"
+              title={mode === "paged" ? "Cambiar a modo Cascada (Webtoon)" : "Cambiar a modo Libro (Paginado)"}
+              onClick={() => setReader({ mode: mode === "paged" ? "webtoon" : "paged" })}
+            >
+              {mode === "paged" ? <BookOpen className="size-3.5" /> : <ScrollText className="size-3.5" />}
+              <span className="max-sm:hidden">{mode === "paged" ? "Libro" : "Cascada"}</span>
+            </button>
+
+            {/* Control directo de dirección de lectura */}
+            {mode === "paged" && (
+              <button
+                type="button"
+                className="k-btn k-btn-sm !bg-white/10 !text-white flex items-center gap-1 px-2 text-xs font-medium max-md:hidden"
+                title={direction === "rtl" ? "Lectura: Derecha a Izquierda. Clic para Izq. a Der." : "Lectura: Izquierda a Derecha. Clic para Der. a Izq."}
+                onClick={() => setReader({ direction: direction === "rtl" ? "ltr" : "rtl" })}
+              >
+                <span>{direction === "rtl" ? "RTL ◀" : "LTR ▶"}</span>
+              </button>
+            )}
+
+            {/* Control directo de doble página */}
+            {mode === "paged" && viewport.width >= 1024 && (
+              <button
+                type="button"
+                className="k-btn k-btn-sm !bg-white/10 !text-white flex items-center gap-1 px-2 text-xs font-medium max-lg:hidden"
+                title={layout === "double" ? "Vista de 2 páginas (libro abierto). Clic para 1 página" : "Vista de 1 página. Clic para 2 páginas"}
+                onClick={() => setReader({ layout: layout === "double" ? "single" : "double" })}
+              >
+                <Columns2 className="size-3.5" />
+                <span>{layout === "double" ? "2 Págs" : "1 Pág"}</span>
+              </button>
+            )}
+
             <button type="button" className="k-btn k-btn-icon k-btn-sm !bg-white/10 !text-white" aria-label="Lista de capítulos" aria-expanded={listOpen} onClick={() => setListOpen((v) => !v)}>
               <List className="size-4" aria-hidden />
             </button>
@@ -470,11 +513,23 @@ export function MangaReader(props: ReaderProps) {
               </motion.div>
             ) : (
               <motion.div key={currentView.join("-")} {...enterVariants} transition={{ duration: dur, ease: [0.22, 1, 0.36, 1] }} className="absolute inset-0 flex items-center justify-center" style={{ transformStyle: animation === "cinematic" ? "preserve-3d" : undefined }}>
-                <div className="flex items-center justify-center transition-transform duration-200" style={{ transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`, cursor: zoom.scale > 1 ? "grab" : undefined }}>
+                <div className="flex items-center justify-center gap-2 transition-transform duration-200 h-full max-h-[calc(100vh-6rem)]" style={{ transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`, cursor: zoom.scale > 1 ? "grab" : undefined }}>
                   {visualOrder(currentView, direction).map((i) => {
                     const a = pages[i];
                     const s = pageW(a, currentView.length);
-                    return <PageImage key={a.src} asset={a} dataSaver={prefs.dataSaver || prefs.quality === "data-saver"} eager style={{ width: s.width, maxWidth: prefs.fit === "original" ? undefined : "100vw" }} />;
+                    return (
+                      <PageImage
+                        key={a.src}
+                        asset={a}
+                        dataSaver={prefs.dataSaver || prefs.quality === "data-saver"}
+                        eager
+                        className="max-h-[calc(100vh-6.5rem)] max-w-full"
+                        style={{
+                          width: s.width,
+                          maxWidth: prefs.fit === "original" ? undefined : currentView.length > 1 ? "48vw" : "96vw",
+                        }}
+                      />
+                    );
                   })}
                 </div>
               </motion.div>
@@ -483,7 +538,7 @@ export function MangaReader(props: ReaderProps) {
         </div>
       ) : (
         <div ref={(el) => void ((scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = el, (stageRef as React.MutableRefObject<HTMLDivElement | null>).current = el)} className="absolute inset-0 overflow-y-auto overscroll-contain" onScroll={() => stamp(session.current)} onClick={(e) => !(e.target as HTMLElement).closest("button,a") && navigate("toggle-ui")}>
-          <div className="mx-auto flex flex-col items-center" style={{ maxWidth: mode === "webtoon" ? 800 : 960, gap: mode === "webtoon" ? 0 : prefs.pageGap, paddingTop: reserveSpace ? "4rem" : 0, paddingBottom: reserveSpace ? "6rem" : 0 }}>
+          <div className="mx-auto flex flex-col items-center" style={{ maxWidth: 850, width: "100%", gap: 0, paddingTop: reserveSpace ? "4rem" : 0, paddingBottom: reserveSpace ? "6rem" : 0 }}>
             {pages.map((a, i) => (
               <div key={a.src} data-index={i} ref={(el) => void (pageRefs.current[i] = el)} className="w-full">
                 <PageImage asset={a} dataSaver={prefs.dataSaver || prefs.quality === "data-saver"} eager={Math.abs(i - page) <= prefs.preload} className="w-full" />

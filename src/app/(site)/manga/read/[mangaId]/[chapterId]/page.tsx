@@ -109,7 +109,7 @@ async function ReadContent({ params, searchParams }: Props) {
           slug: String(media.id),
           seriesTitle: mangaTitle(media),
           snapshot: snapshotFromManga(media),
-          readingDirection: "rtl",
+          readingDirection: media.countryOfOrigin === "KR" || media.countryOfOrigin === "CN" ? "vertical" : "rtl",
           chapter: toReaderChapter(chapter),
           pages,
           chapters: ordered.map(toReaderChapter),

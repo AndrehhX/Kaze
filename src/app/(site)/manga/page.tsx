@@ -39,40 +39,14 @@ async function MangaHomeContent() {
     <>
       <MangaHeroFeature items={d.trending.slice(0, 6)} />
       <ContinueReadingRail />
-      <section className="container-k mt-10" aria-label="Accesos de manga">
-        <ul className="grid gap-3 md:grid-cols-3">
-          {[
-            { href: "/discover", icon: Tv, kicker: "物語は続く", title: "La historia continúa", body: "Abre un anime y pulsa «Continuar la historia» para saber en qué capítulo seguir, con fuentes y nivel de verificación." },
-            { href: "/manga/shelf", icon: Library, kicker: "保管庫", title: "La Bóveda", body: "Tu colección como una estantería de tomos físicos: arrastra, examina y abre cada volumen." },
-            { href: "/manga/random", icon: Dices, kicker: "運命", title: "Ruleta de manga", body: "Filtra por género, extensión o estado y deja que la estantería elija tu próxima lectura." },
-          ].map((c) => (
-            <li key={c.href}>
-              <Link href={c.href} className="km-frame group relative flex h-full flex-col gap-2 overflow-hidden p-5 transition-colors hover:bg-[var(--k-btn-ghost)]">
-                <span aria-hidden className="k-jp absolute -right-2 -top-3 text-5xl text-fg opacity-[0.06]" lang="ja">
-                  {c.kicker}
-                </span>
-                <c.icon className="size-5 text-primary-ink" aria-hidden />
-                <span className="font-display text-lg">{c.title}</span>
-                <span className="text-sm text-muted">{c.body}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-      <MangaRailSection id="mk-trending" title="Tendencias" jp="急上昇" kicker="Actividad reciente en AniList" media={d.trending} ranked href="/manga/trending" />
+      <MangaRailSection id="mk-trending" title="Tendencias" jp="急上昇" kicker="Actividad reciente en AniList" media={d.trending} ranked href="/manga/discover?sort=TRENDING_DESC" />
       <MangaRailSection id="mk-popular" title="Populares en publicación" jp="連載中" kicker="Series en curso con más lectores en AniList" media={d.popularMonth} href="/manga/discover?status=RELEASING&sort=POPULARITY_DESC" />
       <BasedOnYourAnime pool={pool} />
-      <MangaRailSection id="mk-top" title="Mejor valorados" jp="高評価" kicker="Puntuación media en AniList (más de 15 000 lectores)" media={d.topRated} ranked href="/manga/discover?sort=SCORE_DESC&popMin=15000" />
-      <MangaRailSection id="mk-updated" title="Fichas actualizadas" jp="更新" kicker="Series en publicación cuya ficha de AniList se actualizó hace poco" note="AniList no publica fechas de capítulos nuevos; esta lista ordena por la última edición de la ficha." media={d.recentlyUpdated} />
+      <MangaRailSection id="mk-top" title="Mejor valorados" jp="高評価" kicker="Puntuación media en AniList" media={d.topRated} ranked href="/manga/discover?sort=SCORE_DESC" />
       <MangaRailSection id="mk-completed" title="Series completas" jp="完結" kicker="Finalizadas: léelas de principio a fin" media={d.completed} href="/manga/discover?status=FINISHED" />
       <FriendsReading />
-      <MangaRailSection id="mk-gems" title="Joyas ocultas" jp="隠れた名作" kicker="Puntuación alta, menos de 25 000 lectores" media={d.gems} href="/manga/discover?sort=SCORE_DESC&popMax=25000&score=78" />
-      <MangaRailSection id="mk-new" title="Nuevos descubrimientos" jp="新作" kicker="Empezaron a publicarse en los últimos 12 meses" media={d.newDiscoveries} href="/manga/seasonal" />
       <MangaRailSection id="mk-manhwa" title="Manhwa destacados" jp="만화" kicker="Obras de Corea del Sur más populares" media={d.manhwa} href="/manga/discover?country=KR" />
-      <MangaRailSection id="mk-short" title="Lecturas cortas" jp="短編" kicker="Finalizadas en 30 capítulos o menos" media={d.shortReads} href="/manga/discover?status=FINISHED&chMax=30&sort=SCORE_DESC" />
-      <MangaRailSection id="mk-long" title="Historias épicas" jp="長編" kicker="Más de 200 capítulos" media={d.longRunning} href="/manga/discover?chMin=200" />
-      <KazeOriginalsShelf />
-      <p className="container-k mt-12 text-xs text-muted">Datos de manga proporcionados por AniList. Los capítulos de obras comerciales se leen en las plataformas oficiales de cada editor.</p>
+      <p className="container-k mt-12 text-xs text-muted">Datos de manga proporcionados por AniList. Lectura integrada en español e inglés.</p>
     </>
   );
 }

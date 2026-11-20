@@ -7,15 +7,39 @@ import { cn } from "@/lib/utils";
 
 /**
  * One manga page. Aspect ratio is reserved up-front (no layout shift), artwork is never cropped
- * (object-contain), and a failed load can be retried in place.
+ * (object-contain), and automatically adopts natural aspect ratio when loaded so webtoons and spreads
+ * are never distorted or artificially squeezed.
  */
-export function PageImage({ asset, dataSaver, className, style, eager, onLoad }: { asset: ReadingAsset; dataSaver: boolean; className?: string; style?: React.CSSProperties; eager?: boolean; onLoad?: () => void }) {
+export function PageImage({
+  asset,
+  dataSaver,
+  className,
+  style,
+  eager,
+  onLoad,
+}: {
+  asset: ReadingAsset;
+  dataSaver: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+  eager?: boolean;
+  onLoad?: () => void;
+}) {
   const [state, setState] = useState<"loading" | "ok" | "error">("loading");
   const [attempt, setAttempt] = useState(0);
+  const [aspect, setAspect] = useState<string | null>(null);
+
   const base = dataSaver && asset.srcLow ? asset.srcLow : asset.src;
   const src = attempt ? `${base}${base.includes("?") ? "&" : "?"}retry=${attempt}` : base;
+
   return (
-    <div className={cn("relative", className)} style={{ aspectRatio: `${asset.width} / ${asset.height}`, ...style }}>
+    <div
+      className={cn("relative flex items-center justify-center", className)}
+      style={{
+        aspectRatio: aspect ?? (asset.width && asset.height ? `${asset.width} / ${asset.height}` : undefined),
+        ...style,
+      }}
+    >
       {state !== "ok" && state !== "error" && <div className="k-skeleton absolute inset-0 !rounded-none" aria-hidden />}
       {state === "error" ? (
         <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/40 p-4 text-center text-sm text-white">
@@ -37,9 +61,9 @@ export function PageImage({ asset, dataSaver, className, style, eager, onLoad }:
         <img
           key={src}
           ref={(img) => {
-            // An image can finish loading before hydration attaches onLoad; settle its state from the element itself.
             if (img?.complete && state === "loading") {
-              if (img.naturalWidth > 0) {
+              if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                setAspect(`${img.naturalWidth} / ${img.naturalHeight}`);
                 setState("ok");
                 onLoad?.();
               } else setState("error");
@@ -47,17 +71,19 @@ export function PageImage({ asset, dataSaver, className, style, eager, onLoad }:
           }}
           src={src}
           alt={asset.alt}
-          width={asset.width}
-          height={asset.height}
           draggable={false}
           loading={eager ? "eager" : "lazy"}
           decoding="async"
-          onLoad={() => {
+          onLoad={(e) => {
+            const img = e.currentTarget;
+            if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+              setAspect(`${img.naturalWidth} / ${img.naturalHeight}`);
+            }
             setState("ok");
             onLoad?.();
           }}
           onError={() => setState("error")}
-          className={cn("km-page-img size-full object-contain transition-opacity duration-300", state === "ok" ? "opacity-100" : "opacity-0")}
+          className={cn("km-page-img max-h-full max-w-full object-contain transition-opacity duration-300", state === "ok" ? "opacity-100" : "opacity-0")}
         />
       )}
     </div>

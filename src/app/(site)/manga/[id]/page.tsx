@@ -93,13 +93,11 @@ function AniListDetail({ m, chapters = [], volumes = [] }: { m: MangaDetail; cha
       <SectionNavManga
         items={[
           { id: "overview", label: "Resumen" },
-          { id: "read", label: "Dónde leer" },
-          { id: "anime", label: "Anime y continuidad" },
+          { id: "chapters", label: "Capítulos" },
+          ...(adaptations.length > 0 ? [{ id: "anime", label: "Continuidad" }] : []),
           { id: "related", label: "Relacionados" },
           { id: "characters", label: "Personajes" },
-          { id: "recommendations", label: "Recomendaciones" },
-          { id: "reviews", label: "Reseñas" },
-          { id: "discussions", label: "Debates" },
+          ...(recs.length > 0 ? [{ id: "recommendations", label: "Recomendaciones" }] : []),
         ]}
       />
       <section id="overview" aria-label="Resumen" className="container-k mt-10 grid scroll-mt-28 gap-6 lg:grid-cols-[1fr_340px]">
@@ -129,55 +127,46 @@ function AniListDetail({ m, chapters = [], volumes = [] }: { m: MangaDetail; cha
         </aside>
       </section>
 
-      <DetailSection id="read" title="Dónde leer" jp="読む">
+      <DetailSection id="chapters" title="Capítulos" jp="章">
         {chapters.length > 0 ? (
-          <div className="space-y-8">
-            <ChapterCatalog mangaId={m.id} slug={String(m.id)} chapters={chapters} volumes={volumes} tab="chapters" />
-            {availability.length > 0 && (
-              <div className="border-t border-line pt-6">
-                <h3 className="k-label mb-3 text-muted">Destinos oficiales externos</h3>
-                <AvailabilityList options={availability} mangaTitle={title} />
-              </div>
-            )}
-          </div>
+          <ChapterCatalog mangaId={m.id} slug={String(m.id)} chapters={chapters} volumes={volumes} tab="chapters" />
         ) : (
-          <div>
-            <AvailabilityList options={availability} mangaTitle={title} />
-            <div className="mt-4">
-              <NoCatalogNotice chapters={m.chapters} volumes={m.volumes} status={m.status} />
-            </div>
-          </div>
+          <NoCatalogNotice chapters={m.chapters} volumes={m.volumes} status={m.status} />
         )}
       </DetailSection>
 
-      <DetailSection id="anime" title="Anime y continuidad" jp="物語は続く">
-        {adaptations.length ? (
+      {adaptations.length > 0 && (
+        <DetailSection id="anime" title="Anime y continuidad" jp="物語は続く">
           <ul className="grid gap-3 md:grid-cols-2">
-            {adaptations.map((a) => {
-              const rec = mappings.find((x) => x.animeId === a.id);
-              const meta = rec ? VERIFICATION_META[rec.verificationStatus] : null;
-              return (
-                <li key={a.id} className="km-frame flex items-start gap-3 p-4">
-                  <Tv className="mt-0.5 size-5 shrink-0 text-primary-ink" aria-hidden />
-                  <div className="min-w-0 flex-1">
-                    <Link href={`/anime/${a.id}`} className="font-semibold hover:text-primary-ink">
-                      {a.title.english || a.title.romaji}
-                    </Link>
-                    <p className="mt-0.5 text-xs text-muted">
-                      {rec && rec.recommendedStartChapter ? `Tras ${rec.animeLabel.toLowerCase()}: capítulo ${rec.recommendedStartChapter} · ${meta?.label}` : "Punto de continuación aún no verificado"}
-                    </p>
-                    <Link href={`/manga/continue/${a.id}`} className="k-btn k-btn-outline k-btn-sm mt-3">
-                      Continuar la historia
-                    </Link>
-                  </div>
-                </li>
-              );
-            })}
+            {adaptations
+              .filter((a) => {
+                const titleLower = (a.title.english || a.title.romaji || "").toLowerCase();
+                return !titleLower.includes(" pv") && !titleLower.endsWith(" pv");
+              })
+              .slice(0, 4)
+              .map((a) => {
+                const rec = mappings.find((x) => x.animeId === a.id);
+                const meta = rec ? VERIFICATION_META[rec.verificationStatus] : null;
+                return (
+                  <li key={a.id} className="km-frame flex items-start gap-3 p-4">
+                    <Tv className="mt-0.5 size-5 shrink-0 text-primary-ink" aria-hidden />
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/anime/${a.id}`} className="font-semibold hover:text-primary-ink">
+                        {a.title.english || a.title.romaji}
+                      </Link>
+                      <p className="mt-0.5 text-xs text-muted">
+                        {rec && rec.recommendedStartChapter ? `Tras ${rec.animeLabel.toLowerCase()}: capítulo ${rec.recommendedStartChapter} · ${meta?.label}` : "Continuación tras el anime"}
+                      </p>
+                      <Link href={`/manga/continue/${a.id}`} className="k-btn k-btn-outline k-btn-sm mt-3">
+                        Continuar la historia
+                      </Link>
+                    </div>
+                  </li>
+                );
+              })}
           </ul>
-        ) : (
-          <p className="text-sm text-muted">AniList no registra ninguna adaptación al anime de esta obra.</p>
-        )}
-      </DetailSection>
+        </DetailSection>
+      )}
 
       <DetailSection id="related" title="Obras relacionadas" jp="関連">
         <RelatedWorks m={m} />
@@ -195,18 +184,6 @@ function AniListDetail({ m, chapters = [], volumes = [] }: { m: MangaDetail; cha
           <p className="mt-2 text-xs text-muted">Recomendaciones votadas por usuarios de AniList.</p>
         </DetailSection>
       )}
-      <DetailSection id="reviews" title="Reseñas" jp="レビュー">
-        <Suspense fallback={<div className="k-skeleton h-40" />}>
-          <MediaReviews mediaId={m.id} snapshot={reviewSnapshot} />
-        </Suspense>
-        <AniListMangaReviews m={m} />
-      </DetailSection>
-      <DetailSection id="discussions" title="Debates por capítulo" jp="掲示板">
-        <p className="mb-4 text-sm text-muted">Abre un debate con el número de capítulo en el título (p. ej. «Cap. 64») y marca «contiene spoilers» si hablas de lo que viene después: los lectores que van por detrás no lo verán sin aceptarlo.</p>
-        <Suspense fallback={<div className="k-skeleton h-40" />}>
-          <DiscussionList mediaId={m.id} snapshot={reviewSnapshot} limit={8} />
-        </Suspense>
-      </DetailSection>
     </article>
   );
 }

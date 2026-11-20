@@ -77,16 +77,11 @@ export function MangaExplorer({ meta }: { meta: Meta }) {
 
   return (
     <div className="container-k pt-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+        <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="k-label text-primary-ink">Catálogo de AniList · 探す</p>
           <h1 className="km-title mt-2 text-title">Explorar manga</h1>
         </div>
-        <nav aria-label="Atajos" className="flex flex-wrap gap-2">
-          <Link href="/manga/trending" className="k-btn k-btn-ghost k-btn-sm">Tendencias</Link>
-          <Link href="/manga/seasonal" className="k-btn k-btn-ghost k-btn-sm">Novedades</Link>
-          <Link href="/manga/random" className="k-btn k-btn-ghost k-btn-sm">Ruleta</Link>
-        </nav>
       </header>
 
       <div className="sticky top-[var(--k-nav-h)] z-30 -mx-[var(--k-gutter)] mt-6 bg-gradient-to-b from-bg via-bg/95 to-bg/0 px-[var(--k-gutter)] pb-4 pt-2">
@@ -334,9 +329,9 @@ function MangaFilterPanel({ params, meta, setParams }: { params: MangaBrowsePara
       </fieldset>
       {tagGroups.length > 0 && (
         <fieldset>
-          <legend className="k-label mb-2 text-muted">Etiquetas</legend>
-          <div className="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto">
-            {tagGroups.map((t) => (
+          <legend className="k-label mb-2 text-muted">Etiquetas populares</legend>
+          <div className="flex max-h-36 flex-wrap gap-1.5 overflow-y-auto">
+            {tagGroups.slice(0, 20).map((t) => (
               <button key={t.name} type="button" className="k-chip" aria-pressed={Boolean(params.tags?.includes(t.name))} onClick={() => setParams({ tags: toggle(params.tags, t.name) })}>
                 {t.name}
               </button>
@@ -344,33 +339,6 @@ function MangaFilterPanel({ params, meta, setParams }: { params: MangaBrowsePara
           </div>
         </fieldset>
       )}
-      <fieldset className="grid grid-cols-2 gap-2">
-        <legend className="k-label mb-2 text-muted">Año de inicio</legend>
-        <input aria-label="Desde el año" type="number" inputMode="numeric" className="k-input" placeholder="Desde" value={params.yearFrom ?? ""} onChange={(e) => setParams({ yearFrom: num(e.target.value) })} />
-        <input aria-label="Hasta el año" type="number" inputMode="numeric" className="k-input" placeholder="Hasta" value={params.yearTo ?? ""} onChange={(e) => setParams({ yearTo: num(e.target.value) })} />
-      </fieldset>
-      <fieldset className="grid grid-cols-2 gap-2">
-        <legend className="k-label mb-2 text-muted">Capítulos</legend>
-        <input aria-label="Capítulos mínimos" type="number" inputMode="numeric" className="k-input" placeholder="Mín." value={params.minChapters ?? ""} onChange={(e) => setParams({ minChapters: num(e.target.value) })} />
-        <input aria-label="Capítulos máximos" type="number" inputMode="numeric" className="k-input" placeholder="Máx." value={params.maxChapters ?? ""} onChange={(e) => setParams({ maxChapters: num(e.target.value) })} />
-      </fieldset>
-      <fieldset className="grid grid-cols-2 gap-2">
-        <legend className="k-label mb-2 text-muted">Volúmenes</legend>
-        <input aria-label="Volúmenes mínimos" type="number" inputMode="numeric" className="k-input" placeholder="Mín." value={params.minVolumes ?? ""} onChange={(e) => setParams({ minVolumes: num(e.target.value) })} />
-        <input aria-label="Volúmenes máximos" type="number" inputMode="numeric" className="k-input" placeholder="Máx." value={params.maxVolumes ?? ""} onChange={(e) => setParams({ maxVolumes: num(e.target.value) })} />
-      </fieldset>
-      <p className="-mt-3 text-xs text-muted">Los filtros de extensión excluyen series cuyo total AniList aún no conoce (habitual en obras en curso).</p>
-      <label className="block">
-        <span className="k-label mb-2 block text-muted">Puntuación mínima</span>
-        <input type="range" min={0} max={95} step={5} value={params.minScore ?? 0} onChange={(e) => setParams({ minScore: Number(e.target.value) || undefined })} className="w-full accent-[var(--k-primary)]" aria-valuetext={`${params.minScore ?? 0}%`} />
-        <span className="text-xs text-muted">{params.minScore ? `${params.minScore}% o más` : "Cualquiera"}</span>
-      </label>
-      <fieldset className="grid grid-cols-2 gap-2">
-        <legend className="k-label mb-2 text-muted">Popularidad (lectores)</legend>
-        <input aria-label="Popularidad mínima" type="number" inputMode="numeric" className="k-input" placeholder="Mín." value={params.minPopularity ?? ""} onChange={(e) => setParams({ minPopularity: num(e.target.value) })} />
-        <input aria-label="Popularidad máxima" type="number" inputMode="numeric" className="k-input" placeholder="Máx." value={params.maxPopularity ?? ""} onChange={(e) => setParams({ maxPopularity: num(e.target.value) })} />
-      </fieldset>
-      <p className="text-xs text-muted">Disponibilidad por idioma: cada ficha muestra las plataformas oficiales y sus idiomas según AniList.</p>
     </div>
   );
 }

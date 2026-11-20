@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { BarChart3, BookOpen, Compass, Dices, Layers, Library, Sparkles } from "lucide-react";
+import { BookOpen, Compass, Library } from "lucide-react";
 import { useCurrentPath } from "@/stores/route";
 import { cn } from "@/lib/utils";
 import { useKazeMotion } from "@/lib/motion";
@@ -10,11 +10,7 @@ import { useKazeMotion } from "@/lib/motion";
 export const MANGA_NAV = [
   { href: "/manga", label: "Inicio", icon: BookOpen, exact: true },
   { href: "/manga/discover", label: "Explorar", icon: Compass },
-  { href: "/manga/shelf", label: "La Bóveda", icon: Layers },
-  { href: "/manga/random", label: "Ruleta", icon: Dices },
-  { href: "/manga/trending", label: "Tendencias", icon: Sparkles },
-  { href: "/library/manga", label: "Mi manga", icon: Library },
-  { href: "/manga/reading-stats", label: "Estadísticas", icon: BarChart3 },
+  { href: "/library/manga", label: "Mi biblioteca", icon: Library },
 ];
 
 /** Section navigation for KAZE MANGA. Hidden inside the immersive reader. */

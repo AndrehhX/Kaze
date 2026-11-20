@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { X, ArrowRight } from "lucide-react";
 import { useKazeMotion } from "@/lib/motion";
 
-const STORAGE_KEY = "kaze_manga_announcement_seen_v1";
+const STORAGE_KEY = "kaze_manga_announcement_v2";
 
 export function MangaAnnouncementModal() {
   const [isOpen, setIsOpen] = useState(false);
