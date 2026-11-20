@@ -11,22 +11,21 @@ import type { ReadingAvailability } from "@/lib/manga/catalog";
 
 export function DetailActions({ manga, readHref, firstChapterHref }: { manga: MangaRef; readHref?: string | null; firstChapterHref?: string | null }) {
   const entry = useMangaLibrary((s) => s.entries[manga.id]);
-  const resume = entry?.lastChapterId && manga.snapshot.slug ? `/manga/read/${manga.snapshot.slug}/${entry.lastChapterId}?page=${(entry.lastPage ?? 0) + 1}` : null;
+  const mangaSlug = manga.snapshot.slug || String(manga.id);
+  const resume = entry?.lastChapterId ? `/manga/read/${mangaSlug}/${entry.lastChapterId}?page=${(entry.lastPage ?? 0) + 1}` : null;
+  const startHref = firstChapterHref || (readHref && readHref.startsWith("/manga/read/") ? readHref : null) || `#chapters`;
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       {resume ? (
         <Link href={resume} className="k-btn k-btn-primary">
-          <BookOpen className="size-4" aria-hidden /> Continuar · {entry?.lastChapterLabel}
+          <BookOpen className="size-4" aria-hidden /> Continuar · {entry?.lastChapterLabel || "Capítulo"}
         </Link>
-      ) : firstChapterHref ? (
-        <Link href={firstChapterHref} className="k-btn k-btn-primary">
+      ) : (
+        <Link href={startHref} className="k-btn k-btn-primary">
           <BookOpen className="size-4" aria-hidden /> Empezar a leer
         </Link>
-      ) : readHref ? (
-        <a href={readHref} target="_blank" rel="noopener noreferrer" className="k-btn k-btn-primary">
-          <BookOpen className="size-4" aria-hidden /> Leer en plataforma oficial
-        </a>
-      ) : null}
+      )}
       <MangaListMenu manga={manga} />
       <MangaFavoriteButton manga={manga} />
       <ShareButton title={manga.snapshot.title} />

@@ -31,10 +31,6 @@ export async function CatalogPage({ param, tab }: { param: string; tab: "chapter
         ) : (
           <div className="space-y-6">
             <NoCatalogNotice chapters={r.kind === "anilist" ? r.media.chapters : null} volumes={r.kind === "anilist" ? r.media.volumes : null} status={r.kind === "anilist" ? r.media.status : null} />
-            <div>
-              <h2 className="k-label mb-3 text-muted">Dónde leer</h2>
-              <AvailabilityList options={availabilityFor({ seriesKey, externalLinks: r.kind === "anilist" ? r.media.externalLinks : undefined })} mangaTitle={title} />
-            </div>
           </div>
         )}
       </div>

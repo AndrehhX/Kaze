@@ -77,10 +77,8 @@ function AniListDetail({ m, chapters = [], volumes = [] }: { m: MangaDetail; cha
   const title = mangaTitle(m);
   const snapshot = snapshotFromManga(m);
   const ref = { id: m.id, snapshot };
-  const availability = availabilityFor({ seriesKey: seriesKeyFor(m.id), externalLinks: m.externalLinks });
-  const official = availability.find((a) => a.kind === "external");
   const firstChapter = chapters[0];
-  const readHref = firstChapter ? `/manga/read/${m.id}/${firstChapter.id}` : (official?.url ?? null);
+  const readHref = firstChapter ? `/manga/read/${m.id}/${firstChapter.id}` : `#chapters`;
   const adaptations = animeAdaptations(m);
   const mappings = mappingsForManga(m.id);
   const recs = m.recommendations.nodes.map((n) => n.mediaRecommendation).filter((x): x is NonNullable<typeof x> => Boolean(x && x.type === "MANGA" && !x.isAdult));
@@ -89,7 +87,7 @@ function AniListDetail({ m, chapters = [], volumes = [] }: { m: MangaDetail; cha
 
   return (
     <article>
-      <MangaDetailHero m={m} actions={<DetailActions manga={ref} readHref={readHref} />} />
+      <MangaDetailHero m={m} actions={<DetailActions manga={ref} firstChapterHref={readHref} />} />
       <SectionNavManga
         items={[
           { id: "overview", label: "Resumen" },

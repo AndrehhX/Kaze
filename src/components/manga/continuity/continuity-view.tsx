@@ -237,8 +237,14 @@ export function ContinuityView({ anime, timeline, currentIds, manga, relatedMang
 
         <div className="space-y-6">
           <div>
-            <h2 className="k-label mb-3 text-muted">Dónde leer legalmente</h2>
-            {manga ? <AvailabilityList options={availability} mangaTitle={manga.title} /> : <p className="text-sm text-muted">Sin manga original identificado.</p>}
+            <h2 className="k-label mb-3 text-muted">Leer manga en KAZE</h2>
+            {manga ? (
+              <Link href={`/manga/${manga.id}#chapters`} className="k-btn k-btn-primary inline-flex w-full items-center justify-center gap-2">
+                <BookOpen className="size-4" aria-hidden /> Ver capítulos de {manga.title}
+              </Link>
+            ) : (
+              <p className="text-sm text-muted">Sin manga original identificado.</p>
+            )}
           </div>
           {relatedManga.length > 0 && (
             <div>

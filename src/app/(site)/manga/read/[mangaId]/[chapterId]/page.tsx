@@ -138,14 +138,18 @@ async function NotReadable({ param }: { param: string }) {
   return (
     <div className="container-k max-w-3xl pb-16 pt-12">
       <BookOpen className="size-8 text-primary-ink" aria-hidden />
-      <h1 className="km-title mt-4 text-title">{title} no se puede leer dentro de KAZE</h1>
-      <p className="mt-3 text-muted">Las páginas de esta obra pertenecen a su editorial. KAZE no copia ni muestra capítulos sin licencia: te llevamos a los servicios oficiales donde puedes leerla.</p>
-      <div className="mt-8">
-        <AvailabilityList options={availabilityFor({ seriesKey: seriesKeyFor(m.id), externalLinks: m.externalLinks })} mangaTitle={title} />
+      <h1 className="km-title mt-4 text-title">{title} · Capítulo no disponible</h1>
+      <p className="mt-3 text-muted">
+        Las páginas de este capítulo no se pudieron cargar en este momento desde los servidores. Puedes intentar recargar la página o seleccionar otro capítulo de la obra dentro de KAZE.
+      </p>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Link href={`/manga/${m.id}#chapters`} className="k-btn k-btn-primary">
+          <BookOpen className="size-4" aria-hidden /> Ver lista de capítulos
+        </Link>
+        <Link href={`/manga/${m.id}`} className="k-btn k-btn-outline">
+          Volver a la ficha
+        </Link>
       </div>
-      <Link href={`/manga/${m.id}`} className="k-btn k-btn-outline mt-8">
-        Volver a la ficha
-      </Link>
     </div>
   );
 }

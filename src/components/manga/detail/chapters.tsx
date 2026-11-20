@@ -84,7 +84,7 @@ export function NoCatalogNotice({ chapters, volumes, status }: { chapters: numbe
           {volumes ? ` en ${volumes} volúmenes` : ""}
           {status === "RELEASING" ? " (sigue en publicación, el total puede cambiar)" : ""}. No generamos listas de capítulos a partir de ese número porque la numeración real incluye extras, capítulos decimales y ediciones distintas.
         </p>
-        <p className="mt-2 text-muted">Lee los capítulos en las plataformas oficiales que aparecen en «Dónde leer».</p>
+        <p className="mt-2 text-muted">Los capítulos de esta obra se sincronizan automáticamente con los proveedores del lector de KAZE cuando estén disponibles.</p>
       </div>
     </div>
   );
