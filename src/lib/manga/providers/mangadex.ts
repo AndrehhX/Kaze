@@ -71,8 +71,12 @@ async function findMangaDexId(anilistId: number): Promise<string | null> {
     for (const title of queryTitles) {
       if (matchedId) break;
       const url = `https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=15&order[relevance]=desc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
-      const res = await fetch(url, { headers: { "User-Agent": "Kaze/1.0" } });
-      if (!res.ok) continue;
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Kaze/1.0" },
+        signal: AbortSignal.timeout(6000),
+        next: { revalidate: 3600 },
+      }).catch(() => null);
+      if (!res || !res.ok) continue;
 
       const data = (await res.json()) as { data?: MangaDexMangaItem[] };
       const items = data.data ?? [];
@@ -146,8 +150,12 @@ export const mangaDexProvider: ChapterCatalogProvider & ChapterContentProvider &
 
     try {
       const url = `https://api.mangadex.org/manga/${mangadexId}/feed?translatedLanguage[]=es-la&translatedLanguage[]=es&translatedLanguage[]=en&order[chapter]=asc&limit=500&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
-      const res = await fetch(url, { headers: { "User-Agent": "Kaze/1.0" } });
-      if (!res.ok) return [];
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Kaze/1.0" },
+        signal: AbortSignal.timeout(6000),
+        next: { revalidate: 3600 },
+      }).catch(() => null);
+      if (!res || !res.ok) return [];
 
       const json = (await res.json()) as { data?: MangaDexChapterItem[] };
       const rawChapters = json.data ?? [];
@@ -239,8 +247,12 @@ export const mangaDexProvider: ChapterCatalogProvider & ChapterContentProvider &
 
     try {
       const url = `https://api.mangadex.org/at-home/server/${chapterId}`;
-      const res = await fetch(url, { headers: { "User-Agent": "Kaze/1.0" } });
-      if (!res.ok) return [];
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Kaze/1.0" },
+        signal: AbortSignal.timeout(6000),
+        next: { revalidate: 3600 },
+      }).catch(() => null);
+      if (!res || !res.ok) return [];
 
       const json = (await res.json()) as {
         result: string;

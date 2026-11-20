@@ -3,7 +3,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { X, ArrowRight } from "lucide-react";
 import { useKazeMotion } from "@/lib/motion";
@@ -12,7 +11,6 @@ const STORAGE_KEY = "kaze_manga_announcement_v2";
 
 export function MangaAnnouncementModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const pathname = usePathname();
   const { reduced } = useKazeMotion();
 
   useEffect(() => {
@@ -23,8 +21,11 @@ export function MangaAnnouncementModal() {
       return;
     }
 
-    if (pathname?.startsWith("/watch/") || pathname?.startsWith("/manga/read/")) {
-      return;
+    if (typeof window !== "undefined") {
+      const p = window.location.pathname;
+      if (p.startsWith("/watch/") || p.startsWith("/manga/read/")) {
+        return;
+      }
     }
 
     const timer = setTimeout(() => {
@@ -32,7 +33,7 @@ export function MangaAnnouncementModal() {
     }, 900);
 
     return () => clearTimeout(timer);
-  }, [pathname]);
+  }, []);
 
   const handleDismiss = () => {
     setIsOpen(false);

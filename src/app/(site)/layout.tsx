@@ -30,7 +30,9 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
       <MobileNav />
       <CommandPalette />
       <CompletionCelebration />
-      <MangaAnnouncementModal />
+      <Suspense fallback={null}>
+        <MangaAnnouncementModal />
+      </Suspense>
     </>
   );
 }

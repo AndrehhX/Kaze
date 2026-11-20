@@ -13,4 +13,4 @@ export async function resolveManga(param: string) {
   return { kind: "anilist" as const, media };
 }
 
-export const STATIC_MANGA_PARAMS = [{ id: "viento-de-papel" }, { id: "senal-nocturna" }, { id: "101517" }, { id: "105778" }];
+export const STATIC_MANGA_PARAMS = [{ id: "viento-de-papel" }, { id: "senal-nocturna" }];
