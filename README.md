@@ -89,6 +89,7 @@ kaze/
 │   ├── app/                     # App Router pages and API routes
 │   │   ├── api/                 # Playback session grants and AniList OAuth
 │   │   ├── anime/[id]/          # Anime details and episode index
+│   │   ├── manga/               # KAZE MANGA: home, vault, reader, continuity, library
 │   │   ├── watch/[id]/[ep]/     # Web player interface
 │   │   └── party/               # Realtime watch party rooms
 │   ├── components/              # UI components
@@ -132,6 +133,15 @@ kaze/
 ### Library & Synchronization
 - Local-first architecture: changes write immediately to IndexedDB/LocalStorage (Web) or Room (Android) for instant response.
 - Background sync: reconciles watchlist, progress, and ratings with Supabase when online, using a Last-Write-Wins strategy.
+
+### KAZE MANGA — "The anime ends. The story continues."
+Integrated manga section of the web client (`/manga`). Full technical notes: [docs/MANGA.md](docs/MANGA.md).
+- Editorial manga home, explorer with URL-persisted filters (genre, tags, origin, status, chapters, volumes, score, popularity, author), trending and new-releases rankings — all real AniList data.
+- **La Bóveda**: a CSS-3D collector's shelf (spines sized by real volume counts, spring selection, drag/keyboard/wheel, lite mode and an accessible list view) and a **randomizer** that draws a crypto-random winner from the filtered pool before animating.
+- **Continue the Story**: anime → manga continuation points from a sourced, versioned dataset with explicit statuses (verified / approximate / pending / unknown). Precision is never inferred from episode counts.
+- Immersive reader: right-to-left and left-to-right, true double-page spreads, vertical and webtoon modes, zoom (double-click / pinch), gestures, bounded preloading, bookmarks, resume, measured reading time, and optional Smooth / Cinematic / Focus modes.
+- Legal content model: KAZE serves only the original **KAZE Originals** demo series it ships; commercial titles link to the official platforms AniList lists. No scraping, no scans.
+- Manga library (statuses, chapters + volumes, notes, collections, import/export), reading statistics, AniList manga list sync with preview, manga on profiles, reviews and chapter discussions through the existing social layer.
 
 ---
 
