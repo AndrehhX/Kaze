@@ -14,6 +14,7 @@ import { EmptyState, SafeImage, Skeleton } from "@/components/ui/primitives";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { cn, formatNumber } from "@/lib/utils";
 import { useKazeMotion } from "@/lib/motion";
+import { LibraryKindSwitch } from "@/components/manga/library/kind-switch";
 
 type Tab = LibraryStatus | "FAVORITES";
 type Sort = "updated" | "title" | "score" | "progress" | "added";
@@ -130,6 +131,7 @@ export function LibraryView() {
     <div className="container-k pt-8">
       <header className="grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
         <div>
+          <LibraryKindSwitch active="anime" />
           <p className="k-label text-primary-ink">Tu colección</p>
           <h1 className="font-display text-title mt-2">Mi Biblioteca</h1>
           <p className="mt-2 flex items-center gap-2 text-sm text-muted">

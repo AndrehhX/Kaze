@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Expand, List, Minimize, Settings2, X, ZoomIn, ZoomOut } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import type { ReadingAsset } from "@/lib/manga/catalog";
 import type { MangaSnapshot } from "@/lib/manga/types";
@@ -49,6 +49,13 @@ const viewportSnapshot = () => {
 };
 const serverViewport = () => lastViewport;
 
+/** Marks reader activity (and optionally the session start). Kept outside render: it reads the clock. */
+function stamp(s: { startedAt: number; lastInput: number }, start = false) {
+  const t = Date.now();
+  s.lastInput = t;
+  if (start) s.startedAt = t;
+}
+
 export function MangaReader(props: ReaderProps) {
   const { mangaId, slug, seriesTitle, snapshot, readingDirection, chapter, pages, chapters, prev, next, initialPage, demo } = props;
   const router = useRouter();
@@ -57,7 +64,7 @@ export function MangaReader(props: ReaderProps) {
   const { reduced } = useKazeMotion();
   const viewport = useSyncExternalStore(subscribeResize, viewportSnapshot, serverViewport);
   const { mode, direction, layout } = resolveReader(prefs, { readingDirection }, viewport);
-  const views = useMemo(() => buildViews(pages, layout, { coverAlone: prefs.coverAlone }), [pages, layout, prefs.coverAlone]);
+  const views = buildViews(pages, layout, { coverAlone: prefs.coverAlone });
 
   const record = useMangaLibrary((s) => s.recordChapterProgress);
   const recordSession = useMangaLibrary((s) => s.recordSession);
@@ -70,6 +77,8 @@ export function MangaReader(props: ReaderProps) {
   const [page, setPage] = useState(() => Math.max(0, Math.min(pages.length - 1, initialPage ?? 0)));
   const [dirSign, setDirSign] = useState(1);
   const [ui, setUi] = useState(true);
+  // Focus mode keeps its own visibility so switching modes never needs a state reset.
+  const [focusUi, setFocusUi] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [end, setEnd] = useState(false);
@@ -81,9 +90,9 @@ export function MangaReader(props: ReaderProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const gesture = useRef<{ x: number; y: number; t: number; pinch0?: number; scale0?: number; panX?: number; panY?: number; moved: boolean } | null>(null);
+  const gesture = useRef<{ x: number; y: number; pinch0?: number; scale0?: number; panX?: number; panY?: number; moved: boolean } | null>(null);
   const resumed = useRef(false);
-  const session = useRef({ startedAt: Date.now(), active: 0, lastInput: Date.now(), pages: new Set<number>() });
+  const session = useRef({ startedAt: 0, active: 0, lastInput: 0, pages: new Set<number>() });
 
   const viewIndex = viewIndexOf(views, page);
   const currentView = views[viewIndex] ?? [0];
@@ -98,6 +107,8 @@ export function MangaReader(props: ReaderProps) {
     if (resumed.current || !libHydrated) return;
     resumed.current = true;
     if (initialPage == null && storedProgress && !storedProgress.completed && storedProgress.page > 0) {
+      // Syncing from the persisted store once it hydrates (it is not available during the first render).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPage(Math.min(pages.length - 1, storedProgress.page));
       toast(`Reanudado en la página ${storedProgress.page + 1}`, { action: { label: "Desde el inicio", onClick: () => setPage(0) } });
     }
@@ -121,6 +132,7 @@ export function MangaReader(props: ReaderProps) {
   // Measured reading time: counts only while visible and the reader was used in the last 60 s.
   useEffect(() => {
     const s = session.current;
+    stamp(s, true);
     const tick = setInterval(() => {
       if (document.visibilityState === "visible" && Date.now() - s.lastInput < 60_000) s.active += 1;
     }, 1000);
@@ -166,18 +178,11 @@ export function MangaReader(props: ReaderProps) {
     };
   }, []);
 
-  // Focus mode hides controls until the reader asks for them.
-  useEffect(() => {
-    if (animation !== "focus") return;
-    setUi(false);
-  }, [animation]);
+  const goToChapter = (c: ReaderChapter | null) => c && router.push(`/manga/read/${slug}/${c.id}`);
 
-  const goToChapter = useCallback((c: ReaderChapter | null) => c && router.push(`/manga/read/${slug}/${c.id}`), [router, slug]);
-
-  const navigate = useCallback(
-    (intent: NavIntent) => {
-      session.current.lastInput = Date.now();
-      if (intent === "toggle-ui") return setUi((v) => !v);
+  const navigate = (intent: NavIntent) => {
+      stamp(session.current);
+      if (intent === "toggle-ui") return animation === "focus" ? setFocusUi((v) => !v) : setUi((v) => !v);
       if (intent === "none") return;
       if (mode !== "paged") {
         const el = scrollRef.current;
@@ -197,11 +202,9 @@ export function MangaReader(props: ReaderProps) {
       setDirSign(intent === "prev" ? -1 : 1);
       setZoom({ scale: 1, x: 0, y: 0 });
       setPage(views[r.view][0]);
-    },
-    [end, goToChapter, mode, prev, reduced, viewIndex, views],
-  );
+  };
 
-  const toggleBookmark = useCallback(() => {
+  const toggleBookmark = () => {
     if (pageBookmarked) {
       removeBookmark(pageBookmarked.id);
       toast("Marcador eliminado");
@@ -209,7 +212,7 @@ export function MangaReader(props: ReaderProps) {
       addBookmark({ mangaId, chapterId: chapter.id, chapterLabel: chapter.label, page: lastVisiblePage, note: "" });
       toast.success(`Marcador en la página ${lastVisiblePage + 1}`);
     }
-  }, [addBookmark, chapter.id, chapter.label, lastVisiblePage, mangaId, pageBookmarked, removeBookmark]);
+  };
 
   const toggleFullscreen = () => {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
@@ -235,12 +238,12 @@ export function MangaReader(props: ReaderProps) {
 
   // Pointer gestures: tap zones, swipes, pinch-zoom and pan (paged mode).
   const onPointerDown = (e: React.PointerEvent) => {
-    session.current.lastInput = Date.now();
+    stamp(session.current);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()];
-      gesture.current = { x: e.clientX, y: e.clientY, t: performance.now(), pinch0: Math.hypot(a.x - b.x, a.y - b.y), scale0: zoom.scale, moved: true };
-    } else gesture.current = { x: e.clientX, y: e.clientY, t: performance.now(), panX: zoom.x, panY: zoom.y, moved: false };
+      gesture.current = { x: e.clientX, y: e.clientY, pinch0: Math.hypot(a.x - b.x, a.y - b.y), scale0: zoom.scale, moved: true };
+    } else gesture.current = { x: e.clientX, y: e.clientY, panX: zoom.x, panY: zoom.y, moved: false };
   };
   const onPointerMove = (e: React.PointerEvent) => {
     if (!pointers.current.has(e.pointerId)) return;
@@ -298,16 +301,17 @@ export function MangaReader(props: ReaderProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
-  const preload = useMemo(() => new Set(preloadWindow(page, pages.length, prefs.dataSaver ? Math.min(2, prefs.preload) : prefs.preload)), [page, pages.length, prefs.dataSaver, prefs.preload]);
+  // Warm the browser cache for a bounded window around the current page (never the whole chapter).
+  const preloadAhead = prefs.dataSaver ? Math.min(2, prefs.preload) : prefs.preload;
   useEffect(() => {
     if (mode !== "paged") return;
-    for (const i of preload) {
-      if (currentView.includes(i)) continue;
+    for (const i of preloadWindow(page, pages.length, preloadAhead)) {
+      if (i === page) continue;
       const img = new Image();
       img.decoding = "async";
       img.src = pages[i].src;
     }
-  }, [currentView, mode, pages, preload]);
+  }, [mode, page, pages, preloadAhead]);
 
   // Outside Focus mode the bars get their own space, so they never sit on top of a panel or a balloon.
   const reserveSpace = animation !== "focus";
@@ -316,7 +320,7 @@ export function MangaReader(props: ReaderProps) {
     : { top: 0, bottom: 0 };
   const pct = progressPercent(lastVisiblePage, pages.length);
   const bg = prefs.background;
-  const showUi = ui || end;
+  const showUi = (animation === "focus" ? focusUi : ui) || end;
   const pageW = (asset: ReadingAsset, count: number) => {
     // Size each page inside the viewport, honouring the fit preference. Never crops.
     const availW = (stage.width || viewport.width) / count;
@@ -478,7 +482,7 @@ export function MangaReader(props: ReaderProps) {
           </AnimatePresence>
         </div>
       ) : (
-        <div ref={(el) => void ((scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = el, (stageRef as React.MutableRefObject<HTMLDivElement | null>).current = el)} className="absolute inset-0 overflow-y-auto overscroll-contain" onScroll={() => (session.current.lastInput = Date.now())} onClick={(e) => !(e.target as HTMLElement).closest("button,a") && setUi((v) => !v)}>
+        <div ref={(el) => void ((scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = el, (stageRef as React.MutableRefObject<HTMLDivElement | null>).current = el)} className="absolute inset-0 overflow-y-auto overscroll-contain" onScroll={() => stamp(session.current)} onClick={(e) => !(e.target as HTMLElement).closest("button,a") && navigate("toggle-ui")}>
           <div className="mx-auto flex flex-col items-center" style={{ maxWidth: mode === "webtoon" ? 800 : 960, gap: mode === "webtoon" ? 0 : prefs.pageGap, paddingTop: reserveSpace ? "4rem" : 0, paddingBottom: reserveSpace ? "6rem" : 0 }}>
             {pages.map((a, i) => (
               <div key={a.src} data-index={i} ref={(el) => void (pageRefs.current[i] = el)} className="w-full">

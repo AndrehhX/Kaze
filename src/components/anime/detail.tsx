@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { Check, ChevronDown, Clapperboard, ExternalLink, Eye, Minus, Play, Plus, Share2, ShieldAlert, Star, Tv } from "lucide-react";
+import { BookOpen, Check, ChevronDown, Clapperboard, ExternalLink, Eye, Minus, Play, Plus, Share2, ShieldAlert, Star, Tv } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { CharacterEdge, MediaDetail } from "@/lib/anilist/types";
@@ -166,6 +166,11 @@ export function DetailHero({ media }: { media: MediaDetail }) {
                 <a href="#availability" className="k-btn k-btn-ghost backdrop-blur">
                   <Tv className="size-4" aria-hidden /> Opciones
                 </a>
+                {media.relations.edges.some((e) => e.node.type === "MANGA") && (
+                  <Link href={`/manga/continue/${media.id}`} prefetch={false} className="k-btn k-btn-ghost backdrop-blur">
+                    <BookOpen className="size-4" aria-hidden /> Continuar en manga
+                  </Link>
+                )}
                 <ListMenu media={media} />
                 <FavoriteButton media={media} />
                 {media.trailer?.site === "youtube" && (

@@ -120,7 +120,7 @@ function ch1() {
   {
     const full = { x: 0, y: 0, w: W, h: H };
     const body =
-      panel(full, (r) => `<rect x="0" y="0" width="${W}" height="${H}" fill="url(#sky-grad)"/>${cloud(250, 260, 1.5)}${cloud(780, 470, 1)}${windLines(80, 520, 840, { rows: 8, gap: 40, seed: 2 })}${hillTown({ x: 0, y: 760, w: W, h: 740 }, { seed: 4 })}${hana(560, 820, 1.55, { pose: "back" })}${paperPlane(820, 330, 1.2, -16)}`, { bleed: true }) +
+      panel(full, () => `<rect x="0" y="0" width="${W}" height="${H}" fill="url(#sky-grad)"/>${cloud(250, 260, 1.5)}${cloud(780, 470, 1)}${windLines(80, 520, 840, { rows: 8, gap: 40, seed: 2 })}${hillTown({ x: 0, y: 760, w: W, h: 740 }, { seed: 4 })}${hana(560, 820, 1.55, { pose: "back" })}${paperPlane(820, 330, 1.2, -16)}`, { bleed: true }) +
       `<text x="70" y="150" font-family="${LETTER_FONT}" font-size="78" font-weight="900" fill="${INK}" stroke="#fff" stroke-width="10" paint-order="stroke" letter-spacing="3">VIENTO DE PAPEL</text>
        <text x="74" y="200" font-family="${LETTER_FONT}" font-size="30" font-weight="700" fill="${INK}" stroke="#fff" stroke-width="7" paint-order="stroke">Capítulo 1 · La carta sin remitente</text>
        <text x="920" y="250" font-family="${JP_FONT}" font-size="64" font-weight="900" fill="${INK}" writing-mode="tb" stroke="#fff" stroke-width="8" paint-order="stroke">紙の風</text>`;

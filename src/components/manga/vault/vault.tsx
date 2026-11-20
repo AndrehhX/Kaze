@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { BookOpen, ChevronLeft, ChevronRight, LayoutList, Rotate3d } from "lucide-react";
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { cn, hashString } from "@/lib/utils";
 import { genreLabel } from "@/lib/anilist/browse-params";
 import { useKazeMotion } from "@/lib/motion";
@@ -65,13 +65,16 @@ function useCompact() {
 }
 
 /** Lite mode for low-power devices: fewer faces, no blur. Decided once on mount. */
+const noSubscribe = () => () => {};
 function useLite() {
-  const [lite, setLite] = useState(false);
-  useEffect(() => {
-    const nav = navigator as Navigator & { deviceMemory?: number };
-    setLite((nav.hardwareConcurrency ?? 8) <= 4 && (nav.deviceMemory ?? 8) <= 4);
-  }, []);
-  return lite;
+  return useSyncExternalStore(
+    noSubscribe,
+    () => {
+      const nav = navigator as Navigator & { deviceMemory?: number };
+      return (nav.hardwareConcurrency ?? 8) <= 4 && (nav.deviceMemory ?? 8) <= 4;
+    },
+    () => false,
+  );
 }
 
 type VaultProps = {
@@ -92,7 +95,8 @@ export function MangaVault({ items, label, selected, onSelect, spinning, actions
   const { reduced, theme } = useKazeMotion();
   const compact = useCompact();
   const lite = useLite();
-  const [inspect, setInspect] = useState(false);
+  // "Inspect" belongs to one volume: moving the selection ends it without an extra state reset.
+  const [inspectIndex, setInspectIndex] = useState<number | null>(null);
   const [view, setView] = useState<"shelf" | "list">("shelf");
   const stage = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; t: number; acc: number; moved: boolean; vx: number } | null>(null);
@@ -102,19 +106,19 @@ export function MangaVault({ items, label, selected, onSelect, spinning, actions
   const W = compact ? COVER_W.mobile : COVER_W.desktop;
   const H = Math.round(W * 1.5);
   const sel = Math.max(0, Math.min(items.length - 1, selected));
+  const inspect = inspectIndex === sel;
+  const toggleInspect = () => setInspectIndex((v) => (v === sel ? null : sel));
   const current = items[sel];
   const tone = readable(current?.color ?? null);
 
   const go = useCallback(
     (delta: number) => {
       if (spinning || !items.length) return;
-      setInspect(false);
       onSelect(Math.max(0, Math.min(items.length - 1, sel + delta)));
     },
     [items.length, onSelect, sel, spinning],
   );
 
-  useEffect(() => setInspect(false), [sel]);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (spinning) return;
@@ -125,7 +129,7 @@ export function MangaVault({ items, label, selected, onSelect, spinning, actions
       End: () => onSelect(items.length - 1),
       PageDown: () => go(5),
       PageUp: () => go(-5),
-      " ": () => setInspect((v) => !v),
+      " ": toggleInspect,
     };
     const fn = map[e.key];
     if (fn) {
@@ -272,7 +276,7 @@ export function MangaVault({ items, label, selected, onSelect, spinning, actions
                         justDragged.current = false;
                         return;
                       }
-                      if (d === 0) setInspect((v) => !v);
+                      if (d === 0) toggleInspect();
                       else onSelect(i);
                     }}
                   >

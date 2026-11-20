@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Layers } from "lucide-react";
 import { mangaApi } from "@/lib/manga/client-api";
 import { useMangaLibrary } from "@/stores/manga";
@@ -24,15 +24,17 @@ const SHELVES: { value: Shelf; label: string; jp: string }[] = [
 export function ShelfPage() {
   const entries = useMangaLibrary((s) => s.entries);
   const hydrated = useMangaLibrary((s) => s.hydrated);
-  const [shelf, setShelf] = useState<Shelf>("mine");
+  const [chosen, setChosen] = useState<Shelf | null>(null);
   const [status, setStatus] = useState<string>("ALL");
   const [sel, setSel] = useState(0);
   const mine = Object.keys(entries).length > 0;
 
-  // Default to a public shelf when the personal collection is still empty.
-  useEffect(() => {
-    if (hydrated && !mine) setShelf((s) => (s === "mine" ? "trending" : s));
-  }, [hydrated, mine]);
+  // Until the visitor picks a shelf: their collection if it has volumes, otherwise a public shelf.
+  const shelf: Shelf = chosen ?? (hydrated && !mine ? "trending" : "mine");
+  const setShelf = (s: Shelf) => {
+    setChosen(s);
+    setSel(0);
+  };
 
   const remote = useQuery({
     queryKey: ["manga-shelf", shelf],
@@ -51,7 +53,6 @@ export function ShelfPage() {
     return (remote.data?.media ?? []).map((m) => vaultItemFromCard(m));
   }, [entries, remote.data, shelf, status]);
 
-  useEffect(() => setSel(0), [shelf, status]);
 
   return (
     <div className="container-k pb-10 pt-8">
@@ -76,7 +77,7 @@ export function ShelfPage() {
       {shelf === "mine" && mine && (
         <div className="mt-5 flex flex-wrap gap-1.5" aria-label="Filtrar por estado">
           {[{ value: "ALL", label: "Todo" }, ...MANGA_LIBRARY_STATUSES.map((s) => ({ value: s.value, label: s.label })), { value: "FAVORITES", label: "Favoritos" }].map((s) => (
-            <button key={s.value} type="button" className="k-chip" aria-pressed={status === s.value} onClick={() => setStatus(s.value)}>
+            <button key={s.value} type="button" className="k-chip" aria-pressed={status === s.value} onClick={() => (setStatus(s.value), setSel(0))}>
               {s.label}
             </button>
           ))}

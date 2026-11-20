@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ProfileMangaShelf } from "@/components/manga/library/profile-manga";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, useScroll, useTransform } from "motion/react";
 import {
@@ -523,6 +524,9 @@ export function ProfileOverview({ d }: { d: ProfileData }) {
             </ul>
           </section>
         )}
+
+        {/* Manga: lectura actual y favoritos (respeta la privacidad de listas vía RLS) */}
+        <ProfileMangaShelf userId={d.guest ? null : (d.profile?.id ?? null)} isMe={d.isMe} />
       </div>
 
       {/* Barra lateral */}

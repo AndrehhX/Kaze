@@ -25,14 +25,12 @@ export default function MangaSeasonalPage() {
 }
 
 async function Content() {
-  try {
-    const { year, media } = await loadSeason();
-    return <MangaRanking title={`Novedades de ${year}`} jp="今年の新作" kicker="Empezaron a publicarse este año" explanation={`Series cuya fecha de inicio en AniList está en ${year}, ordenadas por número de lectores. A diferencia del anime, el manga no se publica por temporadas.`} media={media} />;
-  } catch {
+  const d = await loadSeason().catch(() => null);
+  if (!d)
     return (
       <div className="container-k mt-10">
         <ErrorPanel title="AniList no responde" message="Vuelve a intentarlo en unos minutos." />
       </div>
     );
-  }
+  return <MangaRanking title={`Novedades de ${d.year}`} jp="今年の新作" kicker="Empezaron a publicarse este año" explanation={`Series cuya fecha de inicio en AniList está en ${d.year}, ordenadas por número de lectores. A diferencia del anime, el manga no se publica por temporadas.`} media={d.media} />;
 }

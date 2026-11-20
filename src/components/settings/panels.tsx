@@ -19,6 +19,7 @@ import { friendlyDbError } from "@/lib/social";
 import { passwordSchema } from "@/components/auth/auth-forms";
 import { signOut } from "@/components/shell/user-menu";
 import { reconcile, fuzzyToIso, type RemoteEntry, type SyncDecision } from "@/lib/library/sync";
+import { AniListMangaSync } from "@/components/manga/library/anilist-sync";
 import { snapshotFromMedia, type LibraryEntry } from "@/lib/library/types";
 import type { AniListListEntry } from "@/lib/anilist/types";
 import { cn, relativeTime } from "@/lib/utils";
@@ -548,6 +549,8 @@ function IntegrationInner() {
           <p className="mt-3 text-xs text-muted">Two-way sync sends up to 25 changes per batch and pauses between writes to respect AniList&apos;s rate limit.</p>
         </Panel>
       )}
+
+      {acct && <AniListMangaSync lastSyncAt={lastSyncAt} />}
 
       <ConfirmDialog
         open={disconnect}

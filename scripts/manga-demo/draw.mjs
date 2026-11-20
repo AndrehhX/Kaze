@@ -46,7 +46,7 @@ export function panel({ x, y, w, h }, content, { border = 5, fill = "#ffffff", b
 }
 
 /** Radial speed lines converging on (cx, cy). Deterministic so builds are reproducible. */
-export function speedLines({ x, y, w, h }, cx, cy, { count = 90, inner = 120, color = INK, seed = 7 } = {}) {
+export function speedLines({ w, h }, cx, cy, { count = 90, inner = 120, color = INK, seed = 7 } = {}) {
   let s = seed;
   const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
   const R = Math.hypot(w, h);

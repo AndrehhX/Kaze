@@ -26,6 +26,7 @@ import { MediaReviews } from "@/components/social/reviews";
 import { DiscussionList } from "@/components/social/discussions";
 import { FriendsWithTitle } from "@/components/social/friends-with-title";
 import { AdBanner } from "@/components/ads/ad-banner";
+import { AnimeMangaBridge } from "@/components/manga/anime-bridge";
 
 export function generateStaticParams() {
   return [{ id: "154587" }, { id: "21" }];
@@ -120,6 +121,9 @@ async function CachedAnimeArticle({ id }: { id: number }) {
       </DetailSection>
       <DetailSection id="related" title="Related Anime" jp="関連">
         <RelatedRail media={media} />
+      </DetailSection>
+      <DetailSection id="manga" title="Del anime al manga" jp="原作">
+        <AnimeMangaBridge media={media} />
       </DetailSection>
       <DetailSection id="recommendations" title="Fans Also Recommend" jp="おすすめ">
         <RecommendationRail media={media} />

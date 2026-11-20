@@ -22,14 +22,12 @@ export default function MangaTrendingPage() {
 }
 
 async function Content() {
-  try {
-    const d = await loadTrending();
-    return <MangaRanking title="Tendencias" jp="急上昇" kicker="Ranking en vivo · AniList" explanation="Ordenado por el indicador de tendencia de AniList: actividad reciente de lectores (listas, puntuaciones y progreso), no por ventas." media={d.media} />;
-  } catch {
+  const d = await loadTrending().catch(() => null);
+  if (!d)
     return (
       <div className="container-k mt-10">
         <ErrorPanel title="AniList no responde" message="Vuelve a intentarlo en unos minutos." />
       </div>
     );
-  }
+  return <MangaRanking title="Tendencias" jp="急上昇" kicker="Ranking en vivo · AniList" explanation="Ordenado por el indicador de tendencia de AniList: actividad reciente de lectores (listas, puntuaciones y progreso), no por ventas." media={d.media} />;
 }
