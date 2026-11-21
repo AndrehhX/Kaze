@@ -74,7 +74,8 @@ export async function suggestManga(search: string): Promise<MangaSuggestion[]> {
   const key = search.trim().toLowerCase();
   const hit = suggestCache.get(key);
   if (hit && hit.expires > Date.now()) return hit.data;
-  const d = await anilistRequest<{ Page: { media: MangaSuggestion[] } }>(MANGA_SUGGEST_QUERY, { search: key });
+  // Autocompletado: no escribir en la Data Cache (cada letra = ISR Write).
+  const d = await anilistRequest<{ Page: { media: MangaSuggestion[] } }>(MANGA_SUGGEST_QUERY, { search: key }, { persist: false });
   if (suggestCache.size > 200) {
     const first = suggestCache.keys().next().value;
     if (first) suggestCache.delete(first);

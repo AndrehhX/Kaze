@@ -27,7 +27,16 @@ type FetchOptions = {
   /** Max automatic retries on 5xx / transient network failures. */
   retries?: number;
   signal?: AbortSignal;
+  /**
+   * Guardar la respuesta en la Data Cache persistente de Next/Vercel (default: true).
+   * Cada entrada nueva o revalidada cuenta como "ISR Write" en Vercel, así que las
+   * consultas de una sola vez (autocompletado, búsquedas libres) deben pasar `false`.
+   */
+  persist?: boolean;
 };
+
+/** Revalidación de la Data Cache para consultas públicas: 1 día (antes 1 hora = 24× más ISR Writes). */
+const PUBLIC_REVALIDATE_SECONDS = 86400;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -66,11 +75,11 @@ export async function anilistRequest<T>(query: string, variables: Record<string,
           signal,
         };
 
-        if (opts.token) {
+        if (opts.token || opts.persist === false) {
           fetchInit.cache = "no-store";
         } else {
-          // Revalidación cada 1 hora en Next.js Data Cache para peticiones públicas
-          fetchInit.next = { revalidate: 3600 };
+          // Data Cache persistente de Next.js (sobrevive a deploys e instancias): 1 día.
+          fetchInit.next = { revalidate: PUBLIC_REVALIDATE_SECONDS };
         }
 
         res = await fetch(ANILIST_ENDPOINT, fetchInit);

@@ -12,7 +12,7 @@ import type { CatalogSeries, Entitlement, PlaybackGrant, ServerOption } from "./
  */
 export async function getCachedAnimeSeries(seriesId: string): Promise<CatalogSeries | null> {
   "use cache";
-  cacheLife("hours");
+  cacheLife("days");
   cacheTag(`series:${seriesId}`);
   return animeStreamingProvider.getSeries(seriesId);
 }

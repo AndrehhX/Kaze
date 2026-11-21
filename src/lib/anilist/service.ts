@@ -79,19 +79,34 @@ export function browseVariables(p: BrowseParams) {
   };
 }
 
-export async function browseMedia(params: BrowseParams): Promise<{ pageInfo: PageInfo; media: MediaCard[] }> {
+type BrowseResult = { pageInfo: PageInfo; media: MediaCard[] };
+
+/**
+ * Búsquedas libres (`search`) casi nunca se repiten: guardarlas en caché solo genera
+ * ISR Writes que no se reutilizan. Van sin caché de servidor; la respuesta HTTP de
+ * /api/anilist/browse ya lleva Cache-Control para la CDN (Cloudflare / Vercel Edge).
+ */
+export async function browseMedia(params: BrowseParams): Promise<BrowseResult> {
+  if (params.search) return browseMediaUncached(params, false);
+  return browseMediaCached(params);
+}
+
+async function browseMediaCached(params: BrowseParams): Promise<BrowseResult> {
   "use cache";
-  if (params.search) cacheLife("minutes");
-  else cacheLife("hours");
+  cacheLife("days");
   cacheTag("anilist:browse");
+  return browseMediaUncached(params, true);
+}
+
+async function browseMediaUncached(params: BrowseParams, persist: boolean): Promise<BrowseResult> {
   if (params.studio) {
     type S = { Studio: { id: number; name: string; media: { pageInfo: PageInfo; nodes: MediaCard[] } } | null };
-    const s = await anilistRequest<S>(STUDIO_SEARCH_QUERY, { search: params.studio, page: params.page ?? 1, perPage: params.perPage ?? 24 });
+    const s = await anilistRequest<S>(STUDIO_SEARCH_QUERY, { search: params.studio, page: params.page ?? 1, perPage: params.perPage ?? 24 }, { persist });
     if (!s.Studio) return { pageInfo: { total: 0, currentPage: 1, lastPage: 1, hasNextPage: false, perPage: 24 }, media: [] };
     return { pageInfo: s.Studio.media.pageInfo, media: s.Studio.media.nodes.filter((m) => !m.isAdult) };
   }
   type R = { Page: { pageInfo: PageInfo; media: MediaCard[] } };
-  const d = await anilistRequest<R>(BROWSE_QUERY, browseVariables(params));
+  const d = await anilistRequest<R>(BROWSE_QUERY, browseVariables(params), { persist });
   return d.Page;
 }
 
@@ -108,7 +123,8 @@ export async function suggestMedia(search: string): Promise<Suggestion[]> {
     return cached.data;
   }
   type R = { Page: { media: Suggestion[] } };
-  const d = await anilistRequest<R>(SUGGEST_QUERY, { search: key });
+  // Autocompletado: cada letra es una consulta distinta → no escribir en la Data Cache.
+  const d = await anilistRequest<R>(SUGGEST_QUERY, { search: key }, { persist: false });
   if (suggestMemoryCache.size > 200) {
     const firstKey = suggestMemoryCache.keys().next().value;
     if (firstKey) suggestMemoryCache.delete(firstKey);
@@ -119,7 +135,8 @@ export async function suggestMedia(search: string): Promise<Suggestion[]> {
 
 export async function getMediaDetail(id: number): Promise<MediaDetail | null> {
   "use cache";
-  cacheLife("hours");
+  // "days": define cada cuánto se regeneran /anime/[id] y /anime/[id]/episodes (antes cada hora).
+  cacheLife("days");
   cacheTag(`anilist:media:${id}`);
   try {
     const d = await anilistRequest<{ Media: MediaDetail | null }>(DETAIL_QUERY, { id });
@@ -132,7 +149,7 @@ export async function getMediaDetail(id: number): Promise<MediaDetail | null> {
 
 export async function getRecommendationsFor(id: number) {
   "use cache";
-  cacheLife("hours");
+  cacheLife("days");
   type R = {
     Media: {
       id: number;
@@ -149,7 +166,7 @@ export async function getRecommendationsFor(id: number) {
 
 export async function getMediaBatch(ids: number[]): Promise<MediaCard[]> {
   "use cache";
-  cacheLife("hours");
+  cacheLife("days");
   if (!ids.length) return [];
   const d = await anilistRequest<{ Page: { media: MediaCard[] } }>(MEDIA_BATCH_QUERY, { ids: ids.slice(0, 50) });
   return d.Page.media;
@@ -180,7 +197,7 @@ export async function getMeta(): Promise<{ genres: string[]; tags: { name: strin
 
 export async function getSeason(season: MediaSeason, year: number, page = 1) {
   "use cache";
-  cacheLife("hours");
+  cacheLife("days");
   type R = { Page: { pageInfo: PageInfo; media: MediaCard[] } };
   const d = await anilistRequest<R>(BROWSE_QUERY, browseVariables({ season, year, sort: "POPULARITY_DESC", perPage: 50, page }));
   return d.Page;
