@@ -21,16 +21,13 @@ export function AnimeMangaBridge({ media }: { media: MediaDetail }) {
       <div className="km-frame km-stage relative overflow-hidden p-6">
         <div aria-hidden className="km-tone km-tone-fade absolute inset-0 opacity-50" />
         <div className="relative">
-          <p className="k-label text-primary-ink">物語は続く · Continuar la historia</p>
+          <p className="k-label text-amber-400">En optimización · 漫画 メンテナンス中</p>
           <p className="km-title mt-3 text-2xl">{headline.headline}</p>
-          {headline.kind === "recommendation" && (
-            <p className="mt-2 text-sm text-muted">
-              {headline.volume ? `Volumen ${headline.volume} · ` : ""}
-              {VERIFICATION_META[headline.status].label}
-            </p>
-          )}
-          <Link href={`/manga/continue/${media.id}`} className="k-btn k-btn-primary mt-5">
-            <BookOpen className="size-4" aria-hidden /> Ver la continuidad paso a paso
+          <p className="mt-2 text-sm text-muted">
+            La sección de lectura y catálogo de manga se encuentra en mantenimiento preventivo para optimizar la velocidad y servidores. Volverá a estar activa próximamente.
+          </p>
+          <Link href="/manga" className="k-btn k-btn-ghost border border-amber-500/30 text-amber-300 mt-5 inline-flex items-center gap-2">
+            <BookOpen className="size-4 text-amber-400" aria-hidden /> Ver estado de la sección manga
           </Link>
         </div>
       </div>

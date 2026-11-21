@@ -167,8 +167,8 @@ export function DetailHero({ media }: { media: MediaDetail }) {
                   <Tv className="size-4" aria-hidden /> Opciones
                 </a>
                 {media.relations.edges.some((e) => e.node.type === "MANGA") && (
-                  <Link href={`/manga/continue/${media.id}`} prefetch={false} className="k-btn k-btn-ghost backdrop-blur">
-                    <BookOpen className="size-4" aria-hidden /> Continuar en manga
+                  <Link href="/manga" prefetch={false} className="k-btn k-btn-ghost backdrop-blur text-muted hover:text-fg">
+                    <BookOpen className="size-4 text-amber-400" aria-hidden /> Manga (En mantenimiento)
                   </Link>
                 )}
                 <ListMenu media={media} />
