@@ -1,3 +1,4 @@
+import { publicOrigin } from "@/lib/public-origin";
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { getSupabaseServer } from "@/lib/supabase/server";
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
   const url = req.nextUrl;
   const next = safeRedirectPath(url.searchParams.get("next"), "/");
   const supabase = await getSupabaseServer();
-  if (!supabase) return NextResponse.redirect(new URL("/login?error=unconfigured", url.origin));
+  if (!supabase) return NextResponse.redirect(new URL("/login?error=unconfigured", publicOrigin(req)));
 
   const code = url.searchParams.get("code");
   const tokenHash = url.searchParams.get("token_hash");
@@ -24,9 +25,9 @@ export async function GET(req: NextRequest) {
   else error = { message: "missing code" };
 
   if (error) {
-    const dest = new URL("/login", url.origin);
+    const dest = new URL("/login", publicOrigin(req));
     dest.searchParams.set("error", "link");
     return NextResponse.redirect(dest);
   }
-  return NextResponse.redirect(new URL(next, url.origin));
+  return NextResponse.redirect(new URL(next, publicOrigin(req)));
 }

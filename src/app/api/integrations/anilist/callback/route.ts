@@ -1,3 +1,4 @@
+import { publicOrigin } from "@/lib/public-origin";
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { exchangeCode, STATE_COOKIE } from "@/lib/anilist/oauth";
@@ -12,7 +13,7 @@ function safeEqual(a: string, b: string) {
 }
 
 export async function GET(req: NextRequest) {
-  const back = new URL("/settings/integrations", req.nextUrl.origin);
+  const back = new URL("/settings/integrations", publicOrigin(req));
   const finish = (result: string) => {
     back.searchParams.set("anilist", result);
     const res = NextResponse.redirect(back);

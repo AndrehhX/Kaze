@@ -1,3 +1,4 @@
+import { publicOrigin } from "@/lib/public-origin";
 import { randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { ANILIST_AUTHORIZE, oauthConfig, STATE_COOKIE } from "@/lib/anilist/oauth";
@@ -5,13 +6,13 @@ import { getRequestUser } from "@/lib/supabase/server";
 
 export async function GET(req: NextRequest) {
   const cfg = oauthConfig();
-  const back = new URL("/settings/integrations", req.nextUrl.origin);
+  const back = new URL("/settings/integrations", publicOrigin(req));
   if (!cfg) {
     back.searchParams.set("anilist", "unconfigured");
     return NextResponse.redirect(back);
   }
   const { user } = await getRequestUser();
-  if (!user) return NextResponse.redirect(new URL("/login?next=/settings/integrations", req.nextUrl.origin));
+  if (!user) return NextResponse.redirect(new URL("/login?next=/settings/integrations", publicOrigin(req)));
 
   // CSRF protection: random state bound to this browser and this user.
   const state = randomBytes(24).toString("base64url");
