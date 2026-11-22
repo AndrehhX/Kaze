@@ -26,8 +26,14 @@ if (-not (Test-Path (Join-Path $sa "server.js"))) {
 }
 
 Write-Host "== Preparando paquete standalone..."
-Copy-Item -Recurse -Force ".next\static" (Join-Path $sa ".next\static")
-if (Test-Path "public") { Copy-Item -Recurse -Force "public" (Join-Path $sa "public") }
+# Copiar a carpetas limpias: si ya existen (deploy con -SkipBuild repetido), Copy-Item las
+# anidaba (static\static) y el paquete crecía. Son salida del build, se regeneran siempre.
+foreach ($pair in @(@(".next\static", ".next\static"), @("public", "public"))) {
+  $src = $pair[0]; $dst = Join-Path $sa $pair[1]
+  if (-not (Test-Path $src)) { continue }
+  if (Test-Path $dst) { Remove-Item -Recurse -Force $dst }
+  Copy-Item -Recurse -Force $src $dst
+}
 
 # Next guarda la ruta del gestor de cache (cacheHandlers) con barras de Windows al compilar
 # en este PC ("..\\cache-handlers\\..."); en Linux esa ruta no existe. Se pasa a "/".

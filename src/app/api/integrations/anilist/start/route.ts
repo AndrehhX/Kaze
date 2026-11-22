@@ -1,10 +1,13 @@
 import { publicOrigin } from "@/lib/public-origin";
 import { randomBytes } from "node:crypto";
-import { NextResponse, type NextRequest } from "next/server";
+import { connection, NextResponse, type NextRequest } from "next/server";
 import { ANILIST_AUTHORIZE, oauthConfig, STATE_COOKIE } from "@/lib/anilist/oauth";
 import { getRequestUser } from "@/lib/supabase/server";
 
 export async function GET(req: NextRequest) {
+  // Siempre en tiempo de petición: si no, Next la pre-genera al compilar (sin las claves del
+  // servidor) y queda fija la respuesta "unconfigured".
+  await connection();
   const cfg = oauthConfig();
   const back = new URL("/settings/integrations", publicOrigin(req));
   if (!cfg) {
