@@ -24,6 +24,15 @@ chown -R orunei:orunei "$DEST" "$BASE/shared/cache"
 
 PREV=""
 if [ -L "$BASE/current" ]; then PREV="$(readlink -f "$BASE/current")"; fi
+
+# Conserva los JS/CSS del release anterior. Cloudflare puede tener HTML viejo en
+# cache que pide chunks con otro hash; sin esto darian 404 y la pagina carga rota.
+# Los nombres llevan hash, asi que no se pisa nada (-n = no sobrescribir).
+if [ -n "$PREV" ] && [ -d "$PREV/.next/static" ]; then
+  cp -an "$PREV/.next/static/." "$DEST/.next/static/" 2>/dev/null || true
+  chown -R orunei:orunei "$DEST/.next/static"
+fi
+
 ln -sfn "$DEST" "$BASE/current"
 systemctl restart orunei-web
 
