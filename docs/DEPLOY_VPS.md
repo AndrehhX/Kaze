@@ -93,29 +93,7 @@ Haz lo mismo con el registro raíz `orunei.sbs` si apunta a Vercel (tu regla `ap
 
 ## 5. Mudarse a la siguiente VPS (~30–60 min)
 
-Requisitos: Ubuntu 22.04/24.04, mínimo 1 vCPU / 2 GB.
-
-1. **Instalar tu llave en la VPS nueva** (escribes tú la contraseña, una sola vez):
-   ```powershell
-   Get-Content $HOME\.ssh\vps_orunei.pub | ssh root@IP_NUEVA "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
-   ```
-2. En `C:\Users\Andreh\.ssh\config`, añade un alias `vps2` con `HostName IP_NUEVA` (o pídemelo).
-3. **Preparar** (desde `crunchy`):
-   ```powershell
-   scp -r deploy vps2:/tmp/orunei-deploy
-   ```
-   ```powershell
-   ssh vps2 "sed -i 's/\r$//' /tmp/orunei-deploy/*.sh /tmp/orunei-deploy/*.service && bash /tmp/orunei-deploy/bootstrap-vps.sh"
-   ```
-4. **Copiar variables, Caddy y servicios de la VPS vieja a la nueva** (hay que llevar también el resolver y el bot):
-   ```powershell
-   ssh vps "tar -czf - /opt/orunei-web/shared/.env /etc/caddy/Caddyfile /opt/kaze-resolver /opt/panbot" | ssh vps2 "tar -xzf - -C / && chown orunei:orunei /opt/orunei-web/shared/.env && chmod 600 /opt/orunei-web/shared/.env"
-   ```
-   En la nueva: instalar Redis (`apt install redis-server`), PM2 (`npm i -g pm2`), arrancar `kaze-resolver` y `panbot` con PM2 (`pm2 start ... && pm2 save && pm2 startup`) y recargar Caddy.
-5. **Desplegar la web:** `deploy\deploy-vps.ps1 -Server vps2`.
-6. **Probar** desde dentro de la VPS nueva (el firewall solo deja entrar a Cloudflare por el 80/443): `ssh vps2 "curl -s -o /dev/null -w '%{http_code}' -H 'Host: www.orunei.sbs' http://127.0.0.1/"` → debe dar `200`.
-7. **Cloudflare:** cambia la IP en los registros `www`, `orunei.sbs`, `resolver`, `panel` (y `vps`).
-8. Deja la VPS vieja encendida un día por si hay que volver atrás.
+Sigue la guía completa y actualizada: **[GUIA_MUDANZA_VPS.md](GUIA_MUDANZA_VPS.md)** (copia segura de archivos, resolver, Redis, bot de Discord, cambio de DNS, cómo volver atrás y checklist).
 
 ## 6. Cambios hechos en la VPS (para referencia)
 - Usuario de sistema `orunei` · `/opt/orunei-web/` · `/etc/systemd/system/orunei-web.service` · `/etc/cron.d/orunei-web-health`.
