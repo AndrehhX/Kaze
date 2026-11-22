@@ -35,9 +35,8 @@ export const metadata: Metadata = {
   authors: [{ name: "KAZE Team" }],
   creator: "KAZE",
   publisher: "KAZE",
-  alternates: {
-    canonical: "/",
-  },
+  // Sin canonical global: si se define aquí, TODAS las páginas lo heredan y Google
+  // trata cada ficha de anime como copia de la portada. Cada página define el suyo.
   robots: {
     index: true,
     follow: true,

@@ -53,6 +53,7 @@ export async function generateMetadata({ params }: PageProps<"/anime/[id]">): Pr
   return {
     title: `Ver ${title}${titleJp} Online Gratis HD · KAZE`,
     description: snippet,
+    alternates: { canonical: `/anime/${media.id}` },
     keywords: [
       `ver ${title}`,
       `ver ${title} gratis`,

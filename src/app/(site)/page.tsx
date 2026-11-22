@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { getHomeData } from "@/lib/anilist/service";
 import { HeroCarousel, HeroSkeleton } from "@/components/home/hero-carousel";
 import {
@@ -17,6 +18,8 @@ import { BecauseYouLoved, ContinueWatching, FavoriteGenres, FriendsAreWatching, 
 import { RailSkeleton } from "@/components/anime/skeletons";
 import { SEASONS } from "@/lib/anilist/browse-params";
 import { AdBanner } from "@/components/ads/ad-banner";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default function HomePage() {
   return (

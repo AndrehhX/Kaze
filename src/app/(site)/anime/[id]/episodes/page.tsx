@@ -13,7 +13,10 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<"/anime/[id]/episodes">): Promise<Metadata> {
   const id = Number((await params).id);
   const media = Number.isInteger(id) && id > 0 ? await getMediaDetail(id) : null;
-  return { title: media ? `Episodes · ${media.title.english || media.title.romaji}` : "Episodes" };
+  return {
+    title: media ? `Episodes · ${media.title.english || media.title.romaji}` : "Episodes",
+    ...(media ? { alternates: { canonical: `/anime/${media.id}/episodes` } } : {}),
+  };
 }
 
 async function CachedEpisodesBody({ id }: { id: number }) {
