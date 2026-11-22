@@ -20,7 +20,10 @@ export class AniListError extends Error {
 
 const inflight = new Map<string, Promise<unknown>>();
 // Cache en memoria (TTL 30 min) para respuestas públicas de AniList: carga instantánea a 0ms.
+// Acotada a pocas entradas: con 500 fichas completas el proceso superaba el heap y se caía
+// por falta de memoria (la persistencia real ya la dan "use cache" y la Data Cache en disco).
 const memoryCache = new Map<string, { data: unknown; expiresAt: number }>();
+const MEMORY_CACHE_MAX = 60;
 
 type FetchOptions = {
   token?: string;
@@ -122,10 +125,16 @@ export async function anilistRequest<T>(query: string, variables: Record<string,
       }
       if (!res.ok || !json.data) throw new AniListError(`AniList request failed (${res.status})`, res.status);
       if (key && !opts.token) {
-        memoryCache.set(key, { data: json.data, expiresAt: Date.now() + 30 * 60_000 });
-        if (memoryCache.size > 500) {
-          const firstKey = memoryCache.keys().next().value;
-          if (firstKey) memoryCache.delete(firstKey);
+        const now = Date.now();
+        memoryCache.delete(key); // reinsertar al final (orden de antigüedad)
+        memoryCache.set(key, { data: json.data, expiresAt: now + 30 * 60_000 });
+        if (memoryCache.size > MEMORY_CACHE_MAX) {
+          for (const [k, v] of memoryCache) if (v.expiresAt <= now) memoryCache.delete(k);
+          while (memoryCache.size > MEMORY_CACHE_MAX) {
+            const oldest = memoryCache.keys().next().value;
+            if (oldest === undefined) break;
+            memoryCache.delete(oldest);
+          }
         }
       }
       return json.data;

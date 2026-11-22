@@ -12,16 +12,16 @@ EnvironmentFile=/opt/orunei-web/shared/.env
 Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=HOSTNAME=127.0.0.1
-# Heap de V8 acotado: con 512 MB el proceso llegaba a ~615 MB de RSS y chocaba con MemoryHigh.
-Environment=NODE_OPTIONS=--max-old-space-size=384
+# Heap de V8: 512 MB de margen (con 384 MB y la caché grande de AniList se caía por OOM cada ~12 min).
+Environment=NODE_OPTIONS=--max-old-space-size=512
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=3
 # Next espera a que Caddy cierre sus conexiones keep-alive; sin esto el stop tarda 90 s.
 TimeoutStopSec=10
 # Limites de memoria para no ahogar al resolver, Redis ni al bot en una VPS de 2 GB.
-MemoryHigh=750M
-MemoryMax=900M
+MemoryHigh=850M
+MemoryMax=1000M
 # Endurecimiento basico
 NoNewPrivileges=true
 PrivateTmp=true

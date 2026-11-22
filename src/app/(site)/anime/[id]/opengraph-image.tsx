@@ -99,17 +99,14 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   return new ImageResponse(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", position: "relative", background: BG }}>
-        {/* Fondo: banner oscurecido */}
-        {media.bannerImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={media.bannerImage} alt="" width={1200} height={630} style={{ position: "absolute", inset: 0, width: 1200, height: 630, objectFit: "cover", opacity: 0.35 }} />
-        ) : null}
+        {/* Fondo liso con el color de la portada: sin foto de fondo la imagen pesa mucho menos
+            (WhatsApp no muestra vistas previas de más de ~600 KB). */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             display: "flex",
-            background: `linear-gradient(90deg, ${BG} 0%, rgba(8,8,16,0.92) 45%, rgba(8,8,16,0.55) 100%)`,
+            background: `radial-gradient(circle at 85% 15%, ${accent}55, ${BG} 55%)`,
           }}
         />
 
