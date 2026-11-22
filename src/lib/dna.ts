@@ -80,24 +80,63 @@ export function computeDna(entries: LibraryEntry[]): Dna {
 
 export type Achievement = { id: string; name: string; description: string; icon: string; category: string; progress: number; target: number; earned: boolean };
 
-/** Mirrors supabase/seed.sql. Earned purely from library data — no streaks, no pressure. */
-export function computeAchievements(entries: LibraryEntry[], extra: { reviews?: number; hostedParties?: number; seasonGoalMet?: boolean } = {}): Achievement[] {
+export type AchievementExtras = {
+  reviews?: number;
+  hostedParties?: number;
+  seasonGoalMet?: boolean;
+  /** Episodios vistos entre las 00:00 y las 05:59 (del progreso de reproducción). */
+  nightEpisodes?: number;
+  /** Máximo de episodios vistos en un mismo día. */
+  bestDayEpisodes?: number;
+};
+
+/**
+ * Logros calculados con datos reales. Los ids coinciden con la tabla public.achievements
+ * (supabase/seed.sql y la migración 20261122000000_more_achievements.sql).
+ */
+export function computeAchievements(entries: LibraryEntry[], extra: AchievementExtras = {}): Achievement[] {
   const completed = entries.filter((e) => e.status === "COMPLETED");
   const genres = new Set(completed.flatMap((e) => e.media.genres));
   const decades = new Set(completed.filter((e) => e.media.year).map((e) => Math.floor(e.media.year! / 10)));
   const episodes = entries.reduce((s, e) => s + e.progress, 0);
+  const favorites = entries.filter((e) => e.favorite).length;
+  const rated = entries.filter((e) => e.score != null).length;
+  const classics = completed.filter((e) => e.media.year != null && e.media.year < 1990).length;
+  const movies = completed.filter((e) => e.media.format === "MOVIE").length;
   const def = (id: string, name: string, description: string, icon: string, category: string, progress: number, target: number): Achievement => ({ id, name, description, icon, category, progress: Math.min(progress, target), target, earned: progress >= target });
   return [
-    def("first-steps", "First Steps", "Add your first title to the library.", "footprints", "milestone", entries.length, 1),
-    def("first-finish", "Credits Roll", "Complete your first anime.", "flag", "milestone", completed.length, 1),
-    def("ten-complete", "Marathoner", "Complete 10 anime.", "medal", "milestone", completed.length, 10),
-    def("fifty-complete", "Veteran Viewer", "Complete 50 anime.", "crown", "milestone", completed.length, 50),
-    def("hundred-episodes", "Century", "Log 100 episodes of progress.", "gauge", "milestone", episodes, 100),
-    def("genre-five", "Genre Explorer", "Complete anime across 5 genres.", "compass", "genre", genres.size, 5),
-    def("genre-ten", "Genre Cartographer", "Complete anime across 10 genres.", "map", "genre", genres.size, 10),
-    def("decades-three", "Time Traveller", "Complete anime from 3 decades.", "hourglass", "discovery", decades.size, 3),
-    def("critic", "Critic", "Publish your first review.", "pen", "social", extra.reviews ?? 0, 1),
-    def("party-host", "Party Host", "Host a watch party.", "popcorn", "social", extra.hostedParties ?? 0, 1),
-    def("season-goal", "On Schedule", "Reach a seasonal watch goal.", "calendar", "seasonal", extra.seasonGoalMet ? 1 : 0, 1),
+    def("first-steps", "Primeros pasos", "Añade tu primer anime a la biblioteca.", "footprints", "milestone", entries.length, 1),
+    def("first-finish", "Créditos finales", "Completa tu primer anime.", "flag", "milestone", completed.length, 1),
+    def("ten-complete", "Maratonista", "Completa 10 animes.", "medal", "milestone", completed.length, 10),
+    def("fifty-complete", "Veterano", "Completa 50 animes.", "crown", "milestone", completed.length, 50),
+    def("hundred-complete", "Sensei del anime", "Completa 100 animes.", "scroll", "milestone", completed.length, 100),
+    def("hundred-episodes", "Centenario", "Registra 100 episodios vistos.", "gauge", "milestone", episodes, 100),
+    def("five-hundred-episodes", "Leyenda", "Registra 500 episodios vistos.", "flame", "milestone", episodes, 500),
+    def("favorites-ten", "Corazón otaku", "Marca 10 animes como favoritos.", "heart", "milestone", favorites, 10),
+    def("rated-twenty", "Ojo crítico", "Puntúa 20 animes de tu biblioteca.", "star", "social", rated, 20),
+    def("genre-five", "Explorador de géneros", "Completa animes de 5 géneros distintos.", "compass", "genre", genres.size, 5),
+    def("genre-ten", "Cartógrafo de géneros", "Completa animes de 10 géneros distintos.", "map", "genre", genres.size, 10),
+    def("decades-three", "Viajero del tiempo", "Completa animes de 3 décadas distintas.", "hourglass", "discovery", decades.size, 3),
+    def("classic-fan", "Amante de los clásicos", "Completa un anime anterior a 1990.", "gem", "discovery", classics, 1),
+    def("movie-buff", "Cinéfilo", "Completa 10 películas de anime.", "film", "discovery", movies, 10),
+    def("night-owl", "Noctámbulo", "Mira 10 episodios entre la medianoche y las 6 de la mañana.", "moon", "milestone", extra.nightEpisodes ?? 0, 10),
+    def("binge-day", "Maratón de un día", "Mira 12 episodios en un mismo día.", "zap", "milestone", extra.bestDayEpisodes ?? 0, 12),
+    def("critic", "Crítico", "Publica tu primera reseña.", "pen", "social", extra.reviews ?? 0, 1),
+    def("party-host", "Anfitrión", "Organiza una sala de cine.", "popcorn", "social", extra.hostedParties ?? 0, 1),
+    def("season-goal", "Al día", "Cumple tu meta de la temporada.", "calendar", "seasonal", extra.seasonGoalMet ? 1 : 0, 1),
   ];
+}
+
+/** Estadísticas de reproducción para los logros de hábitos (hora local de quien mira). */
+export function progressHabits(progress: { position: number; completed: boolean; updatedAt: number }[]) {
+  const perDay = new Map<string, number>();
+  let night = 0;
+  for (const p of progress) {
+    if (!p.completed && p.position < 60) continue;
+    const d = new Date(p.updatedAt);
+    if (d.getHours() < 6) night++;
+    const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    perDay.set(k, (perDay.get(k) ?? 0) + 1);
+  }
+  return { nightEpisodes: night, bestDayEpisodes: Math.max(0, ...perDay.values()) };
 }

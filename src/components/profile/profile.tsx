@@ -26,6 +26,14 @@ import {
   Play,
   Globe,
   Tv,
+  Gem,
+  Flame,
+  Heart,
+  Star,
+  Moon,
+  Zap,
+  Film,
+  Scroll,
 } from "lucide-react";
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -174,6 +182,14 @@ const ICONS: Record<string, ReactNode> = {
   pen: <PenLine className="size-5" />,
   popcorn: <Popcorn className="size-5" />,
   calendar: <Calendar className="size-5" />,
+  gem: <Gem className="size-5" />,
+  flame: <Flame className="size-5" />,
+  heart: <Heart className="size-5" />,
+  star: <Star className="size-5" />,
+  moon: <Moon className="size-5" />,
+  zap: <Zap className="size-5" />,
+  film: <Film className="size-5" />,
+  scroll: <Scroll className="size-5" />,
 };
 
 export function Badge({ a }: { a: Achievement }) {

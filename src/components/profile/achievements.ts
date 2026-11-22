@@ -3,7 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
-import { computeAchievements, type Achievement } from "@/lib/dna";
+import { computeAchievements, progressHabits, type Achievement } from "@/lib/dna";
+import { useProgress } from "@/stores/progress";
 import type { LibraryEntry } from "@/lib/library/types";
 import { isSupabaseConfigured } from "@/lib/env";
 import { seasonOf } from "@/lib/utils";
@@ -47,13 +48,18 @@ export function useAchievements(entries: LibraryEntry[], userId: string | null, 
     },
   });
 
+  // Hábitos (noctámbulo, maratón) desde el progreso de reproducción de este navegador:
+  // solo para tu propio perfil; en perfiles ajenos se ven los logros ya guardados.
+  const progressItems = useProgress((s) => s.items);
+  const habits = useMemo(() => (isMe ? progressHabits(Object.values(progressItems)) : {}), [isMe, progressItems]);
+
   const achievements: Achievement[] = useMemo(() => {
     const e = extras.data;
     const goalMet = Boolean(e?.goal && seasonProgress(entries).done >= e.goal);
-    const list = computeAchievements(entries, { reviews: e?.reviews, hostedParties: e?.hostedParties, seasonGoalMet: goalMet });
+    const list = computeAchievements(entries, { reviews: e?.reviews, hostedParties: e?.hostedParties, seasonGoalMet: goalMet, ...habits });
     const persisted = new Set(e?.persisted ?? []);
     return list.map((a) => (persisted.has(a.id) && !a.earned ? { ...a, earned: true, progress: a.target } : a));
-  }, [entries, extras.data]);
+  }, [entries, extras.data, habits]);
 
   // Persist newly earned badges for the owner (insert-only; RLS checks ownership).
   const saved = useRef(new Set<string>());

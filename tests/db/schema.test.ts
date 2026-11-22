@@ -30,7 +30,7 @@ describe("schema & seed", () => {
   });
 
   it("seeds reference data only (no fake users or activity)", async () => {
-    expect((await rows(db, "select * from achievements")).length).toBe(12);
+    expect((await rows(db, "select * from achievements")).length).toBe(20); // 12 originales + 8 (migración 20261122)
     expect((await rows(db, "select * from reviews")).length).toBe(0);
     expect((await rows(db, "select * from activity_events")).length).toBe(0);
   });
