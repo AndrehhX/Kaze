@@ -58,3 +58,4 @@ mobile/*.apk
 mobile/*.aab
 *.apk
 local.properties
+docs/CLAVES_Y_APIS_PRODUCCION.md
