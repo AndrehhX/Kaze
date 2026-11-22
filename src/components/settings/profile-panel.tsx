@@ -58,6 +58,7 @@ export function ProfileSettingsPanel() {
   // Sincronizar automáticamente el formulario cuando se carga el perfil autenticado real
   useEffect(() => {
     if (isAuth && authProfile && !dirty) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- rellena el formulario cuando llega el perfil, salvo que el usuario ya esté editando
       setForm({
         display_name: authProfile.display_name || authUser?.email?.split("@")[0] || "Usuario",
         username: authProfile.username || authUser?.email?.split("@")[0] || "user",

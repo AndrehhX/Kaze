@@ -137,6 +137,9 @@ export function Player({
   const prevEpisodeIdRef = useRef(grant.episode.id);
 
   // Detección síncrona en render: captura la posición antes de que cualquier hook modifique video.src
+  // Intencionado: se leen/escriben refs durante el render para guardar el minuto exacto al cambiar de
+  // servidor antes de que los efectos cambien video.src. Reescribirlo con estado rompería la reanudación.
+  /* eslint-disable react-hooks/refs */
   if (prevEpisodeIdRef.current === grant.episode.id) {
     if (prevAssetSrcRef.current !== asset.src) {
       if (lastWatchedTimeRef.current > 2) {
@@ -150,6 +153,7 @@ export function Player({
     lastWatchedTimeRef.current = 0;
     targetResumeTimeRef.current = null;
   }
+  /* eslint-enable react-hooks/refs */
 
   const refVideo = useCallback(
     (el: HTMLVideoElement | null) => {
@@ -193,17 +197,17 @@ export function Player({
         const existing = lib.entries[mediaId];
         const isNearEnd = isEffectivelyComplete(video.currentTime, video.duration) || video.ended;
         const targetProgress = isNearEnd ? Math.max(existing?.progress ?? 0, epNum) : (existing?.progress ?? 0);
-        const totalEps = (grant.series as any).episodes ?? null;
+        const totalEps = (grant.series as { episodes?: number | null }).episodes ?? null;
         const isFinished = Boolean(totalEps && targetProgress >= totalEps);
         const nextStatus = isFinished ? "COMPLETED" : (existing?.status === "COMPLETED" ? "COMPLETED" : "CURRENT");
 
         if (!existing || targetProgress > existing.progress || (isNearEnd && existing.status !== nextStatus)) {
           const snapshot: MediaSnapshot = {
             title: grant.series.title ?? existing?.media?.title ?? "Anime",
-            titleNative: (grant.series as any).titleJp ?? null,
+            titleNative: grant.series.titleJp ?? null,
             cover: grant.series.cover ?? existing?.media?.cover ?? null,
             banner: grant.series.banner ?? existing?.media?.banner ?? null,
-            color: (grant.series as any).color ?? null,
+            color: grant.series.color ?? null,
             episodes: totalEps ?? existing?.media?.episodes ?? null,
             format: "TV",
             year: null,

@@ -18,6 +18,7 @@ import { useAuth } from "@/stores/auth";
 import { useGuestProfile } from "@/lib/profile/guest";
 import { Avatar } from "@/components/shell/user-menu";
 import { cn, relativeTime } from "@/lib/utils";
+import { useNow } from "@/lib/hooks";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 
 export interface CommentUserStats {
@@ -178,6 +179,11 @@ export function ProfileHoverCard({
 /**
  * Gestor de almacenamiento local y estadísticas para comentarios de anime (por capítulo)
  */
+/** Id para comentarios guardados en este navegador (fuera del render: no es una función pura). */
+function makeLocalCommentId() {
+  return `c-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
 function getStorageKey(animeId: string, episodeId?: string): string {
   if (episodeId) {
     return `kaze:anime_comments_${animeId}_ep_${episodeId}`;
@@ -221,6 +227,7 @@ export function AnimeComments({
   const authProfile = useAuth((s) => s.profile);
   const [guestProfile] = useGuestProfile();
 
+  const now = useNow();
   const [comments, setComments] = useState<AnimeCommentItem[]>([]);
   const [bodyText, setBodyText] = useState("");
   const [hasSpoilers, setHasSpoilers] = useState(false);
@@ -300,7 +307,7 @@ export function AnimeComments({
           try {
             const legacyParsed = JSON.parse(legacyRaw);
             const onlySeeds = Array.isArray(legacyParsed) && legacyParsed.every(
-              (c: any) =>
+              (c: { id?: string; author?: { username?: string } }) =>
                 c.id === "seed-1" ||
                 c.id === "seed-2" ||
                 c.author?.username === "AkiraOtaku" ||
@@ -319,6 +326,7 @@ export function AnimeComments({
     // Cargar likes locales del usuario
     try {
       const rawLikes = localStorage.getItem("kaze:my_comment_likes");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- comentarios locales (series demo): se leen de localStorage tras hidratar
       if (rawLikes) setLikedComments(JSON.parse(rawLikes));
     } catch {}
 
@@ -352,7 +360,7 @@ export function AnimeComments({
     }));
 
     const newComment: AnimeCommentItem = {
-      id: "c-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      id: makeLocalCommentId(),
       anime_id: seriesId,
       episode_id: episodeId || null,
       user_id: activeUser.id,
@@ -605,7 +613,7 @@ export function AnimeComments({
                       </span>
                       <span className="text-[0.625rem] text-muted/60">•</span>
                       <span className="text-[0.6875rem] text-muted">
-                        {relativeTime(new Date(c.created_at).getTime(), Date.now())}
+                        {now ? relativeTime(new Date(c.created_at).getTime(), now) : ""}
                       </span>
                       {c.episode_id && (
                         <span className="rounded bg-line/80 px-1.5 py-0.2 text-[0.625rem] font-mono text-muted uppercase">

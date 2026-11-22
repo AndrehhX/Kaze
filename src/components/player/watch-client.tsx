@@ -52,8 +52,9 @@ export async function requestGrant(
         continue;
       }
       throw Object.assign(new Error(body?.error ?? "El servidor de streaming tardó en responder. Reintentando..."), { status: res.status, reason: body?.reason });
-    } catch (err: any) {
-      if (err?.status === 404 || err?.status === 403 || err?.status === 401) throw err;
+    } catch (err: unknown) {
+      const status = (err as { status?: number } | null)?.status;
+      if (status === 404 || status === 403 || status === 401) throw err;
       if (attempt < maxAttempts) {
         const delay = Math.min(attempt * 1500, 4000);
         await new Promise((r) => setTimeout(r, delay));
@@ -188,11 +189,7 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
     setCodecPreference("h264");
   }, []);
 
-  useEffect(() => {
-    if (isAppleOrNonAV1()) {
-      setCodecPreference("h264");
-    }
-  }, []);
+  // iOS/iPadOS ya se detecta en el estado inicial de codecPreference (no hace falta un efecto).
 
   useEffect(() => {
     if (activeEpRef.current) {

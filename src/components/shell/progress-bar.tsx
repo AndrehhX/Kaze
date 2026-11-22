@@ -23,6 +23,7 @@ export function NavigationProgress() {
 
     // When pathname changes, complete and dismiss the progress bar
     if (loading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- completa la barra de carga al cambiar de ruta (animación con temporizador)
       setProgress(100);
       const timer = setTimeout(() => {
         setLoading(false);

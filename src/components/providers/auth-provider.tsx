@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let cancelled = false;
 
-    async function activate(userId: string, email: string | null, emailConfirmed: boolean, metadata?: Record<string, any> | null) {
+    async function activate(userId: string, email: string | null, emailConfirmed: boolean, metadata?: Record<string, string | undefined> | null) {
       if (currentUserId.current === userId) return;
       currentUserId.current = userId;
       const db = getSupabaseBrowser()!;

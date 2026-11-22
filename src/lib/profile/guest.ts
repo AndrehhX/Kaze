@@ -60,6 +60,7 @@ export function useGuestProfile(): [Profile, (patch: Partial<Profile>) => Profil
   const [profile, setProfile] = useState<Profile>(readGuestProfile);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- relee el perfil de invitado de localStorage tras hidratar
     setProfile(readGuestProfile());
     const onCustom = (e: Event) => {
       const detail = (e as CustomEvent<Profile>).detail;

@@ -132,7 +132,7 @@ export function isMalIdDubbedInSpanish(malId: number | string): boolean {
   if (EXCLUDED_DUB_MAL_IDS.has(resolved)) return false;
   if (VERIFIED_LATINO_DUB_MAP[resolved]) return true;
   if (VERIFIED_CASTELLANO_DUB_MAP[resolved]) return true;
-  return Boolean((dubbedSpanishList as Record<string, any>)[resolved]);
+  return Boolean((dubbedSpanishList as Record<string, unknown>)[resolved]);
 }
 
 export function isEpisodeInDubRange(malId: number | string, episodeNumber = 1): boolean {

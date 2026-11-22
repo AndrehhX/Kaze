@@ -129,13 +129,13 @@ function Inner() {
   const [inviteOnly, setInviteOnly] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // Actualizar título sugerido cuando cambia el anime
-  useEffect(() => {
-    if (selectedAnime) {
-      setTitle(`Noche de anime · ${selectedAnime.title}`);
-      setEpisode("1");
-    }
-  }, [selectedAnime]);
+  // Actualizar título sugerido cuando cambia el anime (ajuste durante el render, sin efecto)
+  const [titleFor, setTitleFor] = useState(selectedAnime?.id);
+  if (selectedAnime && selectedAnime.id !== titleFor) {
+    setTitleFor(selectedAnime.id);
+    setTitle(`Noche de anime · ${selectedAnime.title}`);
+    setEpisode("1");
+  }
 
   // 2. Consulta blindada de salas activas (sin errores ni toasts si no existe la tabla)
   const rooms = useQuery({

@@ -235,7 +235,7 @@ function RoomInner({ roomId }: { roomId: string }) {
                   const raw = localStorage.getItem("kaze:watch_party_rooms");
                   if (raw) {
                     const list = JSON.parse(raw);
-                    const updated = list.map((r: any) => (r.id === roomId ? { ...r, ended_at: nowIso, is_playing: false } : r));
+                    const updated = (list as { id: string }[]).map((r) => (r.id === roomId ? { ...r, ended_at: nowIso, is_playing: false } : r));
                     localStorage.setItem("kaze:watch_party_rooms", JSON.stringify(updated));
                   }
                 } catch {}
@@ -448,7 +448,7 @@ function RoomInner({ roomId }: { roomId: string }) {
                     const raw = localStorage.getItem("kaze:watch_party_rooms");
                     if (raw) {
                       const list = JSON.parse(raw);
-                      const updated = list.map((r: any) => (r.id === room.id ? { ...r, invite_only: nextVal } : r));
+                      const updated = (list as { id: string }[]).map((r) => (r.id === room.id ? { ...r, invite_only: nextVal } : r));
                       localStorage.setItem("kaze:watch_party_rooms", JSON.stringify(updated));
                     }
                   } catch {}
@@ -533,7 +533,7 @@ function RoomInner({ roomId }: { roomId: string }) {
             const raw = localStorage.getItem("kaze:watch_party_rooms");
             if (raw) {
               const list = JSON.parse(raw);
-              const updated = list.map((r: any) => (r.id === roomId ? { ...r, ended_at: nowStr, is_playing: false } : r));
+              const updated = (list as { id: string }[]).map((r) => (r.id === roomId ? { ...r, ended_at: nowStr, is_playing: false } : r));
               localStorage.setItem("kaze:watch_party_rooms", JSON.stringify(updated));
             }
           } catch {}
@@ -558,7 +558,7 @@ function RoomInner({ roomId }: { roomId: string }) {
             const raw = localStorage.getItem("kaze:watch_party_rooms");
             if (raw) {
               const list = JSON.parse(raw);
-              const updated = list.map((r: any) => (r.id === roomId ? { ...r, ended_at: nowStr, is_playing: false } : r));
+              const updated = (list as { id: string }[]).map((r) => (r.id === roomId ? { ...r, ended_at: nowStr, is_playing: false } : r));
               localStorage.setItem("kaze:watch_party_rooms", JSON.stringify(updated));
             }
           } catch {}
@@ -604,7 +604,7 @@ function RoomInner({ roomId }: { roomId: string }) {
                     const raw = localStorage.getItem("kaze:watch_party_rooms");
                     if (raw) {
                       const list = JSON.parse(raw);
-                      const updated = list.map((r: any) => (r.id === roomId ? { ...r, ended_at: nowStr, is_playing: false } : r));
+                      const updated = (list as { id: string }[]).map((r) => (r.id === roomId ? { ...r, ended_at: nowStr, is_playing: false } : r));
                       localStorage.setItem("kaze:watch_party_rooms", JSON.stringify(updated));
                     }
                   } catch {}

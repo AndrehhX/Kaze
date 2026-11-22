@@ -49,16 +49,15 @@ export function useMediaQuery(query: string) {
 }
 
 /** Current time for relative labels; null during SSR/hydration so markup never mismatches. */
+const NOW_STEP = 30_000;
+const subscribeNow = (onChange: () => void) => {
+  const timer = setInterval(onChange, NOW_STEP);
+  return () => clearInterval(timer);
+};
+// Redondeado a 30 s: el valor solo cambia cuando el reloj avanza un paso (snapshot estable).
+const getNow = () => Math.floor(Date.now() / NOW_STEP) * NOW_STEP;
+const getServerNow = () => null;
+
 export function useNow(): number | null {
-  const [now, setNow] = useState<number | null>(null);
-
-  useEffect(() => {
-    setNow(Date.now());
-    const timer = setInterval(() => {
-      setNow(Date.now());
-    }, 30_000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return now;
+  return useSyncExternalStore(subscribeNow, getNow, getServerNow);
 }

@@ -24,6 +24,7 @@ export function AdBanner({
   const [adBlocked, setAdBlocked] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lee localStorage tras hidratar (en el servidor no existe)
     setMounted(true);
     setDismissed(isAdDismissed(placement));
   }, [placement]);

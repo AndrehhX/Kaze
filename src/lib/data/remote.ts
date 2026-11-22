@@ -87,7 +87,15 @@ export class RemoteStore {
       try {
         const { data: paRows, error: paErr } = await this.db.from("profile_anime").select("*").eq("user_id", this.userId);
         if (!paErr && paRows && paRows.length > 0) {
-          return (paRows as any[]).map((r) => ({
+          // Filas de la tabla antigua profile_anime (esquema heredado, campos opcionales).
+          type LegacyRow = {
+            id?: number | string; anime_id?: number | string; media_id?: number | string; status?: string;
+            episodes_watched?: number; progress?: number; score?: number | null; notes?: string | null;
+            favorite?: boolean; is_favorite?: boolean; started_at?: string | null; completed_at?: string | null;
+            repeat?: number; created_at?: string; updated_at?: string; media_snapshot?: MediaSnapshot | null; media?: MediaSnapshot | null;
+            title?: string; cover_image?: string | null; cover?: string | null; banner_image?: string | null; banner?: string | null; total_episodes?: number | null;
+          };
+          return (paRows as LegacyRow[]).map((r) => ({
             mediaId: Number(r.anime_id || r.media_id || r.id),
             status: (r.status?.toUpperCase?.() || "CURRENT") as LibraryStatus,
             progress: Number(r.episodes_watched || r.progress || 0),

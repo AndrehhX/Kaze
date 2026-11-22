@@ -92,7 +92,7 @@ export async function listFriends(db: SupabaseClient, me: string): Promise<Publi
     if (!errAB && rowsAB && rowsAB.length > 0) {
       friendIds = Array.from(
         new Set(
-          (rowsAB as any[])
+          (rowsAB as { user_a: string; user_b: string }[])
             .map((r) => (r.user_a === me ? r.user_b : r.user_a))
             .filter(Boolean)
         )
@@ -106,7 +106,7 @@ export async function listFriends(db: SupabaseClient, me: string): Promise<Publi
       if (!errReq && rowsReq && rowsReq.length > 0) {
         friendIds = Array.from(
           new Set(
-            (rowsReq as any[])
+            (rowsReq as { requester_id: string; addressee_id: string }[])
               .map((r) => (r.requester_id === me ? r.addressee_id : r.requester_id))
               .filter(Boolean)
           )
@@ -138,7 +138,7 @@ export async function friendActivity(db: SupabaseClient, me: string, limit = 30)
       .order("created_at", { ascending: false })
       .limit(limit);
     if (error || !data) return [];
-    return data.map((e: any) => ({
+    return (data as { user_id: string }[]).map((e) => ({
       ...e,
       user: friendMap.get(e.user_id) ?? null,
     })) as ActivityEvent[];
@@ -160,7 +160,7 @@ export async function userActivity(db: SupabaseClient, userId: string, limit = 3
     const { data: userProf } = await db.from("profiles").select(PROFILE_COLS).eq("id", userId).maybeSingle();
     const prof = (userProf as unknown as PublicProfile) ?? null;
 
-    return data.map((e: any) => ({
+    return (data as { user_id: string }[]).map((e) => ({
       ...e,
       user: prof,
     })) as ActivityEvent[];
@@ -180,7 +180,7 @@ export async function friendRequests(db: SupabaseClient, me: string): Promise<{ 
 
     let rawList: { id: string; sender_id: string; receiver_id: string; status: string; created_at: string }[] = [];
     if (!reqErr && reqRows && reqRows.length > 0) {
-      rawList = reqRows as any[];
+      rawList = reqRows as typeof rawList;
     } else {
       const { data: rows, error } = await db
         .from("friendships")
@@ -189,7 +189,7 @@ export async function friendRequests(db: SupabaseClient, me: string): Promise<{ 
         .eq("status", "pending")
         .order("created_at", { ascending: false });
       if (!error && rows) {
-        rawList = (rows as any[]).map((r) => ({
+        rawList = (rows as { id: string; requester_id: string; addressee_id: string; status: string; created_at: string }[]).map((r) => ({
           id: r.id,
           sender_id: r.requester_id,
           receiver_id: r.addressee_id,
