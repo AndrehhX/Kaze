@@ -68,7 +68,7 @@ export async function generateMetadata({ params }: PageProps<"/anime/[id]">): Pr
     openGraph: {
       title: `Ver ${title} Online en Español HD 1080p · KAZE`,
       description: snippet,
-      images: media.bannerImage ? [media.bannerImage] : media.coverImage.extraLarge ? [media.coverImage.extraLarge] : [],
+      // La imagen la genera ./opengraph-image.tsx (tarjeta con portada y marca KAZE).
     },
   };
 }
