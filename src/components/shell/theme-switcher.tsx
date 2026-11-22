@@ -4,11 +4,22 @@ import * as DM from "@radix-ui/react-dropdown-menu";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, Palette } from "lucide-react";
 import { useRef, useState } from "react";
-import { flushSync } from "react-dom";
 import { THEME_IDS, THEMES, type ThemeId } from "@/lib/themes";
 import { useSettings } from "@/stores/settings";
 import { useKazeMotion } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/stores/auth";
+import { getSupabaseBrowser } from "@/lib/supabase/client";
+
+/** Guarda el tema elegido también como tema del perfil, para que las visitas lo vean igual. */
+function persistProfileTheme(id: ThemeId) {
+  const { profile } = useAuth.getState();
+  if (!profile || profile.profile_theme === id) return;
+  const db = getSupabaseBrowser();
+  if (!db) return;
+  useAuth.setState({ profile: { ...profile, profile_theme: id } });
+  void db.from("profiles").update({ profile_theme: id }).eq("id", profile.id).then(() => {});
+}
 
 type VT = { ready: Promise<void>; finished: Promise<void> };
 type DocWithVT = Document & { startViewTransition?: (cb: () => void) => VT };
@@ -24,13 +35,18 @@ export function useThemeSwitch() {
 
   const switchTo = (id: ThemeId, origin?: { x: number; y: number }) => {
     const doc = document as DocWithVT;
+    persistProfileTheme(id);
     if (reduced || !doc.startViewTransition) {
       setTheme(id);
       return;
     }
     const x = origin?.x ?? innerWidth / 2;
     const y = origin?.y ?? innerHeight / 2;
-    const t = doc.startViewTransition(() => flushSync(() => setTheme(id)));
+    // Dentro de la transición solo se cambian las variables CSS (instantáneo). Antes se hacía
+    // flushSync(setTheme), que re-renderizaba toda la app de golpe y producía el "tirón".
+    // El estado de React se actualiza al terminar, cuando ya no hay nada que animar.
+    const t = doc.startViewTransition(() => paintTheme(id));
+    t.finished.finally(() => setTheme(id));
     setFlash(id);
     t.ready
       .then(() => {
@@ -59,8 +75,8 @@ export function useThemeSwitch() {
           <motion.span
             className="k-jp select-none text-[22vw] font-bold leading-none text-primary/15"
             lang="ja"
-            initial={{ scale: 0.85, filter: "blur(12px)" }}
-            animate={{ scale: 1, filter: "blur(0px)" }}
+            initial={{ scale: 0.92, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           >
             {THEMES[flash].jp}

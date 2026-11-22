@@ -211,6 +211,7 @@ export function ProfileShell({
   const bannerY = useTransform(scrollY, [0, 400], [0, reduced ? 0 : 120]);
   const kanjiY = useTransform(scrollY, [0, 400], [0, reduced ? 0 : -60]);
   const [edit, setEdit] = useState(false);
+  const siteTheme = useSettings((s) => s.theme);
 
   if (d.loading) return <Skeleton className="container-k mt-8 h-80" />;
 
@@ -235,7 +236,9 @@ export function ProfileShell({
     );
 
   const p = normalizeProfile(d.profile);
-  const pTheme: ThemeId = isThemeId(p.profile_theme) ? p.profile_theme : "midnight";
+  // Tu propio perfil sigue el tema que tienes activo en la web (y se anima con el cambio de tema).
+  // Los perfiles ajenos se ven con el tema que eligió su dueño.
+  const pTheme: ThemeId = d.isMe ? siteTheme : isThemeId(p.profile_theme) ? p.profile_theme : "midnight";
   const favorites = d.entries.filter((e) => e.favorite);
   const name = p.display_name || p.username;
   const base = `/profile/${p.username}`;
@@ -252,7 +255,11 @@ export function ProfileShell({
   };
 
   return (
-    <div data-theme={pTheme} className="bg-bg text-fg min-h-screen" style={{ colorScheme: THEMES[pTheme].scheme }}>
+    <div
+      data-theme={d.isMe ? undefined : pTheme}
+      className="bg-bg text-fg min-h-screen"
+      style={d.isMe ? undefined : { colorScheme: THEMES[pTheme].scheme }}
+    >
       <div className="relative -mt-[var(--k-nav-h)] overflow-hidden">
         {/* Banner con paralaje */}
         <motion.div style={{ y: bannerY }} className="absolute inset-0 h-[min(48svh,420px)] overflow-hidden" aria-hidden>
@@ -292,7 +299,9 @@ export function ProfileShell({
         </motion.span>
 
         <div className="container-k relative flex min-h-[min(48svh,420px)] flex-col justify-end pb-8 pt-[calc(var(--k-nav-h)+6rem)]">
-          <div className="flex flex-wrap items-end gap-5">
+          {/* items-center: el avatar queda centrado con nombre + bio (con items-end bajaba
+              al final de la bio y se veía descolocado). */}
+          <div className="flex flex-wrap items-center gap-5">
             {/* Avatar interactivo */}
             <motion.div
               initial={reduced ? false : { scale: 0.6, opacity: 0, rotate: -8 }}
