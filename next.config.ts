@@ -28,6 +28,8 @@ const csp = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Servidor autónomo para la VPS (deploy/). En Vercel no tiene efecto.
+  output: "standalone",
   compress: true,
   cacheComponents: true,
   partialPrefetching: true,

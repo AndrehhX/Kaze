@@ -146,7 +146,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <ServiceWorkerRegister />
           {children}
         </Providers>
-        <Analytics />
+        {/* Vercel Web Analytics solo existe en Vercel; en la VPS /_vercel/insights daría 404. */}
+        {process.env.VERCEL ? <Analytics /> : null}
       </body>
     </html>
   );

@@ -1,0 +1,48 @@
+# Compila crunchy en este PC y lo despliega en la VPS (sin compilar alla).
+# Uso:  powershell -ExecutionPolicy Bypass -File deploy\deploy-vps.ps1 [-Server vps] [-SkipBuild]
+# Requisitos: alias SSH "vps" en ~/.ssh/config y .env.production.local con
+#             NEXT_PUBLIC_SITE_URL=https://www.orunei.sbs (y demas NEXT_PUBLIC_* de produccion).
+param(
+  [string]$Server = "vps",
+  [switch]$SkipBuild
+)
+$ErrorActionPreference = "Stop"
+$root = Split-Path $PSScriptRoot -Parent
+Set-Location $root
+
+if (-not (Test-Path ".env.production.local")) {
+  throw "Falta .env.production.local (al menos NEXT_PUBLIC_SITE_URL=https://www.orunei.sbs)."
+}
+
+if (-not $SkipBuild) {
+  Write-Host "== Compilando (next build)..."
+  npm run build
+  if ($LASTEXITCODE -ne 0) { throw "next build fallo" }
+}
+
+$sa = Join-Path $root ".next\standalone"
+if (-not (Test-Path (Join-Path $sa "server.js"))) {
+  throw "No existe .next\standalone\server.js (falta output: 'standalone' en next.config.ts?)"
+}
+
+Write-Host "== Preparando paquete standalone..."
+Copy-Item -Recurse -Force ".next\static" (Join-Path $sa ".next\static")
+if (Test-Path "public") { Copy-Item -Recurse -Force "public" (Join-Path $sa "public") }
+
+$release = Get-Date -Format "yyyyMMdd-HHmmss"
+$tgz = Join-Path $env:TEMP "orunei-web-$release.tgz"
+tar -czf $tgz -C $sa .
+if ($LASTEXITCODE -ne 0) { throw "tar fallo" }
+$sizeMB = [math]::Round((Get-Item $tgz).Length / 1MB, 1)
+Write-Host "Paquete: $tgz ($sizeMB MB)"
+
+Write-Host "== Subiendo a $Server..."
+scp -q $tgz "${Server}:/tmp/orunei-web-$release.tgz"
+if ($LASTEXITCODE -ne 0) { throw "scp fallo" }
+
+Write-Host "== Activando release $release..."
+ssh $Server "/opt/orunei-web/bin/activate-release.sh $release /tmp/orunei-web-$release.tgz"
+$code = $LASTEXITCODE
+Remove-Item $tgz -ErrorAction SilentlyContinue
+if ($code -ne 0) { throw "La activacion fallo (se restauro el release anterior si existia)." }
+Write-Host "== Deploy completado: $release"

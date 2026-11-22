@@ -1,6 +1,7 @@
 # Plan de migración: `crunchy` (Next.js) de Vercel a VPS
 
-> Fecha: 22 de noviembre de 2026 · Estado: **plan, nada aplicado todavía**.
+> Fecha: 22 de noviembre de 2026 · Estado: **fases 0–2 ejecutadas; falta el cambio de DNS en Cloudflare. Ver `DEPLOY_VPS.md`.**
+> Decisiones tomadas: se mantienen CasaOS/Docker/Samba (no hace falta liberar RAM), se mantiene Node 22 (el resolver y el bot ya lo usan) y el DNS se cambia en cuanto sea posible, porque la cuenta de Vercel llegó al tope de ISR Writes.
 > Objetivo: servir `www.orunei.sbs` desde una VPS con costo fijo, detrás de Cloudflare, y poder **cambiar de VPS en minutos** (la actual dura 1 mes).
 
 ## 1. Veredicto

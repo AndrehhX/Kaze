@@ -19,6 +19,9 @@ export function rateLimit(key: string, limit: number, windowMs: number): { ok: b
 }
 
 export function clientKey(req: Request, scope: string) {
+  // Detrás de Cloudflare + Caddy (VPS), x-forwarded-for empieza con la IP de Cloudflare:
+  // la IP real del visitante viene en cf-connecting-ip.
+  const cf = req.headers.get("cf-connecting-ip")?.trim();
   const fwd = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return `${scope}:${fwd || req.headers.get("x-real-ip") || "local"}`;
+  return `${scope}:${cf || fwd || req.headers.get("x-real-ip") || "local"}`;
 }

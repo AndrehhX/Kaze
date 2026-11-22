@@ -1,0 +1,31 @@
+# Caddyfile de referencia para la VPS. Cloudflare termina el HTTPS publico y habla
+# con la VPS por el puerto 80 (modo SSL "Flexible"). El hash del panel NO va en el repo:
+# generalo con `caddy hash-password` en la VPS.
+:80 {
+    # Web (Next.js standalone, servicio orunei-web)
+    @web host www.orunei.sbs orunei.sbs vps.orunei.sbs
+    handle @web {
+        reverse_proxy 127.0.0.1:3000 {
+            # El visitante llega por HTTPS a Cloudflare; Next necesita saberlo
+            # para construir URLs y redirecciones correctas.
+            header_up X-Forwarded-Proto https
+        }
+    }
+
+    @panel host panel.orunei.sbs
+    handle @panel {
+        basicauth {
+            orunei <HASH_DE_caddy_hash-password>
+        }
+        reverse_proxy 127.0.0.1:8080
+    }
+
+    @resolver host resolver.orunei.sbs
+    handle @resolver {
+        reverse_proxy 127.0.0.1:3001
+    }
+
+    handle {
+        respond "Not found" 404
+    }
+}
