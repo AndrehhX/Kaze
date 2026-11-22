@@ -30,6 +30,10 @@ const csp = [
 const nextConfig: NextConfig = {
   // Servidor autónomo para la VPS (deploy/). En Vercel no tiene efecto.
   output: "standalone",
+  // Sin caché en memoria (ISR y "use cache"): en la VPS la LRU en memoria crecía ~18 MB/min
+  // con miles de fichas de anime y el proceso se caía por OOM cada ~12 min. Las páginas y los
+  // datos siguen cacheados en disco (.next/cache) y en Cloudflare.
+  cacheMaxMemorySize: 0,
   compress: true,
   cacheComponents: true,
   partialPrefetching: true,
