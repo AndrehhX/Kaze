@@ -9,6 +9,7 @@ import {
   MEDIA_BATCH_QUERY,
   META_QUERY,
   RECOMMENDATIONS_QUERY,
+  SCHEDULE_QUERY,
   STUDIO_SEARCH_QUERY,
   SUGGEST_QUERY,
 } from "./queries";
@@ -201,4 +202,45 @@ export async function getSeason(season: MediaSeason, year: number, page = 1) {
   type R = { Page: { pageInfo: PageInfo; media: MediaCard[] } };
   const d = await anilistRequest<R>(BROWSE_QUERY, browseVariables({ season, year, sort: "POPULARITY_DESC", perPage: 50, page }));
   return d.Page;
+}
+
+export type ScheduleItem = {
+  id: number;
+  episode: number;
+  airingAt: number;
+  media: {
+    id: number;
+    title: { romaji: string | null; english: string | null };
+    coverImage: { large: string | null; color: string | null };
+    format: string | null;
+    episodes: number | null;
+    popularity: number | null;
+    countryOfOrigin: string | null;
+  };
+};
+
+/**
+ * Episodios que se emiten desde hace 12 h hasta dentro de 8 días (cubre todas las zonas
+ * horarias de LatAm/España; el cliente agrupa por día local). Caché de 1 hora en servidor.
+ */
+export async function getWeeklySchedule(): Promise<ScheduleItem[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("anilist:schedule");
+  const nowSec = Math.floor(Date.now() / 1000);
+  const from = nowSec - 12 * 3600;
+  const to = nowSec + 8 * 86400;
+  type R = { Page: { pageInfo: { hasNextPage: boolean }; airingSchedules: (ScheduleItem & { media: ScheduleItem["media"] & { isAdult: boolean } | null })[] } };
+  const items: ScheduleItem[] = [];
+  for (let page = 1; page <= 10; page++) {
+    const d = await anilistRequest<R>(SCHEDULE_QUERY, { page, from, to });
+    for (const s of d.Page.airingSchedules) {
+      if (!s.media || s.media.isAdult) continue;
+      const { isAdult: _adult, ...media } = s.media;
+      void _adult;
+      items.push({ id: s.id, episode: s.episode, airingAt: s.airingAt, media });
+    }
+    if (!d.Page.pageInfo.hasNextPage) break;
+  }
+  return items;
 }

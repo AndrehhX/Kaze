@@ -1,4 +1,4 @@
-import { BookOpen, Compass, Home, Library, MessagesSquare, Popcorn, CalendarRange, Users, UserRound, type LucideIcon } from "lucide-react";
+import { BookOpen, Compass, Home, Library, MessagesSquare, Popcorn, CalendarRange, CalendarClock, Users, UserRound, type LucideIcon } from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -14,6 +14,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/discover", label: "Descubrir", jp: "発見", icon: Compass },
   { href: "/manga", label: "Manga", jp: "漫画", icon: BookOpen, badge: "Mantenimiento" },
   { href: "/seasonal", label: "Temporada", jp: "今期", icon: CalendarRange },
+  { href: "/calendario", label: "Calendario", jp: "放送予定", icon: CalendarClock },
   { href: "/library", label: "Mi Biblioteca", jp: "ライブラリ", icon: Library },
   { href: "/community", label: "Comunidad", jp: "コミュニティ", icon: MessagesSquare },
   { href: "/friends", label: "Amigos", jp: "フレンド", icon: Users },

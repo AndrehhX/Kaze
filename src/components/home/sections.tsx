@@ -208,11 +208,11 @@ export function HiddenGemsSection({ media }: { media: MediaCard[] }) {
 export function CalendarHint() {
   return (
     <div className="container-k mt-16">
-      <Link href="/seasonal" className={cn("k-card group flex items-center gap-4 p-5 transition-shadow hover:shadow-[var(--k-hover-glow)]")}>
+      <Link href="/calendario" className={cn("k-card group flex items-center gap-4 p-5 transition-shadow hover:shadow-[var(--k-hover-glow)]")}>
         <CalendarClock className="size-6 text-primary-ink" aria-hidden />
         <div className="flex-1">
-          <p className="font-display text-lg">This season&apos;s full chart</p>
-          <p className="text-sm text-muted">Todos los estrenos, ordenables por popularidad, nota y día de emisión.</p>
+          <p className="font-display text-lg">Calendario de emisión</p>
+          <p className="text-sm text-muted">Qué episodios salen hoy y esta semana, en tu hora local y con cuenta atrás.</p>
         </div>
         <ArrowUpRight className="size-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" aria-hidden />
       </Link>

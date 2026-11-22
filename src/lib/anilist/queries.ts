@@ -314,3 +314,27 @@ export const VIEWER_FAVOURITES_QUERY = /* GraphQL */ `
   }
   ${CARD_FIELDS}
 `;
+
+/** Calendario de emisión: episodios que salen en una ventana de tiempo (página de 50). */
+export const SCHEDULE_QUERY = /* GraphQL */ `
+  query Schedule($page: Int, $from: Int, $to: Int) {
+    Page(page: $page, perPage: 50) {
+      pageInfo { hasNextPage }
+      airingSchedules(airingAt_greater: $from, airingAt_lesser: $to, sort: TIME) {
+        id
+        episode
+        airingAt
+        media {
+          id
+          title { romaji english }
+          coverImage { large color }
+          format
+          episodes
+          popularity
+          isAdult
+          countryOfOrigin
+        }
+      }
+    }
+  }
+`;
