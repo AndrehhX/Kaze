@@ -17,6 +17,8 @@
 | Panel CasaOS | servicio `casaos` | **Opcional**, se reinstala si lo quieres |
 
 ## 1. Unos días antes
+> 📅 **La VPS actual vence el 16 de diciembre de 2026.** Empieza la mudanza hacia el 10–12 de diciembre.
+
 - [ ] Contrata la VPS nueva: **Ubuntu 24.04 (o 22.04), mínimo 1 vCPU / 2 GB RAM / 20 GB de disco**. Mejor 2 vCPU si el precio es parecido.
 - [ ] Ten a mano: la **IP** y la **contraseña de root** de la VPS nueva (te las da el proveedor), y acceso a Cloudflare.
 - [ ] Elige una hora de poco tráfico para el paso 9 (cambio de DNS).
