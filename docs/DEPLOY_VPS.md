@@ -72,7 +72,7 @@ Cloudflare → `orunei.sbs` → **SSL/TLS → Overview**.
 ### 3.2 Cambia el DNS
 Cloudflare → **DNS → Records** → edita el registro **`www`**:
 - Tipo: **A** (si ahora es un CNAME a Vercel, cámbiale el tipo).
-- Contenido: **la IP de tu VPS** (está en `C:SERSANDREH.SSHNFIG`, LÍNEA HOSTNAME)
+- Contenido: **la IP de tu VPS** (la ves en tu archivo `.ssh/config`, línea `HostName`). No la publiques: Cloudflare la mantiene oculta.
 - Proxy: **naranja (Proxied)** ← obligatorio
 - Guardar.
 
