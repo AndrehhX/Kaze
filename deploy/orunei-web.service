@@ -17,6 +17,8 @@ Environment=NODE_OPTIONS=--max-old-space-size=384
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=3
+# Next espera a que Caddy cierre sus conexiones keep-alive; sin esto el stop tarda 90 s.
+TimeoutStopSec=10
 # Limites de memoria para no ahogar al resolver, Redis ni al bot en una VPS de 2 GB.
 MemoryHigh=750M
 MemoryMax=900M
