@@ -12,13 +12,14 @@ EnvironmentFile=/opt/orunei-web/shared/.env
 Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=HOSTNAME=127.0.0.1
-Environment=NODE_OPTIONS=--max-old-space-size=512
+# Heap de V8 acotado: con 512 MB el proceso llegaba a ~615 MB de RSS y chocaba con MemoryHigh.
+Environment=NODE_OPTIONS=--max-old-space-size=384
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=3
 # Limites de memoria para no ahogar al resolver, Redis ni al bot en una VPS de 2 GB.
-MemoryHigh=600M
-MemoryMax=800M
+MemoryHigh=750M
+MemoryMax=900M
 # Endurecimiento basico
 NoNewPrivileges=true
 PrivateTmp=true
