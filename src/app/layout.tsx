@@ -6,6 +6,7 @@ import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { DEFAULT_THEME, themeBootScript } from "@/lib/themes";
 import { siteUrl } from "@/lib/env";
 import { Analytics } from "@vercel/analytics/react";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -148,6 +149,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </Providers>
         {/* Vercel Web Analytics solo existe en Vercel; en la VPS /_vercel/insights daría 404. */}
         {process.env.VERCEL ? <Analytics /> : null}
+        {process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID ? (
+          <Script
+            src="https://cloud.umami.is/script.js"
+            data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+            strategy="afterInteractive"
+          />
+        ) : null}
       </body>
     </html>
   );

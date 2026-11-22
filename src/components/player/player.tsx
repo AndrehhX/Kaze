@@ -58,18 +58,34 @@ type Props = {
   onAdaptCodec?: () => void;
   isAdaptedCodec?: boolean;
   onEnded?: () => void;
+  onFirstPlay?: () => void;
+  onComplete?: () => void;
 };
 
 type Menu = null | "root" | "quality" | "speed" | "subs" | "audio" | "caption-style";
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
-export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = true, persist = true, onAdaptCodec, isAdaptedCodec, onEnded: onEndedProp }: Props) {
+export function Player({
+  grant,
+  onNavigateEpisode,
+  onVideo,
+  sync,
+  autoPlay = true,
+  persist = true,
+  onAdaptCodec,
+  isAdaptedCodec,
+  onEnded: onEndedProp,
+  onFirstPlay,
+  onComplete,
+}: Props) {
   const asset = grant.asset;
   const wrapRef = useRef<HTMLDivElement>(null);
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const ambientRef = useRef<HTMLCanvasElement>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [isAdapting, setIsAdapting] = useState(false);
+  const hasTriggeredFirstPlay = useRef(false);
+  const hasTriggeredComplete = useRef(false);
 
   const handleCodecError = useCallback(() => {
     if (onAdaptCodec && !isAdaptedCodec) {
@@ -235,6 +251,14 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
       if (video.currentTime > 0) {
         lastWatchedTimeRef.current = video.currentTime;
       }
+      if (
+        video.duration > 0 &&
+        !hasTriggeredComplete.current &&
+        video.currentTime / video.duration >= 0.9
+      ) {
+        hasTriggeredComplete.current = true;
+        onComplete?.();
+      }
       if (Date.now() - lastSaved.current > 5000) persistNow();
     };
     const onMeta = () => {
@@ -275,7 +299,13 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
       for (let i = 0; i < video.buffered.length; i++) r.push([video.buffered.start(i), video.buffered.end(i)]);
       setBuffered(r);
     };
-    const onPlay = () => setPlaying(true);
+    const onPlay = () => {
+      setPlaying(true);
+      if (!hasTriggeredFirstPlay.current) {
+        hasTriggeredFirstPlay.current = true;
+        onFirstPlay?.();
+      }
+    };
     const onPause = () => {
       setPlaying(false);
       persistNow(true);
@@ -284,10 +314,18 @@ export function Player({ grant, onNavigateEpisode, onVideo, sync, autoPlay = tru
     const onPlaying = () => {
       setWaiting(false);
       setIsAdapting(false);
+      if (!hasTriggeredFirstPlay.current) {
+        hasTriggeredFirstPlay.current = true;
+        onFirstPlay?.();
+      }
     };
     const onEnded = () => {
       setPlaying(false);
       persistNow(true);
+      if (!hasTriggeredComplete.current) {
+        hasTriggeredComplete.current = true;
+        onComplete?.();
+      }
       onEndedProp?.();
       if (!isLoggedIn) {
         setShowAuthGate(true);

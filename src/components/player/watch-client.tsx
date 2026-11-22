@@ -129,6 +129,60 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
   const { m, reduced } = useKazeMotion();
   const [help, setHelp] = useState(false);
   const activeEpRef = useRef<HTMLLIElement | null>(null);
+  const trackedPlayedEpisodes = useRef<Set<string>>(new Set());
+  const trackedCompletedEpisodes = useRef<Set<string>>(new Set());
+
+  const handleFirstPlay = useCallback(() => {
+    const episodeKey = `${seriesId}:${episodeId}`;
+    if (trackedPlayedEpisodes.current.has(episodeKey)) return;
+    trackedPlayedEpisodes.current.add(episodeKey);
+
+    const animeTitle = grant?.series.title || "Anime";
+    const animeId = grant?.series.id || seriesId;
+    const epNum = grant?.episode.number ?? (Number(episodeId) || 1);
+    const audio = preferredAudio === "latino" ? "latino" : "sub";
+    const serverName =
+      grant?.serverName ||
+      (preferredServer === "clean" ? "✨ 1080p HD Limpio" : "⚡ AnimeAV1 1080p Ultra Rápido");
+
+    try {
+      window.umami?.track("episodio_reproducido", {
+        anime: animeTitle,
+        animeId,
+        episodio: epNum,
+        audio,
+        servidor: serverName,
+      });
+    } catch {
+      // Ignorar silenciosamente si la telemetría falla
+    }
+  }, [seriesId, episodeId, grant, preferredAudio, preferredServer]);
+
+  const handleComplete = useCallback(() => {
+    const episodeKey = `${seriesId}:${episodeId}`;
+    if (trackedCompletedEpisodes.current.has(episodeKey)) return;
+    trackedCompletedEpisodes.current.add(episodeKey);
+
+    const animeTitle = grant?.series.title || "Anime";
+    const animeId = grant?.series.id || seriesId;
+    const epNum = grant?.episode.number ?? (Number(episodeId) || 1);
+    const audio = preferredAudio === "latino" ? "latino" : "sub";
+    const serverName =
+      grant?.serverName ||
+      (preferredServer === "clean" ? "✨ 1080p HD Limpio" : "⚡ AnimeAV1 1080p Ultra Rápido");
+
+    try {
+      window.umami?.track("episodio_completado", {
+        anime: animeTitle,
+        animeId,
+        episodio: epNum,
+        audio,
+        servidor: serverName,
+      });
+    } catch {
+      // Ignorar silenciosamente si la telemetría falla
+    }
+  }, [seriesId, episodeId, grant, preferredAudio, preferredServer]);
 
   const handleAdaptToH264 = useCallback(() => {
     setCodecPreference("h264");
@@ -173,6 +227,8 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
                 onNavigateEpisode={go}
                 onAdaptCodec={handleAdaptToH264}
                 isAdaptedCodec={codecPreference === "h264"}
+                onFirstPlay={handleFirstPlay}
+                onComplete={handleComplete}
               />
             )}
             {grant && (
