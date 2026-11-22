@@ -45,7 +45,7 @@ export function CommentComposer({ targetType, targetId, parentId, onDone, autoFo
     },
     onError: (e) => toast.error(friendlyDbError(e)),
   });
-  if (!me) return <p className="text-xs text-muted"><Link href="/login" className="font-semibold text-primary-ink">Sign in</Link> to join the conversation.</p>;
+  if (!me) return <p className="text-xs text-muted"><Link href="/login" className="font-semibold text-primary-ink">Inicia sesión</Link> para unirte a la conversación.</p>;
   return (
     <form
       className="space-y-2"
@@ -55,23 +55,23 @@ export function CommentComposer({ targetType, targetId, parentId, onDone, autoFo
       }}
     >
       <label className="sr-only" htmlFor={`c-${targetId}-${parentId ?? "root"}`}>
-        {parentId ? "Reply" : "Comment"}
+        {parentId ? "Responder" : "Comentar"}
       </label>
       <textarea
         id={`c-${targetId}-${parentId ?? "root"}`}
         autoFocus={autoFocus}
         className="k-input !min-h-16 text-sm"
         maxLength={4000}
-        placeholder={parentId ? "Write a reply…" : "Add a comment…"}
+        placeholder={parentId ? "Escribe una respuesta…" : "Escribe un comentario…"}
         value={body}
         onChange={(e) => setBody(e.target.value)}
       />
       <div className="flex items-center gap-3">
         <label className="flex items-center gap-2 text-xs text-muted">
-          <input type="checkbox" checked={spoiler} onChange={(e) => setSpoiler(e.target.checked)} className="accent-[var(--k-primary)]" /> Contains spoilers
+          <input type="checkbox" checked={spoiler} onChange={(e) => setSpoiler(e.target.checked)} className="accent-[var(--k-primary)]" /> Contiene spoilers
         </label>
         <button type="submit" className="k-btn k-btn-primary k-btn-sm ml-auto" disabled={!body.trim() || m.isPending}>
-          {m.isPending ? "Posting…" : parentId ? "Reply" : "Comment"}
+          {m.isPending ? "Publicando…" : parentId ? "Responder" : "Comentar"}
         </button>
       </div>
     </form>
@@ -92,12 +92,12 @@ export function CommentThread({ targetType, targetId }: { targetType: "review" |
   };
 
   if (isLoading) return <Skeleton className="h-20" />;
-  if (error) return <p className="text-sm text-danger">Couldn&apos;t load comments.</p>;
+  if (error) return <p className="text-sm text-danger">No se pudieron cargar los comentarios.</p>;
   const roots = (data ?? []).filter((c) => !c.parent_id);
   const replies = (id: string) => (data ?? []).filter((c) => c.parent_id === id);
 
   const Item = ({ c, depth }: { c: Comment; depth: number }) => {
-    const name = c.author?.display_name || c.author?.username || "Member";
+    const name = c.author?.display_name || c.author?.username || "Usuario";
     return (
       <li className={depth ? "ml-6 border-l border-line pl-4" : ""}>
         <div className="flex gap-3 py-3">
@@ -119,12 +119,12 @@ export function CommentThread({ targetType, targetId }: { targetType: "review" |
             <div className="mt-1 flex items-center gap-1">
               {me && depth === 0 && (
                 <button className="k-btn k-btn-ghost k-btn-sm !min-h-8 text-xs" onClick={() => setReplyTo(replyTo === c.id ? null : c.id)}>
-                  <CornerDownRight className="size-3.5" aria-hidden /> Reply
+                  <CornerDownRight className="size-3.5" aria-hidden /> Responder
                 </button>
               )}
               {me === c.user_id ? (
                 <button className="k-btn k-btn-ghost k-btn-sm !min-h-8 text-xs text-muted" onClick={() => remove(c.id)}>
-                  <Trash2 className="size-3.5" aria-hidden /> Delete
+                  <Trash2 className="size-3.5" aria-hidden /> Borrar
                 </button>
               ) : (
                 <ReportButton targetType="comment" targetId={c.id} />
@@ -152,7 +152,7 @@ export function CommentThread({ targetType, targetId }: { targetType: "review" |
     <div>
       {roots.length === 0 && (
         <p className="flex items-center gap-2 py-2 text-sm text-muted">
-          <MessageSquare className="size-4" aria-hidden /> No comments yet.
+          <MessageSquare className="size-4" aria-hidden /> Aún no hay comentarios. ¡Sé el primero!
         </p>
       )}
       <ul className="divide-y divide-line">

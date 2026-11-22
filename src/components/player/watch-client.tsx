@@ -14,7 +14,7 @@ import { useKazeMotion } from "@/lib/motion";
 import { DemoBadge, ErrorPanel, Skeleton } from "@/components/ui/primitives";
 import { cn, formatDuration } from "@/lib/utils";
 import { Dialog } from "@/components/ui/dialog";
-import { AnimeComments } from "@/components/social/anime-comments";
+import { EpisodeComments } from "@/components/social/episode-comments";
 import { AdBanner } from "@/components/ads/ad-banner";
 
 export async function requestGrant(
@@ -391,11 +391,13 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
                   </a>
                 </p>
 
-                {/* Sección de Comentarios con HoverCard de Perfil */}
-                <AnimeComments
-                  seriesId={seriesId}
+                {/* Comentarios del episodio, compartidos (Supabase); en series demo siguen siendo locales */}
+                <EpisodeComments
+                  seriesId={grant.series.anilistId ? String(grant.series.anilistId) : seriesId}
                   episodeId={grant.episode.id}
+                  episodeNumber={grant.episode.number}
                   animeTitle={grant.series.title}
+                  cover={grant.series.cover}
                 />
               </div>
             )}
