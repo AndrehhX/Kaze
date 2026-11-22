@@ -113,7 +113,7 @@ Requisitos: Ubuntu 22.04/24.04, mínimo 1 vCPU / 2 GB.
    ```
    En la nueva: instalar Redis (`apt install redis-server`), PM2 (`npm i -g pm2`), arrancar `kaze-resolver` y `panbot` con PM2 (`pm2 start ... && pm2 save && pm2 startup`) y recargar Caddy.
 5. **Desplegar la web:** `deploy\deploy-vps.ps1 -Server vps2`.
-6. **Probar** con la IP nueva: `curl -H "Host: www.orunei.sbs" http://IP_NUEVA/`.
+6. **Probar** desde dentro de la VPS nueva (el firewall solo deja entrar a Cloudflare por el 80/443): `ssh vps2 "curl -s -o /dev/null -w '%{http_code}' -H 'Host: www.orunei.sbs' http://127.0.0.1/"` → debe dar `200`.
 7. **Cloudflare:** cambia la IP en los registros `www`, `orunei.sbs`, `resolver`, `panel` (y `vps`).
 8. Deja la VPS vieja encendida un día por si hay que volver atrás.
 
@@ -122,4 +122,5 @@ Requisitos: Ubuntu 22.04/24.04, mínimo 1 vCPU / 2 GB.
 - Caddy: bloque `@web` para `www.orunei.sbs`, `orunei.sbs` y `vps.orunei.sbs` → `127.0.0.1:3000` (copias de seguridad en `/etc/caddy/Caddyfile.bak-*`).
 - `shared/.env`: `STREAM_RESOLVER_URL=http://127.0.0.1:3001/api/stream/resolve`. La web llama al resolver dentro de la VPS (~1 ms) en vez de pasar por Cloudflare (~70–95 ms). **Si en una mudanza el resolver queda en otra máquina, vuelve a poner `https://resolver.orunei.sbs/api/stream/resolve`.**
 - Servicio: heap de Node 384 MB, `MemoryHigh` 750 MB, `MemoryMax` 900 MB, `TimeoutStopSec` 10 s (un reinicio deja la web fuera ~12 s).
+- Firewall: SSH (22) abierto; **80/443 solo desde los rangos de Cloudflare** (`/opt/orunei-web/bin/ufw-cloudflare.sh`, se actualiza cada lunes por `/etc/cron.d/orunei-ufw-cloudflare`). Entrar por la IP directa da timeout: así nadie puede saltarse Cloudflare.
 - No se tocaron `kaze-resolver`, `panbot`, Redis, CasaOS, Docker ni Samba.

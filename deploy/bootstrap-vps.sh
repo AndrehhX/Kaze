@@ -32,6 +32,7 @@ echo "== 3. Usuario y carpetas"
 id orunei >/dev/null 2>&1 || useradd --system --home-dir "$BASE" --shell /usr/sbin/nologin orunei
 mkdir -p "$BASE/releases" "$BASE/shared/cache" "$BASE/bin"
 install -m 755 "$HERE/activate-release.sh" "$BASE/bin/activate-release.sh"
+install -m 755 "$HERE/ufw-cloudflare.sh" "$BASE/bin/ufw-cloudflare.sh"
 if [ ! -f "$BASE/shared/.env" ]; then
   touch "$BASE/shared/.env"
   echo "AVISO: $BASE/shared/.env esta vacio; copia ahi las variables de produccion."
@@ -59,11 +60,17 @@ if [ "$(swapon --show --noheadings | wc -l)" = "0" ]; then
 fi
 swapon --show
 
-echo "== 6. Firewall"
+echo "== 6. Firewall (SSH abierto; 80/443 solo desde Cloudflare)"
 if command -v ufw >/dev/null; then
-  ufw allow 22/tcp >/dev/null; ufw allow 80/tcp >/dev/null; ufw allow 443/tcp >/dev/null
+  ufw allow 22/tcp >/dev/null
   ufw --force enable >/dev/null
-  ufw status | head -8
+  "$BASE/bin/ufw-cloudflare.sh"
+  cat > /etc/cron.d/orunei-ufw-cloudflare <<'CRON'
+# Cada lunes: añade rangos nuevos de Cloudflare al firewall.
+17 4 * * 1 root /opt/orunei-web/bin/ufw-cloudflare.sh >/dev/null 2>&1 || logger -t orunei-web "ufw-cloudflare fallo"
+CRON
+  chmod 644 /etc/cron.d/orunei-ufw-cloudflare
+  ufw status | grep -E "^22/tcp" || true
 fi
 
 echo "== 7. SSH solo con llave (solo si root ya tiene una llave autorizada)"
