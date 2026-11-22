@@ -53,6 +53,17 @@ cat > /etc/cron.d/orunei-web-health <<'CRON'
 CRON
 chmod 644 /etc/cron.d/orunei-web-health
 
+echo "== 4c. Avisos de episodios nuevos (cada 30 min)"
+if ! grep -q '^CRON_SECRET=' "$BASE/shared/.env"; then
+  echo "CRON_SECRET=$(head -c 24 /dev/urandom | base64 | tr -d '/+=')" >> "$BASE/shared/.env"
+  echo "CRON_SECRET generado en $BASE/shared/.env"
+fi
+cat > /etc/cron.d/orunei-episodes <<'CRON'
+# Avisa a los usuarios de episodios nuevos de los animes que siguen (y a Discord si hay webhook).
+*/30 * * * * root set -a; . /opt/orunei-web/shared/.env; set +a; [ -L /opt/orunei-web/current ] && curl -fsS -m 120 -X POST -H "x-cron-secret: $CRON_SECRET" http://127.0.0.1:3000/api/cron/episodes >/dev/null 2>&1 || logger -t orunei-web "cron episodios fallo"
+CRON
+chmod 644 /etc/cron.d/orunei-episodes
+
 echo "== 5. Swap (si no hay)"
 if [ "$(swapon --show --noheadings | wc -l)" = "0" ]; then
   fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile

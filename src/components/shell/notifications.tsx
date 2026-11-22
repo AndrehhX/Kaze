@@ -42,6 +42,9 @@ function describe(n: Notification): { text: string; href: string } {
       return { text: `${who} te invitó a “${n.payload.title ?? "una sala de cine"}”`, href: `/watch-parties/${n.payload.room_id}` };
     case "achievement":
       return { text: `Logro desbloqueado: ${n.payload.name ?? ""}`, href: "/profile" };
+    case "system":
+      // Avisos del sistema (p. ej. payload.type "new_episode"): texto y enlace vienen en el payload.
+      return { text: n.payload.message ?? "Actualización", href: n.payload.href?.startsWith("/") ? n.payload.href : "/" };
     default:
       return { text: n.payload.message ?? "Actualización", href: "/" };
   }
