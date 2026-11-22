@@ -120,4 +120,6 @@ Requisitos: Ubuntu 22.04/24.04, mínimo 1 vCPU / 2 GB.
 ## 6. Cambios hechos en la VPS (para referencia)
 - Usuario de sistema `orunei` · `/opt/orunei-web/` · `/etc/systemd/system/orunei-web.service` · `/etc/cron.d/orunei-web-health`.
 - Caddy: bloque `@web` para `www.orunei.sbs`, `orunei.sbs` y `vps.orunei.sbs` → `127.0.0.1:3000` (copias de seguridad en `/etc/caddy/Caddyfile.bak-*`).
+- `shared/.env`: `STREAM_RESOLVER_URL=http://127.0.0.1:3001/api/stream/resolve`. La web llama al resolver dentro de la VPS (~1 ms) en vez de pasar por Cloudflare (~70–95 ms). **Si en una mudanza el resolver queda en otra máquina, vuelve a poner `https://resolver.orunei.sbs/api/stream/resolve`.**
+- Servicio: heap de Node 384 MB, `MemoryHigh` 750 MB, `MemoryMax` 900 MB, `TimeoutStopSec` 10 s (un reinicio deja la web fuera ~12 s).
 - No se tocaron `kaze-resolver`, `panbot`, Redis, CasaOS, Docker ni Samba.
