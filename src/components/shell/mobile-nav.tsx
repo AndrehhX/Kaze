@@ -185,14 +185,7 @@ export function MobileNav() {
                 >
                   <n.icon className="size-5 text-primary-ink" aria-hidden />
                   <span>
-                    <span className="flex items-center gap-1.5 leading-tight text-xs font-semibold">
-                      {n.label}
-                      {"badge" in n && n.badge && (
-                        <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.2 text-[8px] font-semibold text-amber-300">
-                          {n.badge}
-                        </span>
-                      )}
-                    </span>
+                    <span className="block leading-tight text-xs font-semibold">{n.label}</span>
                     <span className="k-jp text-[0.625rem] text-muted">{n.jp}</span>
                   </span>
                 </Link>

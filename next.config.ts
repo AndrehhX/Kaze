@@ -145,11 +145,6 @@ const nextConfig: NextConfig = {
         destination: "/404",
         permanent: true,
       },
-      {
-        source: "/manga/:path+",
-        destination: "/manga",
-        permanent: false,
-      },
     ];
   },
   async headers() {
@@ -184,13 +179,6 @@ const nextConfig: NextConfig = {
         source: "/api/anilist/:path*",
         headers: [
           { key: "Cache-Control", value: "public, max-age=1800, s-maxage=3600, stale-while-revalidate=86400" },
-        ],
-      },
-      // Sección Manga en Mantenimiento: respuesta ultra ligera y cacheada en Edge
-      {
-        source: "/manga",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400" },
         ],
       },
       {

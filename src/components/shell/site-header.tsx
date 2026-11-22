@@ -38,14 +38,7 @@ export function SiteHeader() {
             const active = isActive(item, path);
             return (
               <Link key={item.href} href={item.href} className="k-nav-item" data-active={active} aria-current={active ? "page" : undefined}>
-                <span className="flex items-center gap-1.5">
-                  {item.label}
-                  {item.badge && (
-                    <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.2 text-[9px] font-semibold text-amber-300">
-                      {item.badge}
-                    </span>
-                  )}
-                </span>
+                {item.label}
                 {active && theme !== "cyber" && theme !== "sakura" && (
                   <motion.span
                     layoutId="nav-indicator"

@@ -31,7 +31,9 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
       <MobileNav />
       <CommandPalette />
       <CompletionCelebration />
-      {/* MangaAnnouncementModal desactivado temporalmente durante el mantenimiento de manga */}
+      <Suspense fallback={null}>
+        <MangaAnnouncementModal />
+      </Suspense>
       <Suspense fallback={null}>
         <DiscordAnnouncementModal />
       </Suspense>
