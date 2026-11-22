@@ -1,13 +1,17 @@
-# Caddyfile de referencia para la VPS. Cloudflare termina el HTTPS publico y habla
-# con la VPS por el puerto 80 (modo SSL "Flexible"). El hash del panel NO va en el repo:
+# Caddyfile de referencia para la VPS. El hash del panel NO va en el repo:
 # generalo con `caddy hash-password` en la VPS.
-:80 {
+{
+    # Cloudflare habla con la VPS por 80 (SSL "Flexible") o 443 (SSL "Full"). Sin redirecciones
+    # automaticas HTTP->HTTPS para no crear bucles con el modo Flexible.
+    auto_https disable_redirects
+}
+
+(orunei_routes) {
     # Web (Next.js standalone, servicio orunei-web)
     @web host www.orunei.sbs orunei.sbs vps.orunei.sbs
     handle @web {
         reverse_proxy 127.0.0.1:3000 {
-            # El visitante llega por HTTPS a Cloudflare; Next necesita saberlo
-            # para construir URLs y redirecciones correctas.
+            # El visitante llega por HTTPS a Cloudflare; Next necesita saberlo.
             header_up X-Forwarded-Proto https
         }
     }
@@ -28,4 +32,16 @@
     handle {
         respond "Not found" 404
     }
+}
+
+:80 {
+    import orunei_routes
+}
+
+# HTTPS de origen con certificado propio. Cloudflare en modo SSL "Full" lo acepta.
+# Para "Full (strict)" cambia `tls internal` por un Origin Certificate de Cloudflare:
+#   tls /etc/caddy/origin.pem /etc/caddy/origin.key
+www.orunei.sbs, orunei.sbs, vps.orunei.sbs, panel.orunei.sbs, resolver.orunei.sbs {
+    tls internal
+    import orunei_routes
 }
