@@ -23,7 +23,6 @@ import {
   Share2,
   Edit3,
   Sparkles,
-  Play,
   Globe,
   Tv,
   Gem,
@@ -47,7 +46,9 @@ import { useAchievements } from "./achievements";
 import type { LibraryEntry } from "@/lib/library/types";
 import { THEME_IDS, THEMES, isThemeId, type ThemeId } from "@/lib/themes";
 import { Avatar } from "@/components/shell/user-menu";
-import { EmptyState, SafeImage, Skeleton } from "@/components/ui/primitives";
+import { EmptyState, Skeleton } from "@/components/ui/primitives";
+import { LevelCard, ShowcaseList } from "@/components/profile/showcases";
+import { parseProfileCustom } from "@/lib/profile-custom";
 import { Dialog } from "@/components/ui/dialog";
 import { FriendButton } from "@/components/social/friends";
 import { ActivityList, useUserActivity } from "@/components/social/friends-activity";
@@ -270,12 +271,28 @@ export function ProfileShell({
     } catch {}
   };
 
+  const bg = parseProfileCustom(p.pinned_sections).background;
+
   return (
     <div
       data-theme={d.isMe ? undefined : pTheme}
-      className="bg-bg text-fg min-h-screen"
+      className={cn("text-fg min-h-screen", bg ? "relative isolate" : "bg-bg")}
       style={d.isMe ? undefined : { colorScheme: THEMES[pTheme].scheme }}
     >
+      {/* Fondo de perfil estilo Steam (imagen o GIF), fijo detrás de todo el contenido */}
+      {bg && (
+        <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 bg-bg">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={bg.url}
+            alt=""
+            className="size-full object-cover"
+            referrerPolicy="no-referrer"
+            style={bg.blur ? { filter: `blur(${bg.blur}px)`, transform: "scale(1.06)" } : undefined}
+          />
+          <div className="absolute inset-0" style={{ background: `color-mix(in srgb, var(--k-bg) ${bg.dim}%, transparent)` }} />
+        </div>
+      )}
       <div className="relative -mt-[var(--k-nav-h)] overflow-hidden">
         {/* Banner con paralaje */}
         <motion.div style={{ y: bannerY }} className="absolute inset-0 h-[min(48svh,420px)] overflow-hidden" aria-hidden>
@@ -423,9 +440,7 @@ export function ProfileOverview({ d }: { d: ProfileData }) {
   const activity = useUserActivity(d.guest || !isSupabaseConfigured ? undefined : d.profile?.id, 15);
   const { achievements } = useAchievements(d.entries, d.guest ? null : (d.profile?.id ?? null), d.isMe);
   const p = normalizeProfile(d.profile);
-  const favorites = d.entries.filter((e) => e.favorite);
-  const showcaseAnime = favorites[0] ?? null;
-  const watching = d.entries.filter((e) => e.status === "CURRENT").slice(0, 8);
+  const custom = useMemo(() => parseProfileCustom(p.pinned_sections), [p.pinned_sections]);
   const dna = useMemo(() => computeDna(d.entries), [d.entries]);
   const showAch = gamification || !d.isMe;
 
@@ -442,118 +457,25 @@ export function ProfileOverview({ d }: { d: ProfileData }) {
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_340px]">
       <div className="space-y-12">
-        {/* Estadísticas superiores */}
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            ["Títulos", dna.total],
-            ["Completados", dna.completed],
-            ["Episodios", formatNumber(dna.episodes)],
-            ["Nota media", dna.meanScore ? `${dna.meanScore}%` : "—"],
-          ].map(([k, v]) => (
-            <div key={String(k)} className="k-card p-4">
-              <dt className="k-label text-muted">{k}</dt>
-              <dd className="font-display mt-1 text-3xl font-bold">{v}</dd>
-            </div>
-          ))}
-        </dl>
-
-        {/* Vitrina de Obra Maestra (Showcase) */}
-        {showcaseAnime && (
-          <section aria-labelledby="showcase-h" className="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-r from-surface to-elevated p-6 shadow-xl">
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="k-poster relative aspect-[2/3] w-36 shrink-0 shadow-lg rounded-xl overflow-hidden">
-                <SafeImage src={showcaseAnime.media.cover ?? ""} alt={showcaseAnime.media.title} fill sizes="160px" className="object-cover" />
+        {/* Estadísticas superiores (se omiten si el usuario eligió el escaparate de estadísticas) */}
+        {!custom.showcases.some((x) => x.type === "stats") && (
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              ["Títulos", dna.total],
+              ["Completados", dna.completed],
+              ["Episodios", formatNumber(dna.episodes)],
+              ["Nota media", dna.meanScore ? `${dna.meanScore}%` : "—"],
+            ].map(([k, v]) => (
+              <div key={String(k)} className="k-card p-4">
+                <dt className="k-label text-muted">{k}</dt>
+                <dd className="font-display mt-1 text-3xl font-bold">{v}</dd>
               </div>
-              <div className="min-w-0 flex-1 space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="k-chip !bg-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
-                    <Sparkles className="size-3 inline mr-1" /> Vitrina Destacada
-                  </span>
-                  {showcaseAnime.score && (
-                    <span className="text-xs font-semibold text-accent">★ {showcaseAnime.score}/100</span>
-                  )}
-                </div>
-                <h3 className="font-display text-2xl font-bold text-fg truncate">{showcaseAnime.media.title}</h3>
-                <p className="line-clamp-2 text-sm text-muted">
-                  {showcaseAnime.media.genres?.join(" · ") || "Anime favorito"}
-                </p>
-                <div className="pt-2">
-                  <Link href={`/anime/${showcaseAnime.mediaId}`} className="k-btn k-btn-primary k-btn-sm gap-2">
-                    <Play className="size-4" /> Ver anime
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </section>
+            ))}
+          </dl>
         )}
 
-        {/* Animes Favoritos */}
-        <section aria-labelledby="fav-h">
-          <h2 id="fav-h" className="font-display text-section mb-4">
-            Animes favoritos ({favorites.length})
-          </h2>
-          {favorites.length ? (
-            <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
-              {favorites.slice(0, 12).map((e, i) => (
-                <li key={e.mediaId} style={{ rotate: `${((i % 3) - 1) * 1.5}deg` }} className="transition-transform hover:scale-105">
-                  <Link href={`/anime/${e.mediaId}`} className="k-poster relative block aspect-[2/3] shadow-md rounded-lg overflow-hidden" title={e.media.title}>
-                    <SafeImage src={e.media.cover ?? ""} alt={e.media.title} fill sizes="140px" className="object-cover" />
-                  </Link>
-                  <p className="mt-1 truncate text-xs text-center font-medium">{e.media.title}</p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="k-card p-6 text-center text-sm text-muted">
-              Aún no tienes animes en favoritos. Marca con el corazón cualquier anime en el catálogo para agregarlo aquí.
-            </div>
-          )}
-        </section>
-
-        {/* Personajes Favoritos */}
-        {(p.favorite_characters?.length ?? 0) > 0 && (
-          <section aria-labelledby="chars-h">
-            <h2 id="chars-h" className="font-display text-section mb-4">
-              Personajes favoritos
-            </h2>
-            <ul className="flex flex-wrap gap-4">
-              {p.favorite_characters?.slice(0, 12).map((c) => (
-                <li key={c.id} className="w-20 text-center">
-                  <div className="relative mx-auto size-20 overflow-hidden rounded-full bg-elevated ring-2 ring-line shadow-sm">
-                    {c.image && <SafeImage src={c.image} alt="" fill sizes="80px" className="object-cover" />}
-                  </div>
-                  <p className="mt-1.5 truncate text-xs font-medium">{c.name}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {/* Viendo ahora */}
-        {watching.length > 0 && (
-          <section aria-labelledby="watching-h">
-            <h2 id="watching-h" className="font-display text-section mb-4">
-              Viendo ahora
-            </h2>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {watching.map((e) => (
-                <li key={e.mediaId}>
-                  <Link href={`/anime/${e.mediaId}`} className="k-card flex items-center gap-3 p-2.5 transition-colors hover:border-primary">
-                    <div className="k-poster relative aspect-[2/3] w-12 shrink-0 rounded overflow-hidden">
-                      <SafeImage src={e.media.cover ?? ""} alt="" fill sizes="48px" className="object-cover" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{e.media.title}</p>
-                      <p className="text-xs text-muted">
-                        Episodio {e.progress}/{e.media.episodes ?? "?"}
-                      </p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        {/* Escaparates elegidos por el usuario (estilo Steam); por defecto: destacado, favoritos, personajes y viendo ahora */}
+        <ShowcaseList showcases={custom.showcases} d={{ entries: d.entries, achievements, dna, profile: p, badgeNode: (a) => <Badge key={a.id} a={a} /> }} />
 
         {/* Manga: lectura actual y favoritos (respeta la privacidad de listas vía RLS) */}
         <ProfileMangaShelf userId={d.guest ? null : (d.profile?.id ?? null)} isMe={d.isMe} />
@@ -561,6 +483,7 @@ export function ProfileOverview({ d }: { d: ProfileData }) {
 
       {/* Barra lateral */}
       <aside className="space-y-8">
+        {showAch && <LevelCard d={{ dna, achievements, entries: d.entries }} />}
         {showAch && (
           <section aria-labelledby="ach-h">
             <h2 id="ach-h" className="font-display text-lg mb-3">

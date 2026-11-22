@@ -11,6 +11,8 @@ export type Profile = {
   banner_url: string | null;
   avatar_frame?: string | null;
   custom_accent?: string | null;
+  /** Personalización estilo Steam (fondo, escaparates). Ver src/lib/profile-custom.ts. */
+  pinned_sections?: unknown;
   profile_theme: string;
   favorite_genres: string[];
   favorite_anime: number[];
