@@ -104,4 +104,7 @@ Sigue la guía completa y actualizada: **[GUIA_MUDANZA_VPS.md](GUIA_MUDANZA_VPS.
 - Redirecciones del servidor: usar `publicOrigin(req)` (`src/lib/public-origin.ts`), nunca `req.nextUrl.origin`: detrás de Caddy devuelve `https://localhost:3000`.
 - Desde Git Bash, los comandos `ssh vps '/opt/...'` necesitan `MSYS_NO_PATHCONV=1` delante; si no, Git Bash convierte `/opt/...` en una ruta de Windows. PowerShell no tiene ese problema.
 - Firewall: SSH (22) abierto; **80/443 solo desde los rangos de Cloudflare** (`/opt/orunei-web/bin/ufw-cloudflare.sh`, se actualiza cada lunes por `/etc/cron.d/orunei-ufw-cloudflare`). Entrar por la IP directa da timeout: así nadie puede saltarse Cloudflare.
+- **Avisos de episodios nuevos:** `/etc/cron.d/orunei-episodes` llama cada 30 min a `POST /api/cron/episodes` (por 127.0.0.1, con `CRON_SECRET` del `.env`, generado por el bootstrap). Prueba sin enviar nada: `?dryRun=1&window=1440`.
+  - **Discord (opcional):** en tu servidor de Discord → ajustes del canal → Integraciones → Webhooks → *Nuevo webhook* → copiar URL. Añádela a `/opt/orunei-web/shared/.env` como `DISCORD_EPISODES_WEBHOOK_URL=...` y reinicia (`systemctl restart orunei-web`). Publicará los estrenos populares con su portada.
+- Logros: la migración `supabase/migrations/20261122000000_more_achievements.sql` ya está aplicada en producción (20 logros).
 - No se tocaron `kaze-resolver`, `panbot`, Redis, CasaOS, Docker ni Samba.

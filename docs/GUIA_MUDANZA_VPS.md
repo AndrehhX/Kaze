@@ -39,8 +39,9 @@ ssh vps2 "hostname; free -m"
 ## 4. Preparar la VPS nueva (bootstrap)
 Desde la carpeta `crunchy`:
 ```powershell
-scp -r deploy vps2:/tmp/orunei-deploy
+ssh vps2 "mkdir -p /tmp/orunei-deploy"; scp deploy/* vps2:/tmp/orunei-deploy/
 ```
+> Copia el **contenido** de `deploy/`. Con `scp -r deploy ...`, si la carpeta ya existe en la VPS, se crea `orunei-deploy/deploy/` y se ejecuta un bootstrap viejo.
 ```powershell
 ssh vps2 "sed -i 's/\r$//' /tmp/orunei-deploy/*.sh /tmp/orunei-deploy/*.service && bash /tmp/orunei-deploy/bootstrap-vps.sh"
 ```
