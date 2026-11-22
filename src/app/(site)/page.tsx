@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { WrappedHint } from "@/components/wrapped/wrapped-hint";
 import { getHomeData } from "@/lib/anilist/service";
 import { HeroCarousel, HeroSkeleton } from "@/components/home/hero-carousel";
 import {
@@ -48,6 +49,7 @@ async function HomeContent() {
         />
       )}
       <HeroCarousel items={hero} kickerPrefix={seasonLabel} trendingIds={d.trending.map((t) => t.id)} />
+      <WrappedHint />
       <ContinueWatching />
       <LibraryNudge />
       <RailSection id="trending-h" title="Tendencias del momento" jp="急上昇" kicker="Ahora mismo en AniList" media={d.trending} ranked href="/discover?sort=TRENDING_DESC" />

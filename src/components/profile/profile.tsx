@@ -347,6 +347,11 @@ export function ProfileShell({
                   <Sparkles className="size-4 text-primary" aria-hidden /> Personalizar perfil
                 </Link>
               )}
+              {d.isMe && (
+                <Link href="/wrapped" className="k-btn k-btn-primary k-btn-sm">
+                  <Sparkles className="size-4" aria-hidden /> Mi Wrapped {new Date().getFullYear()}
+                </Link>
+              )}
               {!d.isMe && <FriendButton target={{ id: p.id, username: p.username, display_name: p.display_name, avatar_url: p.avatar_url }} />}
               <button className="k-btn k-btn-ghost k-btn-icon k-btn-sm" onClick={share} aria-label="Compartir perfil">
                 <Share2 className="size-4" />
