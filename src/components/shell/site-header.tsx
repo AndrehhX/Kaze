@@ -99,7 +99,8 @@ export function SiteHeader() {
             href={APK_DOWNLOAD_URL}
             rel="noopener noreferrer"
             download="kaze.apk"
-            className="k-btn k-btn-ghost k-btn-icon k-btn-sm sm:hidden"
+            // En móvil va en el menú inferior (mobile-nav): aquí hacía que la barra se saliera de la pantalla.
+            className="k-btn k-btn-ghost k-btn-icon k-btn-sm hidden"
             aria-label="Descargar App Android"
             title="Descargar Kaze APK"
           >
@@ -139,7 +140,8 @@ export function SiteHeader() {
             href={DISCORD_INVITE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="k-btn k-btn-ghost k-btn-icon k-btn-sm sm:hidden text-[#5865F2] border border-[#5865F2]/25"
+            // En móvil Discord ya está en el menú inferior (mobile-nav).
+            className="k-btn k-btn-ghost k-btn-icon k-btn-sm hidden text-[#5865F2] border border-[#5865F2]/25"
             aria-label="Discord Oficial"
             title="Discord Oficial"
           >
