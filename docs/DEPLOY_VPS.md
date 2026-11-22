@@ -99,6 +99,9 @@ Sigue la guía completa y actualizada: **[GUIA_MUDANZA_VPS.md](GUIA_MUDANZA_VPS.
 - Usuario de sistema `orunei` · `/opt/orunei-web/` · `/etc/systemd/system/orunei-web.service` · `/etc/cron.d/orunei-web-health`.
 - Caddy: bloque `@web` para `www.orunei.sbs`, `orunei.sbs` y `vps.orunei.sbs` → `127.0.0.1:3000` (copias de seguridad en `/etc/caddy/Caddyfile.bak-*`).
 - `shared/.env`: `STREAM_RESOLVER_URL=http://127.0.0.1:3001/api/stream/resolve`. La web llama al resolver dentro de la VPS (~1 ms) en vez de pasar por Cloudflare (~70–95 ms). **Si en una mudanza el resolver queda en otra máquina, vuelve a poner `https://resolver.orunei.sbs/api/stream/resolve`.**
-- Servicio: heap de Node 384 MB, `MemoryHigh` 750 MB, `MemoryMax` 900 MB, `TimeoutStopSec` 10 s (un reinicio deja la web fuera ~12 s).
+- Servicio: heap de Node 512 MB, `MemoryHigh` 850 MB, `MemoryMax` 1000 MB, `TimeoutStopSec` 10 s (un reinicio deja la web fuera ~12 s).
+- **Memoria (22/11/2026):** la web se caía por OOM cada ~12 min. Con heap snapshots y pruebas de 600 fichas se vio que en Next 16.4 el **`partialPrefetching`** dejaba colgados los datos de cada página (~0,6 MB por ficha). Ahora está **desactivado**, la caché ISR en memoria está apagada (`cacheMaxMemorySize: 0`, las páginas siguen en disco y en Cloudflare) y `"use cache"` usa un gestor propio con tope real en bytes (`cache-handlers/use-cache-memory.cjs`). **No reactivar `partialPrefetching` ni quitar el gestor propio sin repetir la prueba de memoria.**
+- Redirecciones del servidor: usar `publicOrigin(req)` (`src/lib/public-origin.ts`), nunca `req.nextUrl.origin`: detrás de Caddy devuelve `https://localhost:3000`.
+- Desde Git Bash, los comandos `ssh vps '/opt/...'` necesitan `MSYS_NO_PATHCONV=1` delante; si no, Git Bash convierte `/opt/...` en una ruta de Windows. PowerShell no tiene ese problema.
 - Firewall: SSH (22) abierto; **80/443 solo desde los rangos de Cloudflare** (`/opt/orunei-web/bin/ufw-cloudflare.sh`, se actualiza cada lunes por `/etc/cron.d/orunei-ufw-cloudflare`). Entrar por la IP directa da timeout: así nadie puede saltarse Cloudflare.
 - No se tocaron `kaze-resolver`, `panbot`, Redis, CasaOS, Docker ni Samba.
