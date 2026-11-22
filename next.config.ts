@@ -30,13 +30,24 @@ const csp = [
 const nextConfig: NextConfig = {
   // Servidor autónomo para la VPS (deploy/). En Vercel no tiene efecto.
   output: "standalone",
-  // Sin caché en memoria (ISR y "use cache"): en la VPS la LRU en memoria crecía ~18 MB/min
-  // con miles de fichas de anime y el proceso se caía por OOM cada ~12 min. Las páginas y los
-  // datos siguen cacheados en disco (.next/cache) y en Cloudflare.
-  cacheMaxMemorySize: 0,
+  // Memoria en la VPS (medido con heap snapshots, ver docs/DEPLOY_VPS.md):
+  // - La caché ISR en memoria mide mal el tamaño de cada página (no cuenta los datos RSC) y
+  //   crecía ~0,7 MB por ficha de anime sin tope real → se desactiva; las páginas siguen en
+  //   disco (.next/cache) y en Cloudflare.
+  // - Con 0, el gestor por defecto de "use cache" no lee el stream de cada entrada y retiene la
+  //   petición entera → se usa un gestor propio que sí lo lee y tiene tope real en bytes.
+  ...(process.env.VERCEL
+    ? {}
+    : {
+        cacheMaxMemorySize: 0,
+        cacheHandlers: { default: require.resolve("./cache-handlers/use-cache-memory.cjs") },
+      }),
   compress: true,
   cacheComponents: true,
-  partialPrefetching: true,
+  // Desactivado: en Next 16.4 el prefetch por segmentos deja colgados el `segmentData` y el
+  // estado pospuesto de cada página renderizada en el servidor. Con miles de fichas de anime
+  // la memoria crecía ~0,6 MB por página hasta caer por OOM. Sin él se estabiliza (~124 MB).
+  partialPrefetching: false,
   poweredByHeader: false,
   devIndicators: false,
   experimental: {

@@ -29,6 +29,18 @@ Write-Host "== Preparando paquete standalone..."
 Copy-Item -Recurse -Force ".next\static" (Join-Path $sa ".next\static")
 if (Test-Path "public") { Copy-Item -Recurse -Force "public" (Join-Path $sa "public") }
 
+# Next guarda la ruta del gestor de cache (cacheHandlers) con barras de Windows al compilar
+# en este PC ("..\\cache-handlers\\..."); en Linux esa ruta no existe. Se pasa a "/".
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+foreach ($f in @((Join-Path $sa "server.js"), (Join-Path $sa ".next\required-server-files.json"))) {
+  if (Test-Path $f) {
+    $txt = [IO.File]::ReadAllText($f)
+    $fixed = $txt -replace '\.\.\\\\cache-handlers\\\\', '../cache-handlers/'
+    if ($fixed -ne $txt) { [IO.File]::WriteAllText($f, $fixed, $utf8); Write-Host "Ruta de cacheHandlers normalizada en $(Split-Path $f -Leaf)" }
+  }
+}
+if (Select-String -Path (Join-Path $sa "server.js") -Pattern 'cache-handlers\\\\' -Quiet) { throw "Quedan rutas de cacheHandlers con barras de Windows" }
+
 $release = Get-Date -Format "yyyyMMdd-HHmmss"
 $tgz = Join-Path $env:TEMP "orunei-web-$release.tgz"
 tar -czf $tgz -C $sa .
