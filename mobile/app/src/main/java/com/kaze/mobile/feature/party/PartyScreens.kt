@@ -124,9 +124,9 @@ fun WatchPartiesScreen(onBack: () -> Unit, onOpenRoom: (code: String, animeId: I
             } else {
                 SectionHeader("Unirse con un código", modifier = Modifier.padding(start = 0.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.weight(1f)) { AuthField("Código de sala", code, { code = it.uppercase().filter { ch -> ch.isLetterOrDigit() }.take(6) }) }
+                    Box(Modifier.weight(1f)) { AuthField("Enlace o código de la sala", code, { code = it.trim().take(200) }) }
                     Spacer(Modifier.width(8.dp))
-                    KazeButton("Join", { vm.join(code) }, enabled = code.length == 6, loading = busy)
+                    KazeButton("Unirme", { vm.join(code) }, enabled = code.length >= 6, loading = busy)
                 }
             }
             SectionHeader("Crear una sala", modifier = Modifier.padding(start = 0.dp))
@@ -164,13 +164,13 @@ fun WatchPartiesScreen(onBack: () -> Unit, onOpenRoom: (code: String, animeId: I
 
 @Composable
 private fun PartyRow(p: Party, onClick: () -> Unit) {
-    KazeCard(Modifier.fillMaxWidth(), onClick = onClick, onClickLabel = "Open room ${p.code}") {
+    KazeCard(Modifier.fillMaxWidth(), onClick = onClick, onClickLabel = "Abrir sala ${p.animeTitle}") {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(44.dp, 62.dp).clip(Kaze.style.posterShape)) { AnimeImage(p.animeCover, null, Modifier.fillMaxSize()) }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(p.animeTitle, style = Kaze.type.titleSmall, color = Kaze.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("Room ${p.code} · EP ${p.episode} · ${if (p.isPlaying) "playing" else "paused"}", style = Kaze.type.bodySmall, color = Kaze.colors.textMuted)
+                Text("Episodio ${p.episode} · ${if (p.isPlaying) "reproduciendo" else "en pausa"}", style = Kaze.type.bodySmall, color = Kaze.colors.textMuted)
             }
         }
     }
@@ -199,7 +199,7 @@ fun WatchPartyRoomScreen(onBack: () -> Unit, vm: PartyRoomViewModel = hiltViewMo
     Box(Modifier.fillMaxSize().imePadding()) {
         Column(Modifier.fillMaxSize()) {
             KazeTopBar(
-                title = party?.let { "Room ${it.code}" } ?: "Watch party",
+                title = party?.animeTitle ?: "Sala de cine",
                 onBack = onBack,
                 subtitle = party?.let { "${it.animeTitle} · EP ${it.episode}" },
                 actions = {
@@ -207,7 +207,7 @@ fun WatchPartyRoomScreen(onBack: () -> Unit, vm: PartyRoomViewModel = hiltViewMo
                         KazeIconButton(Icons.Filled.PersonAdd, "Invite friends", { inviting = true })
                         KazeIconButton(Icons.Filled.Share, "Compartir enlace de sala", {
                             party?.let { p ->
-                                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "Watch ${p.animeTitle} with me on KAZE: kaze://party/${p.code} (code ${p.code})")
+                                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "Mira ${p.animeTitle} conmigo en KAZE: https://www.orunei.sbs/watch-parties/${p.id}")
                                 context.startActivity(Intent.createChooser(send, "Compartir sala").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                             }
                         })
@@ -218,7 +218,7 @@ fun WatchPartyRoomScreen(onBack: () -> Unit, vm: PartyRoomViewModel = hiltViewMo
             when {
                 ui.loading -> { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { KazeSpinner() }; return@Column }
                 ui.error != null && party == null -> { ErrorState(ui.error!!); return@Column }
-                ui.ended -> { EmptyState("Esta sala ha finalizado", "The host closed it or it expired after 6 hours."); return@Column }
+                ui.ended -> { EmptyState("Esta sala ha finalizado", "El anfitrión la cerró o pasaron más de 6 horas."); return@Column }
             }
             if (transport?.isDemo == true) Text("Local demo — not connected to anyone. The sync engine runs against an in-memory server.", style = Kaze.type.bodySmall, color = c.warning, modifier = Modifier.background(c.warning.copy(alpha = 0.12f)).fillMaxWidth().padding(10.dp))
             if (connection == ConnectionState.RECONNECTING) Text("Connection lost — reconnecting and resyncing…", style = Kaze.type.bodySmall, color = c.text, modifier = Modifier.background(c.error.copy(alpha = 0.2f)).fillMaxWidth().padding(10.dp).semantics { liveRegion = LiveRegionMode.Polite })

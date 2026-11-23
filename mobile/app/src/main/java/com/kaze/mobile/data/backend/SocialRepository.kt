@@ -12,7 +12,6 @@ import com.kaze.mobile.domain.social.Block
 import com.kaze.mobile.domain.social.Comment
 import com.kaze.mobile.domain.social.Discussion
 import com.kaze.mobile.domain.social.FriendRequest
-import com.kaze.mobile.domain.social.Friendship
 import com.kaze.mobile.domain.social.Like
 import com.kaze.mobile.domain.social.Profile
 import com.kaze.mobile.domain.social.Review
@@ -86,30 +85,73 @@ class SocialRepository @Inject constructor(private val sb: SupabaseClient) {
     }
 
     // ------------------------------------------------------------ friends
+    // En producción la amistad vive en UNA tabla: `friendships(id, requester_id, addressee_id,
+    // status = pending|accepted)`. Es lo mismo que usa la web (src/lib/social.ts y friends.tsx).
+    @Serializable
+    private data class FriendRow(
+        val id: String,
+        @kotlinx.serialization.SerialName("requester_id") val requesterId: String,
+        @kotlinx.serialization.SerialName("addressee_id") val addresseeId: String,
+        val status: String,
+        @kotlinx.serialization.SerialName("created_at") val createdAt: String = "",
+    )
+
+    private val friendRowSer = ListSerializer(FriendRow.serializer())
+    private val friendCols = "id,requester_id,addressee_id,status,created_at"
+
+    private suspend fun profilesByIds(ids: Collection<String>): Map<String, Profile> {
+        if (ids.isEmpty()) return emptyMap()
+        return sb.select("profiles", "id=in.(${ids.joinToString(",") { enc(it) }})&select=*", profileSer).associateBy { it.id }
+    }
+
+    private fun pairFilter(other: String) =
+        "or=(and(requester_id.eq.$me,addressee_id.eq.${enc(other)}),and(requester_id.eq.${enc(other)},addressee_id.eq.$me))"
+
+    private suspend fun friendIds(): List<String> =
+        sb.select("friendships", "or=(requester_id.eq.$me,addressee_id.eq.$me)&status=eq.accepted&select=$friendCols", friendRowSer)
+            .map { if (it.requesterId == me) it.addresseeId else it.requesterId }.distinct()
+
     suspend fun friends(): Outcome<List<Profile>> = outcomeOf {
-        val rows = sb.select(
-            "friendships",
-            "or=(user_a.eq.$me,user_b.eq.$me)&select=user_a,user_b,created_at,a:profiles!friendships_user_a_fkey(*),b:profiles!friendships_user_b_fkey(*)",
-            ListSerializer(Friendship.serializer()),
-        )
-        rows.mapNotNull { it.other(me) }.sortedBy { it.name.lowercase() }
+        profilesByIds(friendIds()).values.sortedBy { it.name.lowercase() }
     }
 
-    suspend fun incomingRequests(): Outcome<List<FriendRequest>> = outcomeOf {
-        sb.select("friend_requests", "receiver_id=eq.$me&status=eq.pending&select=*,sender:profiles!friend_requests_sender_id_fkey(*)&order=created_at.desc", ListSerializer(FriendRequest.serializer()))
+    private suspend fun pending(incoming: Boolean): List<FriendRequest> {
+        val col = if (incoming) "addressee_id" else "requester_id"
+        val rows = sb.select("friendships", "$col=eq.$me&status=eq.pending&select=$friendCols&order=created_at.desc", friendRowSer)
+        val people = profilesByIds(rows.flatMap { listOf(it.requesterId, it.addresseeId) }.toSet())
+        return rows.map { FriendRequest(it.id, it.requesterId, it.addresseeId, it.status, it.createdAt, people[it.requesterId], people[it.addresseeId]) }
     }
 
-    suspend fun outgoingRequests(): Outcome<List<FriendRequest>> = outcomeOf {
-        sb.select("friend_requests", "sender_id=eq.$me&status=eq.pending&select=*,receiver:profiles!friend_requests_receiver_id_fkey(*)&order=created_at.desc", ListSerializer(FriendRequest.serializer()))
+    suspend fun incomingRequests(): Outcome<List<FriendRequest>> = outcomeOf { pending(incoming = true) }
+    suspend fun outgoingRequests(): Outcome<List<FriendRequest>> = outcomeOf { pending(incoming = false) }
+
+    suspend fun sendFriendRequest(userId: String) = outcomeOf {
+        val existing = sb.select("friendships", "${pairFilter(userId)}&select=$friendCols", friendRowSer).firstOrNull()
+        when {
+            existing == null ->
+                sb.insert("friendships", mapOf("requester_id" to me, "addressee_id" to userId, "status" to "pending").toJsonBody(), returning = false)
+            // Si la otra persona ya me había enviado una, enviar la mía equivale a aceptarla.
+            existing.status == "pending" && existing.addresseeId == me ->
+                sb.update("friendships", "id=eq.${enc(existing.id)}", mapOf("status" to "accepted", "updated_at" to java.time.Instant.now().toString()).toJsonBody())
+            else -> Unit
+        }
+        Unit
     }
 
-    suspend fun sendFriendRequest(userId: String) = outcomeOf { sb.rpc("send_friend_request", mapOf("target" to userId).toJsonBody()); Unit }
-    suspend fun respond(requestId: String, accept: Boolean) = outcomeOf { sb.rpc("respond_friend_request", mapOf("request_id" to requestId, "accept" to accept).toJsonBody()); Unit }
-    suspend fun cancelRequest(requestId: String) = outcomeOf {
-        sb.update("friend_requests", "id=eq.${enc(requestId)}&sender_id=eq.$me&status=eq.pending", mapOf("status" to "cancelled").toJsonBody()); Unit
+    suspend fun respond(requestId: String, accept: Boolean) = outcomeOf {
+        if (accept) sb.update("friendships", "id=eq.${enc(requestId)}&addressee_id=eq.$me", mapOf("status" to "accepted", "updated_at" to java.time.Instant.now().toString()).toJsonBody())
+        else sb.delete("friendships", "id=eq.${enc(requestId)}&addressee_id=eq.$me")
+        Unit
     }
-    suspend fun removeFriend(userId: String) = outcomeOf { sb.rpc("remove_friend", mapOf("other" to userId).toJsonBody()); Unit }
-    suspend fun block(userId: String) = outcomeOf { sb.rpc("block_user", mapOf("target" to userId).toJsonBody()); Unit }
+
+    suspend fun cancelRequest(requestId: String) = outcomeOf { sb.delete("friendships", "id=eq.${enc(requestId)}&requester_id=eq.$me") }
+    suspend fun removeFriend(userId: String) = outcomeOf { sb.delete("friendships", pairFilter(userId)) }
+
+    suspend fun block(userId: String) = outcomeOf {
+        runCatching { sb.insert("user_blocks", mapOf("blocker_id" to me, "blocked_id" to userId).toJsonBody(), returning = false) }
+        sb.delete("friendships", pairFilter(userId))
+    }
+
     suspend fun unblock(userId: String) = outcomeOf { sb.delete("user_blocks", "blocker_id=eq.$me&blocked_id=eq.${enc(userId)}") }
 
     /** La web no expone los amigos de otros usuarios (RLS), así que no hay amigos en común que calcular. */
@@ -117,14 +159,16 @@ class SocialRepository @Inject constructor(private val sb: SupabaseClient) {
     suspend fun mutualFriends(userId: String): Outcome<List<Profile>> = Outcome.Success(emptyList())
 
     suspend fun blocked(): Outcome<List<Block>> = outcomeOf {
-        sb.select("user_blocks", "blocker_id=eq.$me&select=blocked_id,blocked:profiles!user_blocks_blocked_id_fkey(*)", ListSerializer(Block.serializer()))
+        val ids = sb.select("user_blocks", "blocker_id=eq.$me&select=blocked_id", ListSerializer(Block.serializer())).map { it.blockedId }
+        val people = profilesByIds(ids)
+        ids.map { Block(it, people[it]) }
     }
 
     suspend fun relationship(userId: String): Outcome<Relationship> = outcomeOf {
-        val friends = sb.rpc("are_friends", mapOf("a" to me, "b" to userId).toJsonBody()).trim() == "true"
-        val pending = sb.select("friend_requests", "status=eq.pending&or=(and(sender_id.eq.$me,receiver_id.eq.${enc(userId)}),and(sender_id.eq.${enc(userId)},receiver_id.eq.$me))&select=*", ListSerializer(FriendRequest.serializer())).firstOrNull()
+        val row = sb.select("friendships", "${pairFilter(userId)}&select=$friendCols", friendRowSer).firstOrNull()
         val blocked = sb.select("user_blocks", "blocker_id=eq.$me&blocked_id=eq.${enc(userId)}&select=blocked_id", ListSerializer(Block.serializer())).isNotEmpty()
-        Relationship(friends, pending?.takeIf { it.senderId == me }, pending?.takeIf { it.receiverId == me }, blocked)
+        val req = row?.takeIf { it.status == "pending" }?.let { FriendRequest(it.id, it.requesterId, it.addresseeId, it.status, it.createdAt) }
+        Relationship(row?.status == "accepted", req?.takeIf { it.senderId == me }, req?.takeIf { it.receiverId == me }, blocked)
     }
 
     data class Relationship(val isFriend: Boolean, val outgoing: FriendRequest?, val incoming: FriendRequest?, val blockedByMe: Boolean)
@@ -134,9 +178,11 @@ class SocialRepository @Inject constructor(private val sb: SupabaseClient) {
     // publicar reseñas, igual que en la web; la app solo lo lee.
     private val activitySelect = "id,user_id,kind,media_id,media_snapshot,payload,created_at"
 
+    /** Solo la actividad de tus amigos (antes salía la de cualquier perfil público). */
     suspend fun friendsActivity(limit: Int = 40): Outcome<List<Activity>> = outcomeOf {
-        // RLS devuelve solo filas de amigos que comparten actividad (y las nuestras); quitamos las nuestras.
-        sb.select("activity_events", "user_id=neq.$me&select=$activitySelect,user:profiles!activity_events_user_id_fkey(*)&order=created_at.desc&limit=$limit", ListSerializer(Activity.serializer()))
+        val ids = friendIds()
+        if (ids.isEmpty()) return@outcomeOf emptyList()
+        sb.select("activity_events", "user_id=in.(${ids.joinToString(",") { enc(it) }})&select=$activitySelect,user:profiles!activity_events_user_id_fkey(*)&order=created_at.desc&limit=$limit", ListSerializer(Activity.serializer()))
     }
 
     suspend fun userActivity(userId: String) = outcomeOf {

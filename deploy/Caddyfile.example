@@ -20,6 +20,18 @@
         header Cache-Control "public, max-age=300"
         file_server
     }
+    # Versión publicada de la app (la escribe deploy/publish-apk.ps1): las apps instaladas la
+    # consultan al abrirse y muestran "Nueva versión disponible".
+    @appversion {
+        host www.orunei.sbs orunei.sbs vps.orunei.sbs
+        path /app-version.json
+    }
+    handle @appversion {
+        root * /opt/orunei-web/shared/downloads
+        header Content-Type "application/json; charset=utf-8"
+        header Cache-Control "no-cache, max-age=0"
+        file_server
+    }
     # Web (Next.js standalone, servicio orunei-web)
     @web host www.orunei.sbs orunei.sbs vps.orunei.sbs
     handle @web {

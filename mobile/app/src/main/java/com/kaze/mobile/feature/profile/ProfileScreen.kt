@@ -303,7 +303,8 @@ fun EditLocalProfileScreen(onBack: () -> Unit, vm: ProfileViewModel = hiltViewMo
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Field("Display name", name, { name = it.take(40) })
             Field("Bio", bio, { bio = it.take(300) }, singleLine = false)
-            Text("Profile theme", style = Kaze.type.title, color = c.text)
+            Text("Color de tu perfil", style = Kaze.type.title, color = c.text)
+            Text("Solo cambia cómo ven tu perfil. El tema de la app está en Ajustes → Apariencia.", style = Kaze.type.bodySmall, color = c.textMuted)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 KazeChip("Match app", selected = theme == null, onClick = { theme = null })
                 KazeThemeId.entries.forEach { t -> KazeChip(t.label, selected = theme == t, onClick = { theme = t }) }

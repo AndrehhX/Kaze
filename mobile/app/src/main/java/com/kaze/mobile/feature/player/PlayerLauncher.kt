@@ -14,6 +14,12 @@ data class PlaybackRequest(
     val totalEpisodes: Int?,
 )
 
+private tailrec fun Context.findActivity(): android.app.Activity? = when (this) {
+    is android.app.Activity -> this
+    is android.content.ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
 object PlayerLauncher {
     const val EXTRA_ANIME_ID = "anime_id"
     const val EXTRA_EPISODE = "episode"
@@ -30,7 +36,9 @@ object PlayerLauncher {
             putExtra(EXTRA_COVER, request.coverUrl)
             putExtra(EXTRA_BANNER, request.bannerUrl)
             putExtra(EXTRA_TOTAL, request.totalEpisodes ?: -1)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            // Mismo "task" que la app: así el reproductor no aparece como otra app en recientes.
+            // Solo hace falta una tarea nueva si se lanza desde fuera de una Activity.
+            if (context.findActivity() == null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         context.startActivity(intent)
     }

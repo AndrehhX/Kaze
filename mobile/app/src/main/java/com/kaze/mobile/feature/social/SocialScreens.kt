@@ -404,7 +404,8 @@ fun EditProfileScreen(onBack: () -> Unit, vm: EditProfileViewModel = hiltViewMod
             Field("Bio", bio, { bio = it.take(300) }, singleLine = false)
             Field("Avatar image URL (https)", avatar, { avatar = it.take(500) })
             Field("Banner image URL (https)", banner, { banner = it.take(500) })
-            Text("Profile theme", style = Kaze.type.title, color = c.text)
+            Text("Color de tu perfil", style = Kaze.type.title, color = c.text)
+            Text("Solo cambia cómo ven tu perfil. El tema de la app está en Ajustes → Apariencia.", style = Kaze.type.bodySmall, color = c.textMuted)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 KazeChip("None", selected = theme == null, onClick = { theme = null })
                 KazeThemeId.entries.forEach { t -> KazeChip(t.label, selected = theme == t.name, onClick = { theme = t.name }) }

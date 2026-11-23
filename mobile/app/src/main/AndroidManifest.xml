@@ -53,8 +53,7 @@
         <activity
             android:name=".feature.player.PlayerActivity"
             android:exported="false"
-            android:launchMode="singleTask"
-            android:taskAffinity="com.kaze.mobile.player"
+            android:launchMode="singleTop"
             android:supportsPictureInPicture="true"
             android:resizeableActivity="true"
             android:theme="@style/Theme.Kaze.Player"

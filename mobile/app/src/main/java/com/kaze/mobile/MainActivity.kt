@@ -84,6 +84,7 @@ class MainActivity : ComponentActivity() {
                         startOnboarding = !p.onboardingDone,
                         social = social,
                     )
+                    com.kaze.mobile.feature.update.UpdatePrompt()
                 }
             }
         }

@@ -55,6 +55,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -224,7 +225,11 @@ fun RouletteScreen(onBack: () -> Unit, onOpenAnime: (Anime, String?) -> Unit, vm
     val offset = remember { Animatable(0f) }
     var landed by remember { mutableStateOf(false) }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(s.spinId) {
+        // Precargar todas las portadas del sorteo para que aparezcan mientras gira.
+        val loader = coil3.SingletonImageLoader.get(context)
+        s.pool.forEach { a -> a.coverUrl?.let { loader.enqueue(coil3.request.ImageRequest.Builder(context).data(it).build()) } }
         val winner = s.winnerIndex ?: return@LaunchedEffect
         landed = false
         val loops = 4
@@ -247,6 +252,9 @@ fun RouletteScreen(onBack: () -> Unit, onOpenAnime: (Anime, String?) -> Unit, vm
                 val first = floor(center).toInt() - 3
                 for (i in first..first + 6) {
                     if (i < 0) continue
+                    // key(i): cada póster conserva su imagen mientras se desliza. Sin la clave, cada
+                    // fotograma reasignaba otra portada al mismo hueco y la carga se reiniciaba sin fin.
+                    key(i) {
                     val a = pool[i % pool.size]
                     val dx = (i - center) * pxW * 1.08f
                     val dist = kotlin.math.abs(i - center)
@@ -263,6 +271,7 @@ fun RouletteScreen(onBack: () -> Unit, onOpenAnime: (Anime, String?) -> Unit, vm
                             }
                             .clip(Kaze.style.posterShape)
                     ) { AnimeImage(a.coverUrl, null, Modifier.fillMaxSize(), placeholderColor = parseHexColor(a.color)) }
+                    }
                 }
                 // Selection frame
                 Box(
