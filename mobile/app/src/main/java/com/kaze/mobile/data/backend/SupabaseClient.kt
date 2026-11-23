@@ -224,7 +224,9 @@ class SupabaseClient @Inject constructor(
 
     private suspend fun authed(method: String, path: String, body: String?, prefer: String? = null): String {
         requireConfigured()
-        val token = accessToken() ?: throw KazeException(KazeError.Unauthorized)
+        // Las lecturas públicas (comentarios, reseñas, perfiles) funcionan sin sesión con la clave
+        // anónima, igual que en la web; escribir siempre exige sesión.
+        val token = accessToken() ?: if (method == "GET") null else throw KazeException(KazeError.Unauthorized)
         return request(method, path, body, token, prefer)
     }
 
