@@ -216,22 +216,21 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
         <div className={cn("mx-auto grid gap-6", theater ? "max-w-[1800px] px-0 sm:px-4" : "container-k lg:grid-cols-[1fr_340px]")}>
           <motion.div layout={!reduced} transition={m.spring} className="min-w-0">
             {isLoading || !grant ? (
-              <Skeleton className="aspect-video w-full !rounded-[var(--k-radius-panel)]" />
-            ) : (
-              // Contenedor estable para la pantalla completa: el <Player> se vuelve a montar en cada
-              // episodio (key), pero este div no. Así cambiar de capítulo no saca de pantalla completa
-              // ni deja el navegador "atascado" en ella.
-              <div data-player-host className="player-fs-host">
-                <Player
-                  key={grant.episode.id}
-                  grant={grant}
-                  onNavigateEpisode={go}
-                  onAdaptCodec={handleAdaptToH264}
-                  isAdaptedCodec={codecPreference === "h264"}
-                  onFirstPlay={handleFirstPlay}
-                  onComplete={handleComplete}
-                />
+              // data-fs-player: si la página está en pantalla completa, el hueco del reproductor la
+              // ocupa entera también mientras carga el episodio siguiente.
+              <div data-fs-player className="aspect-video w-full">
+                <Skeleton className="h-full w-full !rounded-[var(--k-radius-panel)]" />
               </div>
+            ) : (
+              <Player
+                key={grant.episode.id}
+                grant={grant}
+                onNavigateEpisode={go}
+                onAdaptCodec={handleAdaptToH264}
+                isAdaptedCodec={codecPreference === "h264"}
+                onFirstPlay={handleFirstPlay}
+                onComplete={handleComplete}
+              />
             )}
             {grant && (
               <div className={cn("mt-5", theater && "container-k")}>

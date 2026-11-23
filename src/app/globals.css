@@ -1131,10 +1131,23 @@ html[data-motion="reduce"] *::after {
   }
 }
 
-/* Pantalla completa del reproductor: el contenedor estable ocupa toda la pantalla y el
-   reproductor (que se vuelve a montar en cada episodio) lo llena. */
+/* Pantalla completa del reproductor. El elemento en pantalla completa es el layout de
+   /watch/[animeId] (persiste entre episodios); dentro, el reproductor —o su esqueleto mientras
+   carga el episodio siguiente— se fija a toda la pantalla y tapa el resto de la página. */
 .player-fs-host:fullscreen {
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
   background: #000;
+}
+.player-fs-host:fullscreen [data-fs-player] {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none;
+  aspect-ratio: auto;
+  border-radius: 0 !important;
+  transform: none !important;
 }

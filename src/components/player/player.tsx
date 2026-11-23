@@ -696,6 +696,7 @@ export function Player({
       )}
       <div
         ref={wrapRef}
+        data-fs-player
         tabIndex={0}
         role="region"
         aria-label={`Video player: ${grant.episode.title}`}

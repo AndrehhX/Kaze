@@ -70,8 +70,9 @@ ssh vps2 "tar -xzf /tmp/migracion.tgz -C / && chown orunei:orunei /opt/orunei-we
 ssh vps2 "apt-get update && apt-get install -y redis-server && systemctl enable --now redis-server && npm install -g pm2"
 ```
 ```powershell
-ssh vps2 "pm2 start /opt/kaze-resolver/server.js --name kaze-resolver --cwd /opt/kaze-resolver && pm2 save && pm2 startup systemd -u root --hp /root"
+ssh vps2 'SEGMENT_SIGNING_KEY="$(cat /opt/kaze-resolver/.segment-key)" pm2 start /opt/kaze-resolver/server.js --name kaze-resolver --cwd /opt/kaze-resolver && pm2 save && pm2 startup systemd -u root --hp /root'
 ```
+> El resolver también sirve la mitad de los trozos de video (`/api/stream/seg`, ver `deploy/resolver/segment-proxy.js`). Necesita la clave `/opt/kaze-resolver/.segment-key`, que viaja dentro de `/opt/kaze-resolver` en el paquete del paso 5. Es la misma clave que el secreto `SEGMENT_SIGNING_KEY` del Worker `orunei-stream`: no la cambies en un solo lado. Si el resolver no responde, el Worker deja de repartir y sirve todos los trozos él solo.
 Comprueba el resolver:
 ```powershell
 ssh vps2 "curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3001/"
