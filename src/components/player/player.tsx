@@ -380,14 +380,27 @@ export function Player({
   }, [grant.episode.id]);
 
   // ── Fullscreen ─────────────────────────────────────────────────────
+  // La pantalla completa se pide sobre el contenedor estable de la página ([data-player-host]),
+  // que sobrevive al cambio de episodio. Si no existe (otras páginas), sobre el propio reproductor.
+  const fullscreenTarget = useCallback(
+    () => (wrapRef.current?.closest("[data-player-host]") as HTMLElement | null) ?? wrapRef.current,
+    [],
+  );
   useEffect(() => {
-    const onFs = () => setFullscreen(document.fullscreenElement === wrapRef.current);
+    const onFs = () => {
+      const fsEl = document.fullscreenElement;
+      const isFs = !!fsEl && !!wrapRef.current && fsEl.contains(wrapRef.current);
+      setFullscreen(isFs);
+      // Tras cambiar de episodio en pantalla completa, el teclado sigue funcionando.
+      if (isFs) wrapRef.current?.focus({ preventScroll: true });
+    };
+    onFs(); // el episodio nuevo puede montarse ya en pantalla completa
     document.addEventListener("fullscreenchange", onFs);
     return () => document.removeEventListener("fullscreenchange", onFs);
   }, []);
 
   const toggleFullscreen = useCallback(async () => {
-    const el = wrapRef.current;
+    const el = fullscreenTarget();
     if (!el) return;
     try {
       if (document.fullscreenElement) await document.exitFullscreen();
@@ -396,7 +409,7 @@ export function Player({
     } catch {
       toast.error("Fullscreen isn't available here");
     }
-  }, [video]);
+  }, [video, fullscreenTarget]);
 
   const togglePip = useCallback(async () => {
     if (!video) return;
@@ -460,16 +473,43 @@ export function Player({
 
   // ── Skip markers ───────────────────────────────────────────────────
   const marker: TimingMarker | undefined = (asset.markers || []).find((m) => time >= m.start && time < m.end - 1);
+
+  /**
+   * Salta un marcador. Si el ending dura hasta el final del video, NO busca el último segundo
+   * (el stream HLS se quedaba "cargando" ahí): da el episodio por terminado y pasa al siguiente.
+   */
+  const skipMarker = useCallback(
+    (mk: TimingMarker, auto: boolean) => {
+      skippedMarkers.current.add(`${mk.kind}-${mk.start}`);
+      const d = video && Number.isFinite(video.duration) ? video.duration : duration;
+      const creditsToEnd = mk.kind === "outro" && d > 0 && mk.end >= d - 3;
+      if (!creditsToEnd) {
+        seekTo(mk.end);
+        return;
+      }
+      if (!hasTriggeredComplete.current) {
+        hasTriggeredComplete.current = true;
+        onComplete?.();
+      }
+      video?.pause();
+      persistNow(true);
+      const goNext = !locked && isLoggedIn && (!auto || prefs.autoNext);
+      if (goNext && grant.next && onNavigateEpisode) onNavigateEpisode(grant.next.id);
+      else if (goNext && grant.nextSeason) window.location.href = `/watch/${grant.nextSeason.id}/1`;
+      else if (!isLoggedIn) setShowAuthGate(true);
+    },
+    [video, duration, seekTo, locked, isLoggedIn, prefs.autoNext, grant.next, grant.nextSeason, onNavigateEpisode, onComplete, persistNow],
+  );
+
   useEffect(() => {
     if (!marker || locked) return;
     const key = `${marker.kind}-${marker.start}`;
     const auto = (marker.kind === "intro" && prefs.autoSkipIntro) || (marker.kind === "outro" && prefs.autoSkipOutro);
     if (auto && !skippedMarkers.current.has(key)) {
-      skippedMarkers.current.add(key);
-      seekTo(marker.end);
+      skipMarker(marker, true);
       toast(`Saltando ${marker.kind === "intro" ? "intro" : marker.kind === "outro" ? "ending" : "resumen"}`);
     }
-  }, [marker, prefs.autoSkipIntro, prefs.autoSkipOutro, seekTo, locked]);
+  }, [marker, prefs.autoSkipIntro, prefs.autoSkipOutro, skipMarker, locked]);
 
   // ── Auto-next countdown ────────────────────────────────────────────
   useEffect(() => {
@@ -664,7 +704,8 @@ export function Player({
         onMouseMove={poke}
         onTouchStart={poke}
         className={cn(
-          "group/player @container relative aspect-video w-full select-none overflow-hidden bg-black outline-none",
+          "group/player @container relative w-full select-none overflow-hidden bg-black outline-none",
+          fullscreen ? "h-full" : "aspect-video",
           fullscreen ? "" : theme === "cyber" ? "k-chamfer" : "rounded-[var(--k-radius-panel)]",
           !showUi && "cursor-none",
         )}
@@ -767,10 +808,7 @@ export function Player({
               exit={{ opacity: 0, x: 20, scale: 0.95 }}
               transition={{ duration: 0.2 }}
               className="k-btn k-btn-primary absolute bottom-24 right-4 z-[25] sm:right-6 shadow-2xl flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider backdrop-blur"
-              onClick={() => {
-                skippedMarkers.current.add(`${marker.kind}-${marker.start}`);
-                seekTo(marker.end);
-              }}
+              onClick={() => skipMarker(marker, false)}
             >
               <span>{marker.kind === "intro" ? "Saltar intro" : marker.kind === "outro" ? "Saltar ending" : "Saltar resumen"}</span>
               <SkipForward className="size-4" aria-hidden />
@@ -1148,7 +1186,7 @@ export function Player({
                         aria-current={ep.id === grant.episode.id ? "true" : undefined}
                       >
                         <span className="w-6 text-center font-mono text-white/60">{ep.number}</span>
-                        <span className="flex-1">
+                        <span className="min-w-0 flex-1">
                           <span className="block truncate">{ep.title}</span>
                           <span className="block h-0.5 w-full overflow-hidden rounded bg-white/15">
                             <span className="block h-full bg-primary" style={{ width: `${p ? (p.completed ? 100 : (p.position / p.duration) * 100) : 0}%` }} />

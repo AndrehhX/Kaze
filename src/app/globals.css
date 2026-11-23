@@ -1130,3 +1130,11 @@ html[data-motion="reduce"] *::after {
     filter: blur(0);
   }
 }
+
+/* Pantalla completa del reproductor: el contenedor estable ocupa toda la pantalla y el
+   reproductor (que se vuelve a montar en cada episodio) lo llena. */
+.player-fs-host:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+}
