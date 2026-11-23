@@ -145,6 +145,10 @@ interface PlaybackDao {
 
     @Query("DELETE FROM playback_progress WHERE animeId = :animeId")
     suspend fun clearAnime(animeId: Int)
+
+    /** Filas cambiadas desde [since] (ms): lo que falta subir a la nube. */
+    @Query("SELECT * FROM playback_progress WHERE updatedAt > :since ORDER BY updatedAt ASC LIMIT 200")
+    suspend fun updatedSince(since: Long): List<PlaybackProgressEntity>
 }
 
 @Dao

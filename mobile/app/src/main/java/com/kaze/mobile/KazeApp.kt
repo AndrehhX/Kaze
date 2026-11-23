@@ -10,6 +10,7 @@ import coil3.disk.DiskCache
 import coil3.disk.directory
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import com.kaze.mobile.data.backend.CloudSyncManager
 import com.kaze.mobile.notifications.KazeRefreshWorker
 import com.kaze.mobile.notifications.NotificationHelper
 import dagger.hilt.android.HiltAndroidApp
@@ -22,6 +23,7 @@ class KazeApp : Application(), Configuration.Provider, SingletonImageLoader.Fact
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var notifications: NotificationHelper
     @Inject lateinit var okHttp: OkHttpClient
+    @Inject lateinit var cloudSync: CloudSyncManager
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
@@ -30,6 +32,7 @@ class KazeApp : Application(), Configuration.Provider, SingletonImageLoader.Fact
         super.onCreate()
         notifications.createChannels()
         KazeRefreshWorker.schedule(this)
+        cloudSync.start()
     }
 
     /** Memory-conscious image pipeline: 20% of app heap, 200 MB disk cache of posters/banners. */

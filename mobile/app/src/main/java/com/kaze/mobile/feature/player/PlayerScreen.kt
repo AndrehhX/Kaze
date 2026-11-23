@@ -372,6 +372,7 @@ private fun InfoPanel(ui: PlayerUi, vm: PlayerViewModel, chrome: PlayerChrome, m
             )
         }
         KazeButton("Ver página del anime", chrome.onOpenAnime, kind = KazeButtonKind.Ghost)
+        r?.let { EpisodeCommentsSection(it) }
         Text("Controles y gestos", style = Kaze.type.title, color = c.text)
         Text(
             "Doble toque izq/der: ∓10 s · Deslizar horizontal: adelantar/retroceder · Deslizar vertical izq: brillo, der: volumen · Pellizcar: ajustar pantalla · Mantener presionado: velocidad 2×.",

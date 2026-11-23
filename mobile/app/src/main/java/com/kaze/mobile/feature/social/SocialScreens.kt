@@ -395,7 +395,7 @@ fun EditProfileScreen(onBack: () -> Unit, vm: EditProfileViewModel = hiltViewMod
         var bio by rememberSaveable { mutableStateOf(p.bio) }
         var avatar by rememberSaveable { mutableStateOf(p.avatarUrl.orEmpty()) }
         var banner by rememberSaveable { mutableStateOf(p.bannerUrl.orEmpty()) }
-        var theme by rememberSaveable { mutableStateOf(p.profileTheme) }
+        var theme by rememberSaveable { mutableStateOf(p.profileTheme?.let { KazeThemeId.fromKey(it).name }) }
         var genres by rememberSaveable { mutableStateOf(p.favoriteGenres.toSet()) }
         val c = Kaze.colors
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {

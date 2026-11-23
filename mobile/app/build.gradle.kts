@@ -26,8 +26,8 @@ android {
         applicationId = "com.kaze.mobile"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
 
@@ -36,11 +36,27 @@ android {
         buildConfigField("String", "ANILIST_CLIENT_ID", "\"${localValue("ANILIST_CLIENT_ID")}\"")
     }
 
+    // Firma de la versión que se publica. La llave vive fuera del repo; su ruta y claves van en
+    // local.properties (KAZE_KEYSTORE, KAZE_KEYSTORE_PASSWORD, KAZE_KEY_ALIAS, KAZE_KEY_PASSWORD).
+    // Debe ser SIEMPRE la misma llave: si cambia, los usuarios tendrían que desinstalar la app.
+    signingConfigs {
+        create("release") {
+            val path = localValue("KAZE_KEYSTORE")
+            if (path.isNotEmpty()) {
+                storeFile = file(path)
+                storePassword = localValue("KAZE_KEYSTORE_PASSWORD")
+                keyAlias = localValue("KAZE_KEY_ALIAS")
+                keyPassword = localValue("KAZE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (localValue("KAZE_KEYSTORE").isNotEmpty()) signingConfig = signingConfigs.getByName("release")
         }
         debug {
             applicationIdSuffix = ""
@@ -84,6 +100,9 @@ ksp {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
+    // Instala los perfiles de arranque de Compose/AndroidX también en APKs instaladas fuera de Play:
+    // la app arranca y hace scroll más rápido desde la primera vez.
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

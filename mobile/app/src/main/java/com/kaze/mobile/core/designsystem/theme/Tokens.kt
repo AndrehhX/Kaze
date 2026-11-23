@@ -25,8 +25,14 @@ enum class KazeThemeId(
     CYBER_PULSE("Cyber Pulse", "High-tech anime cyberpunk", true),
     ZEN_STUDIO("Zen Studio", "Japanese editorial minimalism", false);
 
+    val webKey: String get() = name.substringBefore('_').lowercase()
+
     companion object {
-        fun fromKey(key: String?): KazeThemeId = entries.firstOrNull { it.name == key } ?: MIDNIGHT_NEON
+        /** Acepta el nombre local (MIDNIGHT_NEON) o la clave de la web (midnight). */
+        fun fromKey(key: String?): KazeThemeId = entries.firstOrNull { it.name == key || it.webKey == key } ?: MIDNIGHT_NEON
+
+        /** Clave que guarda la web en `profiles.profile_theme` (no admite nulos). */
+        fun webKeyOf(key: String?): String = fromKey(key).webKey
     }
 }
 

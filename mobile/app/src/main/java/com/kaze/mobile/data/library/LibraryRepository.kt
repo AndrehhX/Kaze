@@ -20,6 +20,7 @@ import com.kaze.mobile.domain.model.LibraryEntry
 import com.kaze.mobile.domain.model.LibraryExport
 import com.kaze.mobile.domain.model.LibraryStatus
 import com.kaze.mobile.domain.model.WatchProgress
+import com.kaze.mobile.domain.social.MediaSnap
 import com.kaze.mobile.domain.sync.ConflictChoice
 import com.kaze.mobile.domain.sync.RemoteEntry
 import com.kaze.mobile.domain.sync.SyncConflict
@@ -156,16 +157,23 @@ class LibraryRepository @Inject constructor(
     // ---------------- Sync application (never silent overwrites) ----------------
 
     /** Applies remote values for entries the planner marked as safe to pull. */
-    suspend fun applyRemote(remote: List<RemoteEntry>, metadata: Map<Int, Anime>) = db.withTransaction {
+    suspend fun applyRemote(
+        remote: List<RemoteEntry>,
+        metadata: Map<Int, Anime>,
+        snapshots: Map<Int, MediaSnap> = emptyMap(),
+    ) = db.withTransaction {
         val now = clock.nowMillis()
         remote.forEach { r ->
             val existing = dao.get(r.animeId)?.toDomain()
             val anime = metadata[r.animeId]
+            val snap = snapshots[r.animeId]
             val base = existing ?: LibraryEntry(
-                animeId = r.animeId, title = anime?.displayTitle ?: "Anime #${r.animeId}", addedAt = now,
-                coverUrl = anime?.coverUrl, bannerUrl = anime?.bannerUrl, color = anime?.color, genres = anime?.genres.orEmpty(),
-                tags = anime?.tags.orEmpty().take(12).map { it.name }, studios = anime?.studios.orEmpty(), format = anime?.format,
-                totalEpisodes = anime?.episodes, communityScore = anime?.score, popularity = anime?.popularity, seasonYear = anime?.seasonYear,
+                animeId = r.animeId, title = anime?.displayTitle ?: snap?.title ?: "Anime #${r.animeId}", addedAt = now,
+                coverUrl = anime?.coverUrl ?: snap?.cover, bannerUrl = anime?.bannerUrl ?: snap?.banner, color = anime?.color ?: snap?.color,
+                genres = anime?.genres ?: snap?.genres.orEmpty(),
+                tags = anime?.tags.orEmpty().take(12).map { it.name }, studios = anime?.studios.orEmpty(), format = anime?.format ?: snap?.format,
+                totalEpisodes = anime?.episodes ?: snap?.episodes, communityScore = anime?.score, popularity = anime?.popularity,
+                seasonYear = anime?.seasonYear ?: snap?.year,
             )
             dao.upsert(
                 base.copy(
@@ -312,6 +320,28 @@ class ProgressRepository @Inject constructor(
     }
 
     suspend fun clear(animeId: Int) = dao.clearAnime(animeId)
+
+    // ---------------- Sincronización con la web (`watch_progress`) ----------------
+
+    suspend fun changedSince(sinceMs: Long): List<PlaybackProgressEntity> = dao.updatedSince(sinceMs)
+
+    /** Aplica progreso de la nube solo si es más reciente que el guardado en el teléfono. */
+    suspend fun applyRemote(
+        animeId: Int, episode: Int, title: String, cover: String?, banner: String?,
+        positionMs: Long, durationMs: Long, completed: Boolean, updatedAtMs: Long,
+    ): Boolean {
+        val local = dao.get("$animeId:$episode")
+        if (local != null && local.updatedAt >= updatedAtMs) return false
+        dao.upsert(
+            PlaybackProgressEntity(
+                "$animeId:$episode", animeId, episode,
+                local?.animeTitle?.takeIf { it.isNotBlank() && !it.startsWith("Anime #") } ?: title,
+                local?.coverUrl ?: cover, local?.bannerUrl ?: banner,
+                positionMs, durationMs, completed, updatedAtMs,
+            )
+        )
+        return true
+    }
 
     private companion object {
         const val MIN_RESUMABLE_MS = 10_000L
