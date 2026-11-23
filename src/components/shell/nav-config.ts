@@ -17,8 +17,8 @@ export const PRIMARY_NAV: NavItem[] = [
 export const PROFILE_NAV: NavItem = { href: "/profile", label: "Perfil", jp: "プロフィール", icon: UserRound };
 
 export const APK_DOWNLOAD_URL =
-  process.env.NEXT_PUBLIC_APK_URL ||
-  "https://raw.githubusercontent.com/AndrehhX/Kaze/479c81ed2d8880b949b7ff2219b97c409f75065b/public/kaze.apk";
+  // La APK la sirve Caddy desde la VPS (/opt/orunei-web/shared/downloads/kaze.apk), fuera de los deploys.
+  process.env.NEXT_PUBLIC_APK_URL || "/kaze.apk";
 
 export const DISCORD_INVITE_URL =
   process.env.NEXT_PUBLIC_DISCORD_URL || "https://discord.gg/eYpw7aVUdp";

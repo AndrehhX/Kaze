@@ -1,9 +1,5 @@
 import type { NextConfig } from "next";
 
-const apkDownloadUrl =
-  process.env.NEXT_PUBLIC_APK_URL ||
-  "https://raw.githubusercontent.com/AndrehhX/Kaze/479c81ed2d8880b949b7ff2219b97c409f75065b/public/kaze.apk";
-
 const isDev = process.env.NODE_ENV !== "production";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseOrigin = supabaseUrl ? new URL(supabaseUrl).origin : "";
@@ -98,11 +94,6 @@ const nextConfig: NextConfig = {
           },
         ],
         destination: "/robots.txt",
-        permanent: false,
-      },
-      {
-        source: "/kaze.apk",
-        destination: apkDownloadUrl,
         permanent: false,
       },
       {

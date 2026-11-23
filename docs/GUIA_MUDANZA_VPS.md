@@ -10,6 +10,7 @@
 | --- | --- | --- |
 | Web Next.js | `/opt/orunei-web/` (servicio `orunei-web`) | `bootstrap-vps.sh` + `deploy-vps.ps1` |
 | Variables de la web | `/opt/orunei-web/shared/.env` | Se copia de la VPS vieja |
+| APK de la app móvil | `/opt/orunei-web/shared/downloads/kaze.apk` (Caddy la sirve en `/kaze.apk`) | Se copia de la VPS vieja |
 | Resolver de streams | `/opt/kaze-resolver/` (PM2 `kaze-resolver`, puerto 3001) | Se copia la carpeta y se arranca con PM2 |
 | Redis | servicio `redis-server` (caché del resolver) | Se instala nuevo; la caché se rellena sola |
 | Bot de Discord | `/opt/panbot/` (PM2 `panbot`) | Se copia la carpeta y se arranca con PM2 |
@@ -54,7 +55,7 @@ Instala o deja listo: Node 22, Caddy, el usuario `orunei`, el servicio `orunei-w
 ## 5. Copiar archivos de la VPS vieja a la nueva
 Pasa por tu PC en 3 comandos. No uses una tubería `|` de PowerShell entre los dos `ssh`: corrompe los archivos binarios.
 ```powershell
-ssh vps "tar -czf /tmp/migracion.tgz /opt/orunei-web/shared/.env /etc/caddy/Caddyfile /opt/kaze-resolver /opt/panbot"
+ssh vps "tar -czf /tmp/migracion.tgz /opt/orunei-web/shared/.env /opt/orunei-web/shared/downloads /etc/caddy/Caddyfile /opt/kaze-resolver /opt/panbot"
 ```
 ```powershell
 scp vps:/tmp/migracion.tgz $env:TEMP\migracion.tgz; scp $env:TEMP\migracion.tgz vps2:/tmp/migracion.tgz
