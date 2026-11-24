@@ -1,240 +1,177 @@
 <p align="center">
-  <img src="assets/kaze-hero.svg" alt="KAZE · 風 — Anime & Manga Platform" width="100%">
+  <img src="docs/readme/hero.svg" alt="KAZE · 風 — Plataforma de anime y manga en español" width="100%">
 </p>
 
 <p align="center">
-  <a href="https://www.orunei.sbs" target="_blank">
-    <img src="assets/btn-web.svg" width="31%" alt="Plataforma Web (orunei.sbs)">
-  </a>
-  <a href="https://www.orunei.sbs/kaze.apk">
-    <img src="assets/btn-apk.svg" width="31%" alt="Descargar APK v0.3.0">
-  </a>
-  <a href="#cuenta-e-integraciones">
-    <img src="assets/btn-anilist.svg" width="31%" alt="AniList OAuth 2.0 Sync">
-  </a>
+  <a href="https://www.orunei.sbs"><img src="docs/readme/btn-web.svg" alt="Abrir la web — www.orunei.sbs" width="32%"></a>
+  <a href="https://www.orunei.sbs/kaze.apk"><img src="docs/readme/btn-apk.svg" alt="Descargar la app — Android APK 0.3.0" width="32%"></a>
+  <a href="docs/ARCHITECTURE.md"><img src="docs/readme/btn-docs.svg" alt="Documentación — arquitectura y despliegue" width="32%"></a>
 </p>
 
 <p align="center">
-  <img src="assets/divider-slash.svg" width="100%" alt="Divider">
+  <img src="docs/readme/stats.svg" alt="2 plataformas, 4 temas visuales, 36 tablas con RLS y 113 pruebas automáticas" width="100%">
 </p>
 
-## Descripción
+## Descripción <sub>概要</sub>
 
-**KAZE** (dominio **Orunei**) es una plataforma de alto rendimiento para descubrir, ver y seguir anime y manga. Diseñada como un ecosistema híbrido compuesto por una **aplicación web moderna** en Next.js 16 y una **aplicación Android nativa** en Kotlin con Jetpack Compose.
+**KAZE** es una plataforma hispanohablante para descubrir, ver y seguir anime y manga, publicada en **[orunei.sbs](https://www.orunei.sbs)**. Se compone de una aplicación web en **Next.js 16** y una aplicación **Android nativa** en Kotlin que comparten una misma cuenta y una misma base de datos en **Supabase**: la biblioteca, el progreso de cada episodio, los comentarios, la actividad social y las salas de visionado se mantienen sincronizados entre dispositivos.
 
-Ambas interfaces comparten una única cuenta centralizada y base de datos reactiva en Supabase: biblioteca de favoritos, progreso en tiempo real de cada episodio, comentarios sincronizados, actividad social y salas de cine (*Watch Parties*) se mantienen al unísono entre dispositivos sin fricción.
+El catálogo y los metadatos provienen de la API pública de **AniList**, y la lectura de manga, de **MangaDex**. KAZE no aloja archivos de vídeo ni de manga: actúa como cliente e indexador de fuentes externas.
 
-El catálogo y metadatos se sincronizan desde la API pública de **AniList**. La plataforma no aloja contenido multimedia propio: opera como cliente de visualización e indexador distribuido de alta velocidad.
+## Características <sub>特徴</sub>
 
 <p align="center">
-  <img src="assets/divider-slash.svg" width="100%" alt="Divider">
+  <img src="docs/readme/feature-anime.svg" alt="Anime: catálogo y reproductor" width="49%">
+  <img src="docs/readme/feature-manga.svg" alt="Manga: lector de manga" width="49%">
 </p>
-
 <p align="center">
-  <img src="assets/t-features.svg" width="100%" alt="Características">
+  <img src="docs/readme/feature-social.svg" alt="Comunidad: social en tiempo real" width="49%">
+  <img src="docs/readme/feature-android.svg" alt="Android: app nativa" width="49%">
 </p>
 
-<p align="center">
-  <img src="assets/card-anime.svg" width="49%" alt="Anime Streaming HLS">
-  <img src="assets/card-manga.svg" width="49%" alt="Lector de Manga Webtoon">
-</p>
-
-<p align="center">
-  <img src="assets/card-community.svg" width="49%" alt="Comunidad y Watch Parties">
-  <img src="assets/card-android.svg" width="49%" alt="App Android Nativa Kotlin">
-</p>
-
-### Desglose Funcional
+<details>
+<summary><b>Detalle de funciones</b></summary>
 
 #### Anime
-- **Catálogo inteligente:** Búsqueda instantánea con filtros combinados por género, temporada, año, formato y estado de emisión, con fichas detalladas (reparto de personajes, tráiler en alta definición y árbol de relaciones).
-- **Reproductor HLS adaptativo:** Multi-servidor con conmutación por error (*auto-failover*) imperceptible, selector de audio dual (Japonés original subtitulado o Doblaje Latino) y omisión inteligente de Opening/Ending mediante integración con AniSkip.
-- **Continuar viendo:** Progreso exacto por segundo almacenado en Supabase y retomable al instante desde la web o el móvil.
-- **Calendario y notificaciones:** Agenda semanal de emisiones y alertas push programadas para nuevos episodios en emisión.
+- **Catálogo** con búsqueda, filtros combinables (género, temporada, año, formato, estado), temporadas y calendario semanal de emisión con hora local.
+- **Fichas** con personajes, staff, relaciones, tráiler, reseñas y discusiones.
+- **Reproductor HLS** (hls.js) con varios servidores, audio original o doblaje latino cuando existe, subtítulos estilizables, salto de opening y ending (AniSkip) y pantalla completa estable entre episodios.
+- **Continuar viendo** agrupado por anime: reanuda el episodio a medias o propone el siguiente.
+- **Recomendaciones explicables**: combinan los géneros de la biblioteca y del historial real, las recomendaciones de la comunidad de AniList y las secuelas pendientes; cada sugerencia indica su motivo.
+- **Avisos de nuevos episodios** de las series que sigue el usuario, con publicación opcional en Discord.
 
 #### Manga
-- **Lector de alto rendimiento:** Modos de lectura configurables: doble página (RTL japonés tradicional o LTR occidental) y tira vertical continua con scroll suave optimizado para Webtoons y Manhwas.
-- **Anime-to-Manga Story Bridge:** Algoritmo de mapeo que calcula con exactitud el capítulo del manga correspondiente al episodio final de cada temporada para continuar la historia de inmediato.
-- **Biblioteca local:** Marcadores, historial de lectura y caché local para lectura rápida sin cuellos de botella.
+- Capítulos en español latino, español e inglés a través de MangaDex, con reintentos y caché.
+- Lector en modo libro (derecha a izquierda) y en tira vertical para webtoons, con zoom y modo de ahorro de datos.
+- **Puente anime → manga**: indica en qué capítulo continuar la historia tras terminar el anime.
+- Para obras con licencia sin capítulos disponibles, la ficha enlaza a las plataformas oficiales registradas en AniList.
 
-#### Comunidad & Social
-- **Perfiles personalizables:** Nivel de usuario, vitrina de insignias y logros desbloqueables, personalización de paleta y temas visuales.
-- **Actividad social:** Sistema de seguimiento de amigos, reseñas comunitarias con puntuación, hilos de debate y comentarios anclados por episodio.
-- **Watch Parties en tiempo real:** Salas de reproducción sincronizada con presencia activa, chat en vivo y algoritmo de compensación de latencia entre espectadores.
-- **KAZE Wrapped anual:** Recapitulación interactiva con estadísticas anuales de minutos reproducidos y géneros favoritos, con tarjeta gráfica para compartir.
+#### Comunidad
+- Perfiles personalizables (estilo, vitrina, listas, privacidad por secciones) y logros.
+- Amigos, bloqueos, reseñas con puntuación, discusiones y comentarios por episodio, con reportes y moderación.
+- **Watch parties**: reproducción sincronizada por el anfitrión con corrección de deriva, presencia y chat en vivo.
+- **KAZE Wrapped**: resumen anual de lo visto, con tarjeta para compartir.
 
-#### Cuenta e Integraciones
-- **AniList OAuth 2.0:** Sincronización bidireccional de listas. Los tokens de autenticación se almacenan cifrados en base de datos con AES-256-GCM.
-- **Autenticación segura:** Registro por email mediante Supabase Auth con confirmación y control de sesiones activas.
+#### Cuenta
+- Registro por correo con Supabase Auth; los datos del modo invitado se pueden importar al crear la cuenta.
+- Vinculación con AniList mediante OAuth 2.0; el token se guarda cifrado con AES-256-GCM y nunca llega al navegador.
+- Cuatro temas visuales completos (Midnight, Sakura, Cyber y Zen) con tipografía, color y movimiento propios.
 
-<p align="center">
-  <img src="assets/divider-slash.svg" width="100%" alt="Divider">
-</p>
+</details>
 
-<p align="center">
-  <img src="assets/t-architecture.svg" width="100%" alt="Arquitectura de Sistema">
-</p>
+## Arquitectura <sub>構成</sub>
 
 <p align="center">
-  <img src="assets/kaze-architecture.svg" width="100%" alt="Arquitectura Distribuida de KAZE">
+  <img src="docs/readme/architecture.svg" alt="Arquitectura de KAZE: clientes, Cloudflare, VPS, servicios externos y Supabase" width="100%">
 </p>
 
-### Principios de la Arquitectura
+- **Cloudflare** es la única puerta de entrada: DNS, caché de páginas, firewall y el Worker `orunei-stream`, que actúa como proxy de los flujos HLS.
+- **VPS propia** (Ubuntu): Caddy acepta tráfico únicamente desde los rangos de Cloudflare; la web corre como build *standalone* de Next.js bajo systemd, con despliegue por versiones y vuelta atrás automática si la nueva versión no arranca.
+- **Resolución de vídeo**: el servicio `kaze-resolver` (PM2 + Redis) localiza las fuentes; el Worker reparte los segmentos con la VPS, que sirve uno de cada dos mediante enlaces firmados con HMAC, y asume todo el tráfico si la VPS no responde.
+- **Supabase** concentra cuentas y datos de usuario con **Row Level Security** en todas las tablas: cada cliente solo accede a lo que sus permisos y la privacidad del perfil permiten.
+- **AniList** se consulta desde el servidor con caché de Next.js (`"use cache"`), de modo que el número de peticiones no crece con las visitas.
 
-1. **Borde Cloudflare:** Frente unificado para DNS, proxy inverso con SSL estricto, compresión Brotli y firewall perimetral (WAF). La VPS rechaza cualquier petición cuyo origen no pertenezca a los rangos de IP certificados de Cloudflare.
-2. **Web Standalone en VPS:** Next.js compilado en modo *standalone* administrado por `systemd`, garantizando consumo acotado de RAM y despliegues con cero tiempo de inactividad (*zero-downtime*) y reversión automática ante fallos.
-3. **Persistencia y Seguridad Supabase:** Base de datos PostgreSQL blindada con **Row Level Security (RLS)** a nivel de fila: ningún usuario ni cliente no autenticado puede consultar datos fuera de su propio alcance.
-4. **Proxy de Video Cloudflare Worker:** Procesador de manifiestos M3U8 en el borde que elimina bloqueos CORS y referrers restrictivos de los proveedores de video.
-5. **App Android Desacoplada:** La app nativa interactúa de forma directa con Supabase y AniList GraphQL, consumiendo la API web únicamente para la resolución dinámica de streams HLS.
+Más detalle en [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-<p align="center">
-  <img src="assets/divider-slash.svg" width="100%" alt="Divider">
-</p>
+## Tecnologías <sub>技術</sub>
 
-<p align="center">
-  <img src="assets/t-stack.svg" width="100%" alt="Stack Tecnológico">
-</p>
+| Capa | Tecnologías |
+| :--- | :--- |
+| **Web** | Next.js 16 (App Router, Cache Components), React 19, TypeScript |
+| **Interfaz** | Tailwind CSS v4, Motion, Lucide, tokens de diseño por tema |
+| **Estado y datos** | Zustand, TanStack Query, Zod |
+| **Vídeo** | hls.js en la web · Media3 / ExoPlayer en Android |
+| **Backend** | Supabase: PostgreSQL con RLS, Auth, Realtime y Storage |
+| **Android** | Kotlin 2.1, Jetpack Compose, Hilt, Room, DataStore, Media3 |
+| **Infraestructura** | VPS Ubuntu, Caddy, systemd, PM2, Redis, Cloudflare (Workers, caché, WAF) |
+| **Calidad** | Vitest, Testing Library, PGlite, Playwright, axe, ESLint |
+| **Analítica** | Umami (sin cookies de seguimiento) |
 
-<p align="center">
-  <img src="assets/kaze-stack.svg" width="100%" alt="Arsenal Tecnológico de KAZE">
-</p>
+## Estructura del repositorio
 
-| Capa | Tecnologías | Propósito |
-| :--- | :--- | :--- |
-| **Frontend Web** | Next.js 16 (App Router, `use cache`), React 19, TypeScript | Renderizado híbrido ultrarrápido y Server Actions |
-| **Estilos & UI** | Tailwind CSS v4, Motion, Lucide Icons | Sistema de tokens de diseño Midnight Neon y animaciones |
-| **Estado & Caché** | Zustand, TanStack Query v5, Zod | Reactividad client-side y validación estricta de esquemas |
-| **Reproducción de Video** | hls.js (Web), Media3 / ExoPlayer (Android) | Streaming adaptativo HLS con buffer dinámico y PiP |
-| **Backend & Base de Datos** | Supabase: PostgreSQL con RLS, Auth, Realtime | Autenticación, persistencia atómica y canales WebSocket |
-| **App Android Nativa** | Kotlin 2.0, Jetpack Compose, Room, Hilt, Coil | Cliente móvil con base de datos local y sincronización |
-| **Infraestructura & Edge** | VPS Ubuntu, Caddy 2, systemd, Cloudflare Workers | Servidor web HTTP/3, proxy de streams y caché de borde |
-| **Testing & Calidad** | Vitest, Testing Library, PGlite, Playwright + axe | Pruebas unitarias, de integración, E2E y accesibilidad |
-
-### Estructura del Repositorio
-
-```
+```text
 crunchy/
 ├── src/
-│   ├── app/              # Rutas (App Router): (site), (auth), api, sitemap, robots
-│   ├── components/       # UI por dominio: anime, player, manga, social, profile, shell…
-│   ├── lib/              # Lógica: anilist, supabase, streaming, logros, wrapped, seguridad
-│   ├── stores/           # Estado global (Zustand)
-│   └── types/
-├── mobile/               # App Android (Kotlin + Compose), ver mobile/README.md
-├── supabase/migrations/  # Esquema SQL, políticas RLS y funciones
-├── deploy/               # Scripts de despliegue en VPS y publicación de la APK
-├── cache-handlers/       # Gestor de caché propio para "use cache" (memoria acotada)
-├── docs/                 # Arquitectura, despliegue, mudanza de VPS y manga
-├── tests/                # unit, db y e2e
-└── scripts/              # Pruebas de humo (crawl / interact)
+│   ├── app/            # Rutas (App Router): (site), (auth) y api
+│   ├── components/     # Interfaz por dominio: home, anime, player, manga, social, profile…
+│   ├── lib/            # Lógica: anilist, media, manga, recommend, supabase, seguridad
+│   └── stores/         # Estado del cliente (Zustand)
+├── mobile/             # App Android (Kotlin + Compose) · ver mobile/README.md
+├── supabase/           # Migraciones SQL, políticas RLS y funciones
+├── deploy/             # Despliegue en la VPS, Worker de Cloudflare, resolver y APK
+├── cache-handlers/     # Gestor de caché propio para "use cache" (memoria acotada)
+├── docs/               # Arquitectura, despliegue, mudanza de servidor y manga
+└── tests/              # Pruebas unit, db y e2e
 ```
 
-<p align="center">
-  <img src="assets/divider-slash.svg" width="100%" alt="Divider">
-</p>
+## Puesta en marcha <sub>導入</sub>
 
-<p align="center">
-  <img src="assets/t-mobile.svg" width="100%" alt="App Android Nativa">
-</p>
-
-La aplicación Android de **KAZE** está construida desde cero sin wrappers web ni WebView:
-- **Motor Media3 / ExoPlayer:** Soporte completo para Picture-in-Picture nativo, controles táctiles gestuales para brillo y volumen, y decodificación de video por hardware.
-- **Offline-First con Room:** Toda la biblioteca personal se persiste en una base de datos SQLite interna gestionada por Room, sincronizándose en segundo plano al recuperar la conexión.
-- **Actualización OTA Integrada:** Comprueba automáticamente al iniciar si existe una versión superior en el servidor de distribución y permite actualizar la APK con un solo toque.
-
-```bash
-# Compilar la APK de producción
-cd mobile
-./gradlew assembleRelease
-```
-> Consulta la guía técnica completa en [`mobile/README.md`](mobile/README.md).
-
-<p align="center">
-  <img src="assets/divider-slash.svg" width="100%" alt="Divider">
-</p>
-
-<p align="center">
-  <img src="assets/t-install.svg" width="100%" alt="Instalación y Despliegue">
-</p>
-
-### Instalación Local
-
-**Requisitos:** Node.js 20+ y npm. Opcional: Proyecto en Supabase para funciones sociales (sin él funcionan catálogo, reproductor y biblioteca local).
+**Requisitos:** Node.js 20 o superior. Supabase es opcional: sin él funcionan el catálogo, el reproductor y la biblioteca local.
 
 ```bash
 git clone https://github.com/AndrehhX/Kaze.git
 cd Kaze
 npm install
-cp .env.example .env.local   # Completa las variables
+cp .env.example .env.local   # completar las variables
 npm run dev                  # http://localhost:3000
 ```
 
-#### Variables de Entorno Clave
-
-| Variable | Descripción |
+| Variable | Uso |
 | :--- | :--- |
-| `NEXT_PUBLIC_SITE_URL` | URL canónica del sitio (redirecciones OAuth y metadata OpenGraph) |
-| `NEXT_PUBLIC_SUPABASE_URL` · `ANON_KEY` | Credenciales de conexión a Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | Clave de administración (solo servidor) para tareas privilegiadas |
-| `NEXT_PUBLIC_ANILIST_CLIENT_ID` · `SECRET` | Credenciales de la aplicación OAuth en AniList |
-| `TOKEN_ENCRYPTION_KEY` | Clave maestra AES-256 (32 bytes en base64) para cifrar tokens |
-
-#### Scripts de Desarrollo & Control de Calidad
+| `NEXT_PUBLIC_SITE_URL` | URL pública del sitio (OAuth, metadatos y enlaces) |
+| `NEXT_PUBLIC_SUPABASE_URL` · `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Conexión a Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clave de servidor para tareas privilegiadas (nunca en el cliente) |
+| `NEXT_PUBLIC_ANILIST_CLIENT_ID` · `ANILIST_CLIENT_SECRET` | Aplicación OAuth de AniList |
+| `TOKEN_ENCRYPTION_KEY` | Clave AES-256 para cifrar tokens de terceros |
+| `STREAM_RESOLVER_URL` · `NEXT_PUBLIC_STREAM_PROXY_URL` | Servicio de resolución y proxy de vídeo |
+| `CRON_SECRET` | Protege las tareas programadas |
 
 ```bash
-npm run dev           # Servidor local de desarrollo
-npm run build         # Compilación de producción
-npm start             # Iniciar bundle de producción
-npm run typecheck     # Verificación estricta de TypeScript
-npm run lint          # Análisis estático ESLint
-npm test              # Suite de pruebas unitarias con Vitest
-npm run test:e2e      # Pruebas end-to-end con Playwright
+npm run dev          # desarrollo
+npm run build        # compilación de producción
+npm run typecheck    # TypeScript estricto
+npm run lint         # ESLint
+npm test             # Vitest (unitarias y base de datos)
+npm run test:e2e     # Playwright
 ```
 
-### Despliegue en Producción
+## Despliegue <sub>デプロイ</sub>
 
-- **Web (VPS):** Compila en local y transfiere el artefacto *standalone*. Si la nueva versión no responde al test de salud, revierte automáticamente a la versión anterior:
-  ```powershell
-  powershell -ExecutionPolicy Bypass -File deploy\deploy-vps.ps1
-  ```
-- **Android APK:** Publicación con incremento automático de `versionCode`:
-  ```powershell
-  powershell -ExecutionPolicy Bypass -File deploy\publish-apk.ps1 -Build -Notes "Nuevas mejoras"
-  ```
-- Guías de infraestructura: [`docs/DEPLOY_VPS.md`](docs/DEPLOY_VPS.md) y [`docs/GUIA_MUDANZA_VPS.md`](docs/GUIA_MUDANZA_VPS.md).
+| Componente | Cómo se publica |
+| :--- | :--- |
+| **Web** | `deploy\deploy-vps.ps1` compila en local, sube el build *standalone* y activa la versión; si no arranca, vuelve sola a la anterior |
+| **App Android** | `deploy\publish-apk.ps1 -Build` publica la APK y `app-version.json`; la app avisa al usuario de la nueva versión |
+| **Worker de vídeo** | `wrangler deploy` desde `deploy/cloudflare-worker/` |
 
-<p align="center">
-  <img src="assets/divider-slash.svg" width="100%" alt="Divider">
-</p>
+Guías: [`docs/DEPLOY_VPS.md`](docs/DEPLOY_VPS.md) y [`docs/GUIA_MUDANZA_VPS.md`](docs/GUIA_MUDANZA_VPS.md).
 
-## Seguridad & Buenas Prácticas
+## Calidad y seguridad <sub>品質</sub>
 
-- **Row Level Security (RLS):** Aislamiento de tenants garantizado en PostgreSQL por políticas RLS.
-- **Criptografía AES-256-GCM:** Cifrado simétrico de credenciales y tokens OAuth externos.
-- **Defensa en Profundidad:** VPS con firewall UFW estricto, SSH con clave ed25519 y puertos expuestos exclusivamente al rango de Cloudflare.
-- **Rate Limiting:** Control de concurrencia y peticiones por IP real (`cf-connecting-ip`) en endpoints sensibles.
-- **Sin Publicidad ni Rastreo:** Experiencia limpia, sin minería de datos ni telemetría invasiva.
+- **113 pruebas automáticas**: lógica (recomendaciones, sincronización, filtros, subtítulos, watch parties, manga) y políticas RLS ejecutadas sobre la migración real en PostgreSQL embebido (PGlite); pruebas de extremo a extremo y de accesibilidad con Playwright y axe.
+- **Row Level Security** en todas las tablas y funciones `SECURITY DEFINER` para las operaciones sensibles (control de salas, privacidad, bloqueos).
+- **Secretos fuera del cliente**: los tokens de AniList se cifran con AES-256-GCM; la clave de servicio solo existe en el servidor.
+- **Servidor endurecido**: firewall que solo admite a Cloudflare, SSH exclusivamente con llave, límites de memoria y reinicio automático si la web deja de responder.
+- **Entradas validadas** con Zod y restricciones `CHECK` en la base de datos; límites de peticiones por IP en las rutas sensibles; cabeceras de seguridad (CSP, HSTS, `X-Frame-Options`).
 
-## Mantenimiento
+## Documentación
 
-- **Monitorización:** La VPS comprueba cada 2 minutos que la web responde y reinicia el servicio si no lo hace.
-- **Avisos de episodios:** Una tarea programada cada 30 minutos genera las notificaciones de estrenos.
-- **Firewall:** Los rangos de Cloudflare se actualizan solos cada semana.
-- **Calidad:** Ejecuta `npm run lint`, `npm run typecheck` y `npm test` antes de cada despliegue.
-- **Documentación:** Las decisiones de arquitectura y las operaciones están en [`docs/`](docs/).
+| Documento | Contenido |
+| :--- | :--- |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Capas, caché, persistencia, reproducción, watch parties y recomendaciones |
+| [`docs/DEPLOY_VPS.md`](docs/DEPLOY_VPS.md) | Montaje del servidor y operación diaria |
+| [`docs/GUIA_MUDANZA_VPS.md`](docs/GUIA_MUDANZA_VPS.md) | Migración completa a otro servidor |
+| [`docs/MANGA.md`](docs/MANGA.md) | Lector, proveedores y continuidad anime → manga |
+| [`mobile/README.md`](mobile/README.md) | Compilación y estructura de la app Android |
+| [`AGENTS.md`](AGENTS.md) | Normas y mapa del proyecto para asistentes de programación |
 
 ## Licencia y autoría
 
 **© 2026 Andreh ([@AndrehhX](https://github.com/AndrehhX)). Todos los derechos reservados.**
 
-Este repositorio es público como muestra de ingeniería y portafolio profesional. No se autoriza su redistribución, uso comercial ni la reutilización de la marca sin permiso escrito del autor. Consulta [`LICENSE`](LICENSE).
+El código se publica como portafolio y muestra de ingeniería. No se autoriza su redistribución, uso comercial ni el uso de la marca KAZE sin permiso escrito del autor. Consulta [`LICENSE`](LICENSE).
 
-Los metadatos e imágenes de las obras provienen de la API de AniList. KAZE no aloja archivos multimedia protegidos por derechos de autor.
-
-<p align="center">
-  <img src="assets/divider-slash.svg" width="100%" alt="Divider">
-</p>
+Los metadatos e imágenes de las obras pertenecen a sus titulares y se obtienen de AniList y MangaDex. KAZE no aloja contenido protegido por derechos de autor.
 
 <p align="center">
-  <img src="assets/footer.svg" width="100%" alt="KAZE Footer">
+  <img src="docs/readme/footer.svg" alt="KAZE · Orunei — diseñado y desarrollado por Andreh" width="100%">
 </p>
