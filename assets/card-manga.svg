@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 320" width="620" height="320" fill="none">
+  <defs>
+    <linearGradient id="film-grad-2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#12121f"/>
+      <stop offset="100%" stop-color="#0a0a14"/>
+    </linearGradient>
+  </defs>
+  <style>
+    .mono-bold { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 800; }
+    .mono-reg { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 500; }
+    .card-title { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-weight: 900; }
+  </style>
+
+  <!-- Hard Shadow Offset -->
+  <rect x="6" y="6" width="608" height="308" rx="8" fill="#000000"/>
+  
+  <!-- Main Card Body -->
+  <rect x="0" y="0" width="608" height="308" rx="8" fill="url(#film-grad-2)" stroke="#252538" stroke-width="1.5"/>
+
+  <!-- Top Sprocket Bar -->
+  <rect x="0" y="0" width="608" height="28" fill="#090912" rx="8 8 0 0"/>
+  <line x1="0" y1="28" x2="608" y2="28" stroke="#1f1f2e" stroke-width="1"/>
+  <!-- Sprocket Holes -->
+  <g fill="#050508" stroke="#252538" stroke-width="0.8">
+    <rect x="20" y="7" width="16" height="14" rx="2.5"/>
+    <rect x="56" y="7" width="16" height="14" rx="2.5"/>
+    <rect x="92" y="7" width="16" height="14" rx="2.5"/>
+    <rect x="128" y="7" width="16" height="14" rx="2.5"/>
+    <rect x="464" y="7" width="16" height="14" rx="2.5"/>
+    <rect x="500" y="7" width="16" height="14" rx="2.5"/>
+    <rect x="536" y="7" width="16" height="14" rx="2.5"/>
+    <rect x="572" y="7" width="16" height="14" rx="2.5"/>
+  </g>
+  <!-- Film Bar Text -->
+  <text class="mono-bold" x="160" y="19" fill="#ff4fd8" font-size="9" letter-spacing="2">KAZE 100 // 02 · MANGA READER</text>
+  <text class="mono-reg" x="380" y="19" fill="#00d9ff" font-size="9" letter-spacing="1">EXP 36 · WEBTOON ENGINE</text>
+
+  <!-- Big Watermark Kanji Background (漫画 - Manga) -->
+  <text x="500" y="180" fill="#ff4fd8" fill-opacity="0.08" font-family="'Noto Sans JP', sans-serif" font-size="120" font-weight="900" text-anchor="middle">漫画</text>
+
+  <!-- Card Content -->
+  <!-- Status Badge Capsule -->
+  <g transform="translate(24, 46)">
+    <rect x="2" y="2" width="170" height="22" rx="5" fill="#000000"/>
+    <rect x="0" y="0" width="170" height="22" rx="5" fill="#201124" stroke="#ff4fd8" stroke-width="1.2"/>
+    <circle cx="12" cy="11" r="3.5" fill="#c8f31d"/>
+    <text class="mono-bold" x="24" y="15" fill="#f7f5ff" font-size="9.5" letter-spacing="1">CONTINUOUS · WEBTOON</text>
+  </g>
+
+  <!-- Card Title -->
+  <text class="card-title" x="24" y="104" fill="#f7f5ff" font-size="28" letter-spacing="1">LECTOR DE MANGA</text>
+
+  <!-- Feature Bullet Points -->
+  <g class="mono-reg" font-size="11.5" fill="#a9a6c4" transform="translate(24, 132)">
+    <text x="0" y="0">
+      <tspan fill="#ff4fd8" font-weight="800">▸ </tspan>Modo doble página (RTL / LTR) y tira vertical continua
+    </text>
+    <text x="0" y="22">
+      <tspan fill="#c8f31d" font-weight="800">▸ </tspan>Del Anime al Manga: calcula el capítulo exacto tras cada temporada
+    </text>
+    <text x="0" y="44">
+      <tspan fill="#00d9ff" font-weight="800">▸ </tspan>Precarga y compresión en memoria para transición fluida
+    </text>
+    <text x="0" y="66">
+      <tspan fill="#a855f7" font-weight="800">▸ </tspan>Colecciones, marcadores y panel analítico de lectura
+    </text>
+  </g>
+
+  <!-- Bottom Tech Pills -->
+  <g transform="translate(24, 230)">
+    <!-- Pill 1 -->
+    <rect x="0" y="0" width="86" height="24" rx="4" fill="#090912" stroke="#252538" stroke-width="1"/>
+    <text class="mono-bold" x="43" y="16" fill="#f7f5ff" font-size="9" text-anchor="middle">WEBTOON</text>
+    <!-- Pill 2 -->
+    <rect x="94" y="0" width="102" height="24" rx="4" fill="#090912" stroke="#252538" stroke-width="1"/>
+    <text class="mono-bold" x="145" y="16" fill="#ff4fd8" font-size="9" text-anchor="middle">STORY BRIDGE</text>
+    <!-- Pill 3 -->
+    <rect x="204" y="0" width="94" height="24" rx="4" fill="#090912" stroke="#252538" stroke-width="1"/>
+    <text class="mono-bold" x="251" y="16" fill="#c8f31d" font-size="9" text-anchor="middle">INDEXEDDB</text>
+    <!-- Pill 4 -->
+    <rect x="306" y="0" width="94" height="24" rx="4" fill="#090912" stroke="#252538" stroke-width="1"/>
+    <text class="mono-bold" x="353" y="16" fill="#00d9ff" font-size="9" text-anchor="middle">CANVAS RENDER</text>
+  </g>
+
+  <!-- Bottom Sprocket Bar -->
+  <g transform="translate(0, 280)">
+    <rect x="0" y="0" width="608" height="28" fill="#090912" rx="0 0 8 8"/>
+    <line x1="0" y1="0" x2="608" y2="0" stroke="#1f1f2e" stroke-width="1"/>
+    <g fill="#050508" stroke="#252538" stroke-width="0.8">
+      <rect x="20" y="7" width="16" height="14" rx="2.5"/>
+      <rect x="56" y="7" width="16" height="14" rx="2.5"/>
+      <rect x="92" y="7" width="16" height="14" rx="2.5"/>
+      <rect x="128" y="7" width="16" height="14" rx="2.5"/>
+      <rect x="464" y="7" width="16" height="14" rx="2.5"/>
+      <rect x="500" y="7" width="16" height="14" rx="2.5"/>
+      <rect x="536" y="7" width="16" height="14" rx="2.5"/>
+      <rect x="572" y="7" width="16" height="14" rx="2.5"/>
+    </g>
+    <text class="mono-bold" x="240" y="19" fill="#ff4fd8" font-size="9" letter-spacing="2">KAZE MANGA PIPELINE // OK</text>
+  </g>
+</svg>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 290 62" width="290" height="62" fill="none">
+  <defs>
+    <linearGradient id="btn-web-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#ff4fd8"/>
+    </linearGradient>
+  </defs>
+  <style>
+    .btn-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 800; }
+    .btn-sub { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 500; font-size: 10px; fill: #a9a6c4; }
+  </style>
+
+  <!-- Hard Shadow Offset -->
+  <rect x="5" y="5" width="280" height="52" rx="10" fill="#000000"/>
+  <!-- Button Body -->
+  <rect x="0" y="0" width="280" height="52" rx="10" fill="#12121f" stroke="#a855f7" stroke-width="2"/>
+  
+  <!-- Icon dot / status indicator -->
+  <circle cx="24" cy="26" r="6" fill="#a855f7"/>
+  <circle cx="24" cy="26" r="2.5" fill="#ffffff"/>
+
+  <!-- Text -->
+  <text class="btn-mono" x="42" y="25" fill="#f7f5ff" font-size="14" letter-spacing="1">PLATAFORMA WEB</text>
+  <text class="btn-sub" x="42" y="40">orunei.sbs · En vivo</text>
+
+  <!-- Arrow Badge -->
+  <rect x="236" y="12" width="28" height="28" rx="6" fill="#1b1b2c" stroke="#2a2a3c" stroke-width="1"/>
+  <path d="M245 26 L255 16 M248 16 L255 16 L255 23" stroke="#c8f31d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

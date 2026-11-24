@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 140" width="1280" height="140" fill="none">
+  <defs>
+    <linearGradient id="footer-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e0e1a"/>
+      <stop offset="100%" stop-color="#06060c"/>
+    </linearGradient>
+    <pattern id="footer-dots" width="16" height="16" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="0.8" fill="#a855f7" fill-opacity="0.12"/>
+    </pattern>
+  </defs>
+
+  <style>
+    .ft-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 800; }
+    .ft-sub { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 500; font-size: 11px; fill: #8a8a9e; }
+    .ft-bold { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-weight: 900; }
+  </style>
+
+  <!-- Background -->
+  <rect width="1280" height="140" rx="8" fill="url(#footer-grad)" stroke="#1f1f32" stroke-width="1.5"/>
+  <rect width="1280" height="140" rx="8" fill="url(#footer-dots)"/>
+
+  <!-- Top Sprocket Strip -->
+  <rect x="0" y="0" width="1280" height="24" rx="8 8 0 0" fill="#080810"/>
+  <line x1="0" y1="24" x2="1280" y2="24" stroke="#1f1f30" stroke-width="1"/>
+  <g fill="#040408" stroke="#252538" stroke-width="0.8">
+    <rect x="25" y="5" width="14" height="14" rx="2.5"/>
+    <rect x="65" y="5" width="14" height="14" rx="2.5"/>
+    <rect x="105" y="5" width="14" height="14" rx="2.5"/>
+    <rect x="145" y="5" width="14" height="14" rx="2.5"/>
+    <rect x="1120" y="5" width="14" height="14" rx="2.5"/>
+    <rect x="1160" y="5" width="14" height="14" rx="2.5"/>
+    <rect x="1200" y="5" width="14" height="14" rx="2.5"/>
+    <rect x="1240" y="5" width="14" height="14" rx="2.5"/>
+  </g>
+  <text class="ft-mono" x="180" y="16" fill="#c8f31d" font-size="9" letter-spacing="2">KAZE // END OF TRANSMISSION</text>
+  <text class="ft-mono" x="1100" y="16" fill="#6d5ef8" font-size="9" text-anchor="end" letter-spacing="1">ARCHIVE · 2026</text>
+
+  <!-- Brand Signature -->
+  <g transform="translate(40, 50)">
+    <text class="ft-bold" x="0" y="24" fill="#f7f5ff" font-size="22" letter-spacing="2">KAZE · 風</text>
+    <text class="ft-sub" x="0" y="46">
+      Diseñado y desarrollado por <tspan fill="#c8f31d" font-weight="700">Andreh (@AndrehhX)</tspan> · Plataforma Orunei
+    </text>
+    <text class="ft-sub" x="0" y="64" fill="#58586c">
+      Metadatos proporcionados por AniList GraphQL. No aloja archivos multimedia propios.
+    </text>
+  </g>
+
+  <!-- Right Side Status Badge -->
+  <g transform="translate(980, 50)">
+    <!-- Offset Hard Shadow -->
+    <rect x="4" y="4" width="260" height="64" rx="8" fill="#000000"/>
+    <rect x="0" y="0" width="260" height="64" rx="8" fill="#141424" stroke="#c8f31d" stroke-width="1.5"/>
+    <circle cx="24" cy="24" r="5" fill="#c8f31d"/>
+    <circle cx="24" cy="24" r="2" fill="#000000"/>
+    <text class="ft-mono" x="38" y="28" fill="#f7f5ff" font-size="11" letter-spacing="1">STATUS: OPERATIONAL</text>
+    <text class="ft-mono" x="38" y="48" fill="#a9a6c4" font-size="10">VPS Standalone · 99.98% Up</text>
+  </g>
+</svg>

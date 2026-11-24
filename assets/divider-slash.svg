@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 48" width="1280" height="48" fill="none">
+  <defs>
+    <linearGradient id="slash-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0"/>
+      <stop offset="25%" stop-color="#ff4fd8"/>
+      <stop offset="50%" stop-color="#c8f31d"/>
+      <stop offset="75%" stop-color="#00d9ff"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Speedline Katana Slash Line -->
+  <line x1="40" y1="20" x2="1240" y2="20" stroke="url(#slash-grad)" stroke-width="2.5"/>
+
+  <!-- Secondary Parallel Fine Dashed Line -->
+  <line x1="120" y1="26" x2="1160" y2="26" stroke="#2a2a3c" stroke-width="1" stroke-dasharray="8 12"/>
+
+  <!-- Center Diamond / Kanji Badge -->
+  <g transform="translate(640, 20)">
+    <rect x="-10" y="-10" width="20" height="20" rx="3" fill="#080810" stroke="#c8f31d" stroke-width="1.8" transform="rotate(45)"/>
+    <circle cx="0" cy="0" r="3" fill="#ff4fd8"/>
+  </g>
+
+  <!-- Drips and Splatters -->
+  <path d="M260 20 Q262 32 264 36 Q266 38 268 36 Q270 30 272 20" fill="#c8f31d"/>
+  <path d="M890 20 Q892 34 894 40 Q896 42 898 39 Q900 30 902 20" fill="#ff4fd8"/>
+  <circle cx="480" cy="28" r="1.5" fill="#00d9ff"/>
+  <circle cx="780" cy="30" r="2" fill="#a855f7"/>
+  <circle cx="1020" cy="27" r="1.5" fill="#c8f31d"/>
+</svg>

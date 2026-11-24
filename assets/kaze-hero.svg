@@ -1,0 +1,244 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 440" width="1280" height="440" fill="none">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="neon-kaze" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7"/>
+      <stop offset="50%" stop-color="#ff4fd8"/>
+      <stop offset="100%" stop-color="#c8f31d"/>
+    </linearGradient>
+    <linearGradient id="cyber-lime" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c8f31d"/>
+      <stop offset="100%" stop-color="#d4ff00"/>
+    </linearGradient>
+    <linearGradient id="neon-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d9ff"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="film-bar" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0e0e18"/>
+      <stop offset="100%" stop-color="#080810"/>
+    </linearGradient>
+    <linearGradient id="tape-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.38"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.12"/>
+    </linearGradient>
+
+    <!-- Dot Matrix Pattern -->
+    <pattern id="dither-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#a855f7" fill-opacity="0.12"/>
+      <circle cx="12" cy="12" r="1.2" fill="#c8f31d" fill-opacity="0.08"/>
+    </pattern>
+
+    <!-- Speedlines Pattern -->
+    <pattern id="speed-mesh" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M0 40 L40 0 M-10 10 L10 -10 M30 50 L50 30" stroke="#a855f7" stroke-width="0.5" stroke-opacity="0.09"/>
+    </pattern>
+  </defs>
+
+  <style>
+    .mono-bold { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-weight: 800; }
+    .mono-reg { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-weight: 500; }
+    .display-title { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-weight: 900; }
+  </style>
+
+  <!-- Deep Void Background -->
+  <rect width="1280" height="440" fill="#080810"/>
+  <rect width="1280" height="440" fill="url(#dither-grid)"/>
+  <rect width="1280" height="440" fill="url(#speed-mesh)"/>
+
+  <!-- Top 35mm Sprocket Strip -->
+  <rect x="0" y="0" width="1280" height="34" fill="url(#film-bar)"/>
+  <line x1="0" y1="34" x2="1280" y2="34" stroke="#222230" stroke-width="1.5"/>
+  <g fill="#080810" stroke="#2a2a3c" stroke-width="1">
+    <rect x="30" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="75" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="120" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="165" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="210" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="255" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="300" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="345" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="390" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="435" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="480" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="525" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="570" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="615" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="660" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="705" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="750" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="795" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="840" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="885" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="930" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="975" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="1020" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="1065" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="1110" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="1155" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="1200" y="8" width="18" height="18" rx="3.5"/>
+    <rect x="1245" y="8" width="18" height="18" rx="3.5"/>
+  </g>
+
+  <!-- Telemetry Bar -->
+  <g class="mono-bold" font-size="9" letter-spacing="2">
+    <text x="45" y="56" fill="#c8f31d">● KAZE-SYS // ORUNEI.SBS</text>
+    <text x="360" y="56" fill="#6d5ef8">FRAME: 0024</text>
+    <text x="540" y="56" fill="#a9a6c4">LATENCY: &lt; 0.8ms [ZERO-BUFFER]</text>
+    <text x="880" y="56" fill="#ff4fd8">EXP. 36 // ISO 400</text>
+    <text x="1120" y="56" fill="#c8f31d">VER 0.3.0 [PROD]</text>
+  </g>
+
+  <!-- Big Stylized Kanji Background (風 - Wind) -->
+  <g transform="translate(860, 48) scale(1.15)" opacity="0.18">
+    <!-- Stylized Kanji 風 vector path -->
+    <path d="M120 40 L160 40 C240 40 280 60 280 130 L280 280 C280 300 270 320 230 320 C200 320 195 305 195 295 L195 270" stroke="url(#neon-kaze)" stroke-width="26" stroke-linecap="round" fill="none"/>
+    <path d="M110 35 L70 310" stroke="url(#neon-kaze)" stroke-width="26" stroke-linecap="round"/>
+    <path d="M130 115 L220 100" stroke="url(#neon-kaze)" stroke-width="18" stroke-linecap="round"/>
+    <path d="M165 140 L140 250" stroke="url(#neon-kaze)" stroke-width="16" stroke-linecap="round"/>
+    <path d="M165 170 Q210 220 230 250" stroke="url(#neon-kaze)" stroke-width="16" stroke-linecap="round"/>
+  </g>
+
+  <!-- Speedline Slashes / Wind Cuts -->
+  <g opacity="0.35">
+    <line x1="380" y1="90" x2="680" y2="90" stroke="#ff4fd8" stroke-width="2" stroke-dasharray="12 18"/>
+    <line x1="240" y1="120" x2="820" y2="120" stroke="#c8f31d" stroke-width="1.5" stroke-dasharray="24 14"/>
+    <line x1="420" y1="290" x2="980" y2="290" stroke="#a855f7" stroke-width="1" stroke-dasharray="8 20"/>
+  </g>
+
+  <!-- Brand Title: 3D Neo-Brutalist KAZE Extrusion -->
+  <!-- Shadow Extrusion Layers -->
+  <g class="display-title" font-size="118" letter-spacing="4">
+    <text x="58" y="196" fill="#000000" font-weight="900">KAZE</text>
+    <text x="55" y="193" fill="#1b122c" font-weight="900">KAZE</text>
+    <text x="52" y="190" fill="#6d5ef8" font-weight="900" opacity="0.6">KAZE</text>
+    <!-- Main Neon Face -->
+    <text x="48" y="186" fill="url(#neon-kaze)" font-weight="900">KAZE</text>
+  </g>
+
+  <!-- Kanji Badge Next to Title -->
+  <g transform="translate(450, 96)">
+    <!-- Offset Hard Shadow -->
+    <rect x="6" y="6" width="94" height="94" rx="14" fill="#000000"/>
+    <rect x="0" y="0" width="94" height="94" rx="14" fill="#12121f" stroke="#c8f31d" stroke-width="2"/>
+    <!-- Kanji 風 inside badge -->
+    <text x="47" y="68" fill="#c8f31d" font-family="'Noto Sans JP', 'Segoe UI', sans-serif" font-size="62" font-weight="900" text-anchor="middle">風</text>
+  </g>
+
+  <!-- Subtitle and Domain Description -->
+  <g transform="translate(50, 232)">
+    <rect x="-8" y="-18" width="560" height="28" fill="#12121f" rx="4" stroke="#222234" stroke-width="1"/>
+    <text class="mono-bold" x="0" y="1" fill="#f7f5ff" font-size="13" letter-spacing="1.5">
+      ANIME &amp; MANGA PLATFORM · ECOSYSTEM // ORUNEI
+    </text>
+  </g>
+
+  <g transform="translate(50, 268)">
+    <text class="mono-reg" x="0" y="0" fill="#a9a6c4" font-size="13.5" letter-spacing="0.5">
+      Next.js 16 Web · Kotlin Native Android · Supabase Realtime Watch Parties · AniList OAuth
+    </text>
+    <text class="mono-reg" x="0" y="22" fill="#6d5ef8" font-size="12" letter-spacing="0.8">
+      Dual-resolver HLS streaming failover · Webtoon continuous reader · Room local sync
+    </text>
+  </g>
+
+  <!-- Feature Badge Capsules (Neo-Brutalist Pill Stickers) -->
+  <!-- Capsule 1: STREAMING -->
+  <g transform="translate(50, 318)">
+    <rect x="4" y="4" width="180" height="36" rx="8" fill="#000000"/>
+    <rect x="0" y="0" width="180" height="36" rx="8" fill="#12121f" stroke="#a855f7" stroke-width="1.8"/>
+    <circle cx="20" cy="18" r="5" fill="#a855f7"/>
+    <text class="mono-bold" x="35" y="23" fill="#f7f5ff" font-size="11.5" letter-spacing="1">HLS STREAMING</text>
+  </g>
+
+  <!-- Capsule 2: MANGA READER -->
+  <g transform="translate(244, 318)">
+    <rect x="4" y="4" width="168" height="36" rx="8" fill="#000000"/>
+    <rect x="0" y="0" width="168" height="36" rx="8" fill="#12121f" stroke="#ff4fd8" stroke-width="1.8"/>
+    <circle cx="18" cy="18" r="5" fill="#ff4fd8"/>
+    <text class="mono-bold" x="32" y="23" fill="#f7f5ff" font-size="11.5" letter-spacing="1">MANGA READER</text>
+  </g>
+
+  <!-- Capsule 3: ANDROID NATIVE -->
+  <g transform="translate(426, 318)">
+    <rect x="4" y="4" width="190" height="36" rx="8" fill="#000000"/>
+    <rect x="0" y="0" width="190" height="36" rx="8" fill="#c8f31d" stroke="#000000" stroke-width="1.5"/>
+    <rect x="14" y="11" width="12" height="14" rx="2" fill="#000000"/>
+    <text class="mono-bold" x="35" y="23" fill="#000000" font-size="11.5" letter-spacing="1">ANDROID KOTLIN</text>
+  </g>
+
+  <!-- Capsule 4: WATCH PARTIES -->
+  <g transform="translate(630, 318)">
+    <rect x="4" y="4" width="196" height="36" rx="8" fill="#000000"/>
+    <rect x="0" y="0" width="196" height="36" rx="8" fill="#12121f" stroke="#00d9ff" stroke-width="1.8"/>
+    <circle cx="20" cy="18" r="5" fill="#00d9ff"/>
+    <text class="mono-bold" x="35" y="23" fill="#00d9ff" font-size="11.5" letter-spacing="1">WATCH PARTIES RT</text>
+  </g>
+
+  <!-- Capsule 5: ANILIST OAUTH -->
+  <g transform="translate(840, 318)">
+    <rect x="4" y="4" width="170" height="36" rx="8" fill="#000000"/>
+    <rect x="0" y="0" width="170" height="36" rx="8" fill="#12121f" stroke="#8a8a9e" stroke-width="1.5"/>
+    <text class="mono-bold" x="22" y="23" fill="#f7f5ff" font-size="11.5" letter-spacing="1">ANILIST SYNC</text>
+  </g>
+
+  <!-- Signature Rotated Sticker with Washi Tape (Inspired by AndrehhX Profile) -->
+  <g transform="translate(1040, 110) rotate(5)">
+    <!-- Hard shadow -->
+    <rect x="5" y="5" width="180" height="74" rx="6" fill="#000000"/>
+    <!-- Sticker background -->
+    <rect x="0" y="0" width="180" height="74" rx="6" fill="#c8f31d" stroke="#000000" stroke-width="2"/>
+    <text class="mono-bold" x="90" y="32" fill="#000000" font-size="13" text-anchor="middle" letter-spacing="2">SINGLE ACCOUNT</text>
+    <text class="mono-bold" x="90" y="52" fill="#080810" font-size="11" text-anchor="middle" letter-spacing="0.5">WEB ↔ MOBILE SYNC</text>
+    <!-- Washi tape overlay -->
+    <polygon points="65,-12 115,-12 105,10 55,10" fill="url(#tape-grad)"/>
+    <polygon points="65,-12 115,-12 105,10 55,10" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.4" fill="none"/>
+  </g>
+
+  <!-- Bottom Katana Slash / Torn Paper & Drips Edge -->
+  <g transform="translate(0, 385)">
+    <!-- Base black bar with sprocket line -->
+    <rect x="0" y="22" width="1280" height="33" fill="url(#film-bar)"/>
+    <line x1="0" y1="22" x2="1280" y2="22" stroke="#222230" stroke-width="1.5"/>
+    
+    <!-- Neon Katana slash / torn edge -->
+    <path d="M0 12 L120 18 L240 6 L380 20 L520 8 L680 18 L840 5 L980 16 L1120 8 L1280 14" stroke="#c8f31d" stroke-width="2.5" fill="none"/>
+    
+    <!-- Paint Drips -->
+    <path d="M210 18 Q213 32 216 38 Q218 41 220 38 Q222 30 224 16" fill="#c8f31d"/>
+    <path d="M580 12 Q582 28 584 34 Q586 37 588 34 Q590 26 592 10" fill="#a855f7"/>
+    <path d="M910 14 Q912 30 914 36 Q916 39 918 36 Q920 28 922 12" fill="#ff4fd8"/>
+
+    <!-- Bottom Sprocket Holes -->
+    <g fill="#080810" stroke="#2a2a3c" stroke-width="1">
+      <rect x="30" y="30" width="18" height="16" rx="3"/>
+      <rect x="75" y="30" width="18" height="16" rx="3"/>
+      <rect x="120" y="30" width="18" height="16" rx="3"/>
+      <rect x="165" y="30" width="18" height="16" rx="3"/>
+      <rect x="210" y="30" width="18" height="16" rx="3"/>
+      <rect x="255" y="30" width="18" height="16" rx="3"/>
+      <rect x="300" y="30" width="18" height="16" rx="3"/>
+      <rect x="345" y="30" width="18" height="16" rx="3"/>
+      <rect x="390" y="30" width="18" height="16" rx="3"/>
+      <rect x="435" y="30" width="18" height="16" rx="3"/>
+      <rect x="480" y="30" width="18" height="16" rx="3"/>
+      <rect x="525" y="30" width="18" height="16" rx="3"/>
+      <rect x="570" y="30" width="18" height="16" rx="3"/>
+      <rect x="615" y="30" width="18" height="16" rx="3"/>
+      <rect x="660" y="30" width="18" height="16" rx="3"/>
+      <rect x="705" y="30" width="18" height="16" rx="3"/>
+      <rect x="750" y="30" width="18" height="16" rx="3"/>
+      <rect x="795" y="30" width="18" height="16" rx="3"/>
+      <rect x="840" y="30" width="18" height="16" rx="3"/>
+      <rect x="885" y="30" width="18" height="16" rx="3"/>
+      <rect x="930" y="30" width="18" height="16" rx="3"/>
+      <rect x="975" y="30" width="18" height="16" rx="3"/>
+      <rect x="1020" y="30" width="18" height="16" rx="3"/>
+      <rect x="1065" y="30" width="18" height="16" rx="3"/>
+      <rect x="1110" y="30" width="18" height="16" rx="3"/>
+      <rect x="1155" y="30" width="18" height="16" rx="3"/>
+      <rect x="1200" y="30" width="18" height="16" rx="3"/>
+      <rect x="1245" y="30" width="18" height="16" rx="3"/>
+    </g>
+  </g>
+</svg>
