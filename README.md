@@ -110,6 +110,25 @@ El catálogo y metadatos se sincronizan desde la API pública de **AniList**. La
 | **Infraestructura & Edge** | VPS Ubuntu, Caddy 2, systemd, Cloudflare Workers | Servidor web HTTP/3, proxy de streams y caché de borde |
 | **Testing & Calidad** | Vitest, Testing Library, PGlite, Playwright + axe | Pruebas unitarias, de integración, E2E y accesibilidad |
 
+### Estructura del Repositorio
+
+```
+crunchy/
+├── src/
+│   ├── app/              # Rutas (App Router): (site), (auth), api, sitemap, robots
+│   ├── components/       # UI por dominio: anime, player, manga, social, profile, shell…
+│   ├── lib/              # Lógica: anilist, supabase, streaming, logros, wrapped, seguridad
+│   ├── stores/           # Estado global (Zustand)
+│   └── types/
+├── mobile/               # App Android (Kotlin + Compose), ver mobile/README.md
+├── supabase/migrations/  # Esquema SQL, políticas RLS y funciones
+├── deploy/               # Scripts de despliegue en VPS y publicación de la APK
+├── cache-handlers/       # Gestor de caché propio para "use cache" (memoria acotada)
+├── docs/                 # Arquitectura, despliegue, mudanza de VPS y manga
+├── tests/                # unit, db y e2e
+└── scripts/              # Pruebas de humo (crawl / interact)
+```
+
 <p align="center">
   <img src="assets/divider-slash.svg" width="100%" alt="Divider">
 </p>
@@ -195,6 +214,22 @@ npm run test:e2e      # Pruebas end-to-end con Playwright
 - **Defensa en Profundidad:** VPS con firewall UFW estricto, SSH con clave ed25519 y puertos expuestos exclusivamente al rango de Cloudflare.
 - **Rate Limiting:** Control de concurrencia y peticiones por IP real (`cf-connecting-ip`) en endpoints sensibles.
 - **Sin Publicidad ni Rastreo:** Experiencia limpia, sin minería de datos ni telemetría invasiva.
+
+## Mantenimiento
+
+- **Monitorización:** La VPS comprueba cada 2 minutos que la web responde y reinicia el servicio si no lo hace.
+- **Avisos de episodios:** Una tarea programada cada 30 minutos genera las notificaciones de estrenos.
+- **Firewall:** Los rangos de Cloudflare se actualizan solos cada semana.
+- **Calidad:** Ejecuta `npm run lint`, `npm run typecheck` y `npm test` antes de cada despliegue.
+- **Documentación:** Las decisiones de arquitectura y las operaciones están en [`docs/`](docs/).
+
+## Licencia y autoría
+
+**© 2026 Andreh ([@AndrehhX](https://github.com/AndrehhX)). Todos los derechos reservados.**
+
+Este repositorio es público como muestra de ingeniería y portafolio profesional. No se autoriza su redistribución, uso comercial ni la reutilización de la marca sin permiso escrito del autor. Consulta [`LICENSE`](LICENSE).
+
+Los metadatos e imágenes de las obras provienen de la API de AniList. KAZE no aloja archivos multimedia protegidos por derechos de autor.
 
 <p align="center">
   <img src="assets/divider-slash.svg" width="100%" alt="Divider">
