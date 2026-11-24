@@ -78,13 +78,13 @@ export function NoCatalogNotice({ chapters, volumes, status }: { chapters: numbe
     <div className="km-frame flex gap-3 p-5 text-sm">
       <Info className="mt-0.5 size-5 shrink-0 text-primary-ink" aria-hidden />
       <div>
-        <p className="font-semibold">Catálogo de capítulos no disponible en KAZE</p>
+        <p className="font-semibold">Esta obra todavía no se puede leer dentro de KAZE</p>
         <p className="mt-1 text-muted">
-          Según AniList: {chapters ? `${chapters} capítulos` : "número de capítulos desconocido"}
+          Tiene licencia oficial y sus capítulos solo se publican en la plataforma del editor. Según AniList: {chapters ? `${chapters} capítulos` : "número de capítulos desconocido"}
           {volumes ? ` en ${volumes} volúmenes` : ""}
-          {status === "RELEASING" ? " (sigue en publicación, el total puede cambiar)" : ""}. No generamos listas de capítulos a partir de ese número porque la numeración real incluye extras, capítulos decimales y ediciones distintas.
+          {status === "RELEASING" ? " (sigue en publicación)" : ""}.
         </p>
-        <p className="mt-2 text-muted">Los capítulos de esta obra se sincronizan automáticamente con los proveedores del lector de KAZE cuando estén disponibles.</p>
+        <p className="mt-2 text-muted">Si aparecen capítulos disponibles, se añadirán aquí automáticamente.</p>
       </div>
     </div>
   );

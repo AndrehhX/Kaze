@@ -23,7 +23,7 @@ export function DetailActions({ manga, readHref, firstChapterHref }: { manga: Ma
         </Link>
       ) : (
         <Link href={startHref} className="k-btn k-btn-primary">
-          <BookOpen className="size-4" aria-hidden /> Empezar a leer
+          <BookOpen className="size-4" aria-hidden /> {startHref === "#chapters" ? "Dónde leer" : "Empezar a leer"}
         </Link>
       )}
       <MangaListMenu manga={manga} />

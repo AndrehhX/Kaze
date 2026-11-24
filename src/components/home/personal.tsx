@@ -12,14 +12,14 @@ import type { MediaCard } from "@/lib/anilist/types";
 import { useLibrary } from "@/stores/library";
 import { continueByAnime, useProgress } from "@/stores/progress";
 import { useAuth } from "@/stores/auth";
-import { buildGenreProfile, pickSeed, recommend } from "@/lib/recommend";
+import { buildGenreProfile, pickSeed, rankSeeds, recommend, type WatchedSignal } from "@/lib/recommend";
 import { api } from "@/lib/api-client";
 import { DEMO_SERIES } from "@/lib/media/demo-catalog";
 import { AnimeCard, AnimeCardSkeleton } from "@/components/anime/anime-card";
 import { Rail } from "@/components/ui/rail";
 import { EmptyState, SafeImage, SectionHeader } from "@/components/ui/primitives";
 import { formatDuration } from "@/lib/utils";
-import { FALLBACK_GENRES } from "@/lib/anilist/browse-params";
+import { FALLBACK_GENRES, genreLabel } from "@/lib/anilist/browse-params";
 import { FriendsActivityRail } from "@/components/social/friends-activity";
 
 function useLibraryList() {
@@ -224,9 +224,9 @@ function useHiddenRecs() {
   const hide = (id: number, title: string) => {
     useLocal.getState().hideRec(id);
     persist(useLocal.getState().hiddenRecs);
-    toast(`Got it: we won't recommend ${title} again`, {
+    toast(`Entendido: no volveremos a recomendarte ${title}`, {
       action: {
-        label: "Undo",
+        label: "Deshacer",
         onClick: () => {
           useLocal.getState().unhideRec(id);
           persist(useLocal.getState().hiddenRecs);
@@ -241,32 +241,96 @@ function useHiddenRecs() {
 export function RecommendedForYou({ pool }: { pool: MediaCard[] }) {
   const { list, hydrated } = useLibraryList();
   const { hidden, hide } = useHiddenRecs();
-  const profile = useMemo(() => buildGenreProfile(list), [list]);
-  const seeds = useMemo(
-    () =>
-      list
-        .filter((e) => (e.score ?? 0) >= 75 || e.favorite)
-        .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-        .slice(0, 2),
-    [list],
-  );
+  const progressItems = useProgress((s) => s.items);
+  const progressHydrated = useProgress((s) => s.hydrated);
+
+  // Lo que el usuario ve de verdad en el reproductor, agrupado por anime.
+  const watchedRaw = useMemo(() => {
+    const by = new Map<number, { id: number; episodes: number; maxEp: number; updatedAt: number }>();
+    for (const p of Object.values(progressItems)) {
+      if (!isRealAnime(p) || p.position < 60) continue;
+      const id = Number(p.seriesId);
+      const ep = p.episodeNumber || Number(p.episodeId) || 0;
+      const cur = by.get(id) ?? { id, episodes: 0, maxEp: 0, updatedAt: 0 };
+      cur.episodes++;
+      if (p.completed || ep > cur.maxEp) cur.maxEp = Math.max(cur.maxEp, ep);
+      cur.updatedAt = Math.max(cur.updatedAt, p.updatedAt);
+      by.set(id, cur);
+    }
+    return [...by.values()].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 20);
+  }, [progressItems]);
+  const watchedIds = useMemo(() => watchedRaw.map((w) => w.id).sort((a, b) => a - b), [watchedRaw]);
+  const { data: watchedMedia } = useQuery({
+    queryKey: ["continue-batch", watchedIds],
+    queryFn: ({ signal }) => api.batch(watchedIds, signal),
+    enabled: watchedIds.length > 0,
+    staleTime: 30 * 60_000,
+  });
+  const watched = useMemo<WatchedSignal[]>(() => {
+    const byId = new Map((watchedMedia?.media ?? []).map((m) => [m.id, m]));
+    return watchedRaw.flatMap((w) => {
+      const media = byId.get(w.id);
+      return media ? [{ media, episodes: w.episodes, updatedAt: w.updatedAt }] : [];
+    });
+  }, [watchedRaw, watchedMedia]);
+
+  const profile = useMemo(() => buildGenreProfile(list, watched), [list, watched]);
+
+  // Semillas: tus títulos mejor valorados + lo que más estás viendo (hasta 5).
+  const seeds = useMemo(() => {
+    const out: { id: number; title: string; finished: boolean }[] = [];
+    for (const e of rankSeeds(list).slice(0, 3)) out.push({ id: e.mediaId, title: e.media.title, finished: e.status === "COMPLETED" || e.status === "REPEATING" });
+    const byWatch = [...watched].sort((a, b) => b.episodes - a.episodes || b.updatedAt - a.updatedAt);
+    for (const w of byWatch) {
+      if (out.length >= 5) break;
+      if (out.some((s) => s.id === w.media.id)) continue;
+      const raw = watchedRaw.find((r) => r.id === w.media.id);
+      out.push({
+        id: w.media.id,
+        title: w.media.title.english || w.media.title.romaji || "este anime",
+        finished: Boolean(w.media.episodes && raw && raw.maxEp >= w.media.episodes),
+      });
+    }
+    return out;
+  }, [list, watched, watchedRaw]);
+
+  const topGenres = profile.top.slice(0, 2);
   const recQueries = useQuery({
-    queryKey: ["rec-seeds", seeds.map((s) => s.mediaId)],
-    queryFn: async ({ signal }) => Promise.all(seeds.map((s) => api.recommendations(s.mediaId, signal).then((r) => ({ seed: s, r })))),
-    enabled: hydrated && seeds.length > 0,
+    queryKey: ["rec-seeds-v2", seeds.map((s) => s.id), topGenres],
+    queryFn: async ({ signal }) => {
+      const [recs, genres] = await Promise.all([
+        Promise.allSettled(seeds.map((s) => api.recommendations(s.id, signal).then((r) => ({ seed: s, r })))),
+        Promise.allSettled(topGenres.map((g) => api.browse({ genres: [g], sort: "SCORE_DESC", minPopularity: 15000 }, signal))),
+      ]);
+      return {
+        seeds: recs.flatMap((r) => (r.status === "fulfilled" ? [r.value] : [])),
+        genrePicks: genres.flatMap((r) => (r.status === "fulfilled" ? r.value.media : [])),
+      };
+    },
+    enabled: hydrated && progressHydrated && (seeds.length > 0 || topGenres.length > 0),
+    staleTime: 30 * 60_000,
   });
 
   const recs = useMemo(() => {
     const peer = new Map<number, { seedTitle: string; rating: number }[]>();
+    const sequelOf = new Map<number, string>();
     const extra: MediaCard[] = [];
-    for (const { seed, r } of recQueries.data ?? []) {
+    for (const { seed, r } of recQueries.data?.seeds ?? []) {
       for (const it of r.items) {
         extra.push(it.media);
-        peer.set(it.media.id, [...(peer.get(it.media.id) ?? []), { seedTitle: seed.media.title, rating: it.rating }]);
+        peer.set(it.media.id, [...(peer.get(it.media.id) ?? []), { seedTitle: seed.title, rating: it.rating }]);
+      }
+      if (seed.finished) {
+        for (const rel of r.relations) {
+          if (rel.relationType !== "SEQUEL") continue;
+          extra.push(rel.node);
+          sequelOf.set(rel.node.id, seed.title);
+        }
       }
     }
-    return recommend([...extra, ...pool], { profile, exclude: new Set([...list.map((e) => e.mediaId), ...hidden]), peerSignals: peer }, 16);
-  }, [recQueries.data, pool, profile, list, hidden]);
+    const exclude = new Set([...list.map((e) => e.mediaId), ...watchedRaw.map((w) => w.id), ...hidden]);
+    return recommend([...extra, ...(recQueries.data?.genrePicks ?? []), ...pool], { profile, exclude, peerSignals: peer, sequelOf }, 24);
+  }, [recQueries.data, pool, profile, list, watchedRaw, hidden]);
   const discovery = useMemo(() => {
     const seen = new Set<number>();
     return [...pool]
@@ -283,30 +347,30 @@ export function RecommendedForYou({ pool }: { pool: MediaCard[] }) {
         id="rec-h"
         title={enough ? "Recomendado para ti" : "Comienza tu perfil de gustos"}
         jp="あなたへ"
-        kicker={enough ? `Basado en ${profile.top.slice(0, 3).join(", ") || "tu biblioteca"}` : "Descubrimiento"}
+        kicker={enough ? `Basado en ${profile.top.slice(0, 3).map(genreLabel).join(", ") || "lo que ves"}` : "Descubrimiento"}
       />
       {!enough ? (
         <>
           <EmptyState
           icon={<Sparkles className="size-6" />}
           jp="好"
-          title="Personal picks unlock after a couple de titles"
+          title="Tus recomendaciones se desbloquean con un par de animes"
           body={
             <>
-              KAZE recommends from what you actually watch — genres you finish, scores you give, and AniList fan recommendations. Add or rate at least two titles and this row becomes
-              yours. Until then, here are the community&apos;s highest-scored picks.
+              KAZE recomienda a partir de lo que ves de verdad: los episodios que miras, los géneros que terminas, tus notas y las recomendaciones de fans de AniList. Mira o añade al menos
+              dos animes y esta fila será tuya. Mientras, aquí tienes lo mejor valorado por la comunidad.
             </>
           }
           action={
             <Link href="/discover/moods" className="k-btn k-btn-primary k-btn-sm">
-              Find something by mood
+              Buscar por estado de ánimo
             </Link>
           }
         />
           <div className="mt-6">
-            <Rail label="Discovery picks">
+            <Rail label="Para descubrir">
               {discovery.map((m) => (
-                <AnimeCard key={m.id} media={m} caption="Highly rated on AniList" layoutScope="disc" />
+                <AnimeCard key={m.id} media={m} caption="Muy bien valorado en AniList" layoutScope="disc" />
               ))}
             </Rail>
           </div>
@@ -314,14 +378,14 @@ export function RecommendedForYou({ pool }: { pool: MediaCard[] }) {
       ) : recs.length ? (
         <Rail label="Recomendado para ti">
           {recs.map((r) => (
-            <div key={r.media.id} className="group/rec relative" title={r.factors.map((f) => `${f.label}: +${f.value}`).join("\n")}>
+            <div key={r.media.id} className="group/rec relative" title={r.factors.map((f) => `${f.label}: ${f.value > 0 ? "+" : ""}${f.value}`).join("\n")}>
               <AnimeCard media={r.media} caption={r.reason} layoutScope="rec" />
               <button
                 type="button"
                 className="k-btn k-btn-icon k-btn-sm absolute left-1.5 top-1.5 z-[5] !size-7 !min-h-7 bg-black/65 text-white opacity-0 backdrop-blur transition-opacity focus-visible:opacity-100 group-hover/rec:opacity-100 max-md:opacity-100"
-                aria-label={`Not interested in ${r.media.title.english || r.media.title.romaji}`}
-                title="Not interested"
-                onClick={() => hide(r.media.id, r.media.title.english || r.media.title.romaji || "this")}
+                aria-label={`No me interesa ${r.media.title.english || r.media.title.romaji}`}
+                title="No me interesa"
+                onClick={() => hide(r.media.id, r.media.title.english || r.media.title.romaji || "este anime")}
               >
                 <X className="size-3.5" />
               </button>
@@ -329,9 +393,9 @@ export function RecommendedForYou({ pool }: { pool: MediaCard[] }) {
           ))}
         </Rail>
       ) : (
-        <Rail label="Loading recommendations">{Array.from({ length: 6 }, (_, i) => <AnimeCardSkeleton key={i} />)}</Rail>
+        <Rail label="Cargando recomendaciones">{Array.from({ length: 6 }, (_, i) => <AnimeCardSkeleton key={i} />)}</Rail>
       )}
-      {enough && <p className="mt-1 text-[0.6875rem] text-muted">Rule-based and explainable: hover a card to see what contributed to its score.</p>}
+      {enough && <p className="mt-1 text-[0.6875rem] text-muted">Pasa el ratón por una tarjeta para ver por qué te la recomendamos.</p>}
     </section>
   );
 }

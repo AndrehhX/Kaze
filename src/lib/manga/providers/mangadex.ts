@@ -15,6 +15,26 @@ const chaptersCache = new Map<string, { chapters: MangaChapter[]; expires: numbe
 const pagesCache = new Map<string, { pages: ReadingAsset[]; expires: number }>();
 
 const CACHE_TTL_SERIES = 24 * 60 * 60 * 1000; // 24 hours
+// "No está en MangaDex" se vuelve a comprobar antes: las obras nuevas se suben con el tiempo.
+const CACHE_TTL_SERIES_MISS = 3 * 60 * 60 * 1000; // 3 hours
+
+/** GET a MangaDex con un reintento ante límite (429), error 5xx o timeout. */
+async function mdxFetch(url: string, timeoutMs: number, revalidate: number): Promise<Response | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Kaze/1.0" },
+      signal: AbortSignal.timeout(timeoutMs),
+      next: { revalidate },
+    }).catch(() => null);
+    if (res && res.ok) return res;
+    if (res && res.status < 500 && res.status !== 429) return res; // 4xx real: no reintentar
+    if (attempt === 0) {
+      const wait = res?.status === 429 ? Number(res.headers.get("retry-after") ?? 1) * 1000 : 600;
+      await new Promise((r) => setTimeout(r, Math.min(3000, Math.max(300, wait))));
+    }
+  }
+  return null;
+}
 const CACHE_TTL_CHAPTERS = 60 * 60 * 1000;     // 1 hour
 // MangaDex@Home base URLs are ephemeral tokens valid for ~15 minutes; cache pages for 10 minutes max
 const CACHE_TTL_PAGES = 10 * 60 * 1000;        // 10 minutes
@@ -68,17 +88,18 @@ async function findMangaDexId(anilistId: number): Promise<string | null> {
     ].filter((t): t is string => Boolean(t && t.trim().length > 0));
 
     let matchedId: string | null = null;
+    let fallbackId: string | null = null;
+    let failed = false;
 
     for (const title of queryTitles) {
       if (matchedId) break;
       // Exclude doujinshis (UUID b13b2a48-c720-44a9-9c77-39c9979373fb) so official serializations match first
       const url = `https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=25&order[relevance]=desc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&excludedTags[]=b13b2a48-c720-44a9-9c77-39c9979373fb`;
-      const res = await fetch(url, {
-        headers: { "User-Agent": "Kaze/1.0" },
-        signal: AbortSignal.timeout(6000),
-        next: { revalidate: 3600 },
-      }).catch(() => null);
-      if (!res || !res.ok) continue;
+      const res = await mdxFetch(url, 6000, 3600);
+      if (!res || !res.ok) {
+        failed = true;
+        continue;
+      }
 
       const data = (await res.json()) as { data?: MangaDexMangaItem[] };
       const items = data.data ?? [];
@@ -97,9 +118,12 @@ async function findMangaDexId(anilistId: number): Promise<string | null> {
         return !tags.some((t) => t.attributes?.name?.en?.toLowerCase() === "doujinshi");
       });
 
-      const exact = nonDoujin.find((m) => {
-        const titles = Object.values(m.attributes.title || {});
-        return titles.some((t) => t.toLowerCase() === title.toLowerCase());
+      // Las obras con enlace a OTRA ficha de AniList no son esta (p. ej. secuelas o spin-offs).
+      const candidates = nonDoujin.filter((m) => !m.attributes.links?.al || m.attributes.links.al === String(anilistId));
+      const wanted = title.toLowerCase();
+      const exact = candidates.find((m) => {
+        const titles = [...Object.values(m.attributes.title || {}), ...(m.attributes.altTitles ?? []).flatMap((a) => Object.values(a))];
+        return titles.some((t) => t.toLowerCase() === wanted);
       });
 
       if (exact) {
@@ -107,13 +131,15 @@ async function findMangaDexId(anilistId: number): Promise<string | null> {
         break;
       }
 
-      // 3. Fallback to top non-doujinshi result if no better match
-      if (!matchedId && nonDoujin.length > 0) {
-        matchedId = nonDoujin[0].id;
-      }
+      // 3. Fallback to top non-doujinshi result, only if no other title gives a better match
+      if (!fallbackId && candidates.length > 0) fallbackId = candidates[0].id;
     }
+    matchedId ??= fallbackId;
 
-    seriesCache.set(anilistId, { mangadexId: matchedId, expires: Date.now() + CACHE_TTL_SERIES });
+    // Un fallo temporal de MangaDex no debe dejar la obra "sin capítulos" durante horas.
+    if (matchedId || !failed) {
+      seriesCache.set(anilistId, { mangadexId: matchedId, expires: Date.now() + (matchedId ? CACHE_TTL_SERIES : CACHE_TTL_SERIES_MISS) });
+    }
     return matchedId;
   } catch (err) {
     console.error(`[MangaDex] Error finding series for AniList ${anilistId}:`, err);
@@ -152,11 +178,7 @@ export const mangaDexProvider: ChapterCatalogProvider & ChapterContentProvider &
 
     try {
       const url = `https://api.mangadex.org/manga/${mangadexId}/feed?translatedLanguage[]=es-la&translatedLanguage[]=es&translatedLanguage[]=en&order[chapter]=asc&limit=500&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
-      const res = await fetch(url, {
-        headers: { "User-Agent": "Kaze/1.0" },
-        signal: AbortSignal.timeout(8000),
-        next: { revalidate: 3600 },
-      }).catch(() => null);
+      const res = await mdxFetch(url, 8000, 3600);
       if (!res || !res.ok) return [];
 
       const json = (await res.json()) as { data?: MangaDexChapterItem[]; total?: number };
@@ -165,11 +187,7 @@ export const mangaDexProvider: ChapterCatalogProvider & ChapterContentProvider &
       // If manga has more than 500 chapters across languages, fetch page 2 to avoid missing scans
       if (json.total && json.total > 500) {
         const p2Url = `https://api.mangadex.org/manga/${mangadexId}/feed?translatedLanguage[]=es-la&translatedLanguage[]=es&translatedLanguage[]=en&order[chapter]=asc&limit=500&offset=500&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
-        const p2Res = await fetch(p2Url, {
-          headers: { "User-Agent": "Kaze/1.0" },
-          signal: AbortSignal.timeout(8000),
-          next: { revalidate: 3600 },
-        }).catch(() => null);
+        const p2Res = await mdxFetch(p2Url, 8000, 3600);
         if (p2Res && p2Res.ok) {
           const p2Json = (await p2Res.json()) as { data?: MangaDexChapterItem[] };
           rawChapters = rawChapters.concat(p2Json.data ?? []);
@@ -270,11 +288,7 @@ export const mangaDexProvider: ChapterCatalogProvider & ChapterContentProvider &
 
     try {
       const url = `https://api.mangadex.org/at-home/server/${chapterId}?forcePort443=true`;
-      const res = await fetch(url, {
-        headers: { "User-Agent": "Kaze/1.0" },
-        signal: AbortSignal.timeout(8000),
-        next: { revalidate: 600 },
-      }).catch(() => null);
+      const res = await mdxFetch(url, 8000, 600);
       if (!res || !res.ok) return [];
 
       const json = (await res.json()) as {

@@ -124,7 +124,13 @@ function AniListDetail({ m, chapters = [], volumes = [] }: { m: MangaDetail; cha
         {chapters.length > 0 ? (
           <ChapterCatalog mangaId={m.id} slug={String(m.id)} chapters={chapters} volumes={volumes} tab="chapters" />
         ) : (
-          <NoCatalogNotice chapters={m.chapters} volumes={m.volumes} status={m.status} />
+          <div className="space-y-4">
+            <NoCatalogNotice chapters={m.chapters} volumes={m.volumes} status={m.status} />
+            <div>
+              <h3 className="k-label mb-2 text-muted">Dónde leerlo oficialmente</h3>
+              <AvailabilityList options={availabilityFor({ seriesKey: seriesKeyFor(m.id), externalLinks: m.externalLinks })} mangaTitle={title} />
+            </div>
+          </div>
         )}
       </DetailSection>
 

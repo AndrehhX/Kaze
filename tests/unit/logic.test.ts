@@ -159,12 +159,28 @@ describe("explainable recommendations", () => {
     const recs = recommend([card(10, ["Psychological"]), card(20, ["Psychological", "Thriller"]), card(21, ["Sports"])], { profile, exclude: new Set([10, 11, 12]) });
     expect(recs.map((r) => r.media.id)).not.toContain(10);
     expect(recs[0].media.id).toBe(20);
-    expect(recs[0].reason).toMatch(/Because you enjoy Psychological/);
+    expect(recs[0].reason).toMatch(/Porque te gusta psicológico/);
   });
 
   it("surfaces AniList fan signals as the reason when they dominate", () => {
-    const recs = recommend([card(30, ["Comedy"], 70)], { profile: buildGenreProfile([]), exclude: new Set(), peerSignals: new Map([[30, [{ seedTitle: "Monster", rating: 300 }, { seedTitle: "Erased", rating: 100 }]]]) });
-    expect(recs[0].reason).toBe("Recommended by AniList fans of Monster");
+    const recs = recommend([card(30, ["Comedy"], 70)], { profile: buildGenreProfile([]), exclude: new Set(), peerSignals: new Map([[30, [{ seedTitle: "Monster", rating: 300 }]]]) });
+    expect(recs[0].reason).toBe("A los fans de Monster les encantó");
+    const multi = recommend([card(30, ["Comedy"], 70)], { profile: buildGenreProfile([]), exclude: new Set(), peerSignals: new Map([[30, [{ seedTitle: "Monster", rating: 300 }, { seedTitle: "Erased", rating: 100 }]]]) });
+    expect(multi[0].reason).toBe("Recomendado por fans de 2 de tus animes");
+  });
+
+  it("puts sequels of what you watched first and learns from watched episodes", () => {
+    const recs = recommend([card(40, ["Psychological"], 90), card(41, ["Psychological"], 70)], { profile, exclude: new Set(), sequelOf: new Map([[41, "Haikyuu"]]) });
+    expect(recs[0].media.id).toBe(41);
+    expect(recs[0].reason).toBe("Continúa Haikyuu");
+    const watched = buildGenreProfile([], [{ media: card(50, ["Romance", "Drama"]), episodes: 8, updatedAt: Date.now() }]);
+    expect(watched.top).toContain("Romance");
+    expect(watched.sampleSize).toBe(1);
+  });
+
+  it("fills a short rail instead of dropping titles for diversity", () => {
+    const many = Array.from({ length: 10 }, (_, i) => card(100 + i, ["Psychological"]));
+    expect(recommend(many, { profile, exclude: new Set() }, 9)).toHaveLength(9);
   });
 
   it("picks the best-loved title as the seed", () => {
