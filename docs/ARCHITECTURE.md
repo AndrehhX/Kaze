@@ -3,7 +3,7 @@
 ## Principles
 
 1. **Real data only.** Public anime metadata comes from AniList; everything a user creates lives in their own browser (guest) or in Supabase (account). Nothing is invented: no fake users, reviews, activity, episode titles or thumbnails.
-2. **Metadata ≠ rights.** AniList listing a title never makes it playable. Playback requires a provider-confirmed entitlement; today the only provider is the open-licensed demo catalog.
+2. **Metadata ≠ rights.** AniList listing a title never makes it playable. Playback requires a provider-confirmed entitlement (ver "Producción" en la sección Playback para las fuentes que se usan hoy).
 3. **The server is the authority.** Access control is enforced by Postgres Row Level Security and `SECURITY DEFINER` functions, never only by the UI. Third-party tokens never reach the browser.
 4. **Works without configuration.** Every integration is optional and reports "not configured" honestly instead of failing.
 
@@ -61,6 +61,8 @@ The settings page shows the full plan before anything is written. Writes to AniL
 
 `MediaProvider` (`src/lib/media/types.ts`) separates catalog, assets, entitlements and sessions. `POST /api/playback/session` checks the entitlement server-side and returns a short-lived grant (asset URL, subtitles, timing markers, episode list) and records a `playback_sessions` row for signed-in users. To add a licensed source, implement `MediaProvider` and register it in `src/lib/media/provider.ts`.
 
+**Producción (actualizado 24/11/2026):** `src/lib/media/provider.ts` pregunta primero al resolver de la VPS (`STREAM_RESOLVER_URL`, PM2 `kaze-resolver` con Redis) y, si falla, usa el resolver local (`providers/stream-resolver`). El navegador recibe el HLS a través del Worker de Cloudflare `orunei-stream` (`deploy/cloudflare-worker/`), que reparte uno de cada dos segmentos con la VPS (`deploy/resolver/segment-proxy.js`, firmados con HMAC usando `SEGMENT_SIGNING_KEY`). Si la VPS no responde a `/health`, el Worker sirve todo él solo. Las marcas de opening/ending salen de AniSkip (`src/lib/media/aniskip.ts`).
+
 The player (`src/components/player`) uses hls.js where MSE exists and native HLS on Safari. Captions are rendered by KAZE (not the browser) so they can be styled and shifted in time; cue maths lives in `captions.ts`.
 
 ### Watch parties
@@ -74,7 +76,16 @@ The player (`src/components/player`) uses hls.js where MSE exists and native HLS
 
 ### Recommendations
 
-`src/lib/recommend.ts` is rule-based and explainable: genre affinity from your library (weighted by status, score and favourites), AniList fan recommendations for your top-rated titles, community score and a small popularity nudge. Each result carries the strongest factor as its reason, and titles you marked "Not interested" are excluded. `scoreCandidate` is the seam for a future learned model.
+`src/lib/recommend.ts` is rule-based and explainable (v2, 24/11/2026):
+
+- **Perfil de géneros** con la biblioteca (estado, nota, favoritos, decaimiento de 45 días) **y con lo que el usuario ve en el reproductor** (`watch_progress`), aunque no lo haya añadido a su lista.
+- **Hasta 5 semillas** (mejor valorados + más vistos) → recomendaciones de fans de AniList; si varias semillas coinciden en un título, pesa más.
+- **Secuelas** de lo que ya se terminó van primero ("Continúa…").
+- Candidatos extra: lo mejor valorado de los 2 géneros favoritos (`api.browse`, `minPopularity` 15 000) + el pool de la portada.
+- Se excluye lo que está en la biblioteca, lo ya visto y lo marcado "No me interesa"; se descartan música, especiales y lo no estrenado.
+- Diversidad: máximo 1/3 de la fila por género principal y 3 por estudio, rellenando si queda corta. La fila muestra 24 títulos.
+
+Each result carries the strongest factor as its reason (en español). `scoreCandidate` is the seam for a future learned model. The UI lives in `RecommendedForYou` (`src/components/home/personal.tsx`).
 
 ### Themes and motion
 
