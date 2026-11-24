@@ -1,196 +1,122 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 370" width="1280" height="370" fill="none">
-  <defs>
-    <linearGradient id="arch-bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0c0c16"/>
-      <stop offset="100%" stop-color="#06060c"/>
-    </linearGradient>
-    <pattern id="arch-grid" width="24" height="24" patternUnits="userSpaceOnUse">
-      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#181826" stroke-width="0.7"/>
-    </pattern>
-    <marker id="arrow-cyan" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#00d9ff"/>
-    </marker>
-    <marker id="arrow-lime" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#c8f31d"/>
-    </marker>
-    <marker id="arrow-fuchsia" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 8 5 L 0 9 z" fill="#ff4fd8"/>
-    </marker>
-  </defs>
-
-  <style>
-    .arch-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 800; }
-    .arch-sub { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 500; font-size: 10px; fill: #8a8a9e; }
-    .box-title { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-weight: 900; font-size: 13px; letter-spacing: 1px; }
-  </style>
-
-  <!-- Canvas Frame -->
-  <rect width="1280" height="370" rx="10" fill="url(#arch-bg-grad)" stroke="#1f1f32" stroke-width="1.5"/>
-  <rect width="1280" height="370" rx="10" fill="url(#arch-grid)"/>
-
-  <!-- Top Frame HUD Header -->
-  <rect x="0" y="0" width="1280" height="32" rx="10 10 0 0" fill="#090912"/>
-  <line x1="0" y1="32" x2="1280" y2="32" stroke="#222234" stroke-width="1"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420" width="1280" height="420" role="img" aria-label="Arquitectura Distribuida de KAZE">
+  <rect width="1280" height="420" fill="#080810"/>
+  <rect x="10" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="10" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="36" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="36" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="62" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="62" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="88" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="88" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="114" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="114" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="140" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="140" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="166" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="166" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="192" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="192" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="218" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="218" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="244" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="244" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="270" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="270" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="296" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="296" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="322" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="322" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="348" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="348" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="374" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="374" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="400" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="400" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="426" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="426" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="452" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="452" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="478" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="478" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="504" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="504" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="530" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="530" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="556" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="556" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="582" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="582" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="608" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="608" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="634" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="634" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="660" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="660" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="686" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="686" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="712" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="712" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="738" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="738" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="764" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="764" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="790" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="790" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="816" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="816" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="842" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="842" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="868" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="868" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="894" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="894" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="920" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="920" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="946" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="946" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="972" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="972" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="998" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="998" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="1024" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="1024" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="1050" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="1050" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="1076" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="1076" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="1102" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="1102" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="1128" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="1128" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="1154" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="1154" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="1180" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="1180" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="1206" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="1206" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="1232" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="1232" y="403" width="14" height="9" rx="2" fill="#201f38"/><rect x="1258" y="8" width="14" height="9" rx="2" fill="#201f38"/><rect x="1258" y="403" width="14" height="9" rx="2" fill="#201f38"/>
   
-  <circle cx="24" cy="16" r="4.5" fill="#c8f31d"/>
-  <text class="arch-mono" x="38" y="20" fill="#f7f5ff" font-size="10.5" letter-spacing="2">
-    KAZE DISTRIBUTED TOPOLOGY // CLOUD HYBRID &amp; EDGE NETWORKING
-  </text>
-  <text class="arch-mono" x="1256" y="20" fill="#00d9ff" font-size="10" text-anchor="end" letter-spacing="1">
-    TLS 1.3 · ZERO-TRUST WAF · HTTP/3
-  </text>
+  <text x="35" y="44" font-family="ui-monospace, 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="12" font-weight="700" fill="#c89bff" letter-spacing="2">[ TOPOLOGÍA DISTRIBUIDA EN PRODUCCIÓN ]</text>
+  <text x="1245" y="44" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="12" font-weight="700" fill="#ff4fd8" letter-spacing="2">ZERO DOWNTIME · AES-256 · HTTP/3</text>
 
-  <!-- ══════════════ 1. CLIENTS BLOCK ══════════════ -->
-  <g transform="translate(30, 56)">
-    <!-- Container Outline -->
-    <rect x="0" y="0" width="220" height="280" rx="8" fill="#0d0d1a" stroke="#2a2a40" stroke-width="1.2"/>
-    <rect x="0" y="0" width="220" height="28" rx="8 8 0 0" fill="#131326"/>
-    <text class="arch-mono" x="14" y="18" fill="#a855f7" font-size="10" letter-spacing="1.5">01 // CLIENTS LAYER</text>
+  <!-- Flow connecting arrows -->
+  <path d="M310 200 L345 200" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 2"/>
+  <polygon points="345,196 353,200 345,204" fill="#f59e0b"/>
+  <text x="328" y="190" text-anchor="middle" font-family="ui-monospace, monospace" font-size="9" fill="#f59e0b">HTTP/3</text>
 
-    <!-- Sub-node: Web App -->
-    <g transform="translate(14, 42)">
-      <rect x="3" y="3" width="192" height="96" rx="6" fill="#000000"/>
-      <rect x="0" y="0" width="192" height="96" rx="6" fill="#141424" stroke="#a855f7" stroke-width="1.5"/>
-      <circle cx="16" cy="18" r="4" fill="#a855f7"/>
-      <text class="box-title" x="28" y="21" fill="#f7f5ff">KAZE WEB</text>
-      <text class="arch-sub" x="16" y="44">Next.js 16 (App Router)</text>
-      <text class="arch-sub" x="16" y="60">React 19 · "use cache"</text>
-      <text class="arch-sub" x="16" y="76" fill="#a855f7">Tailwind v4 · Motion</text>
-    </g>
+  <path d="M620 185 L655 185" stroke="#a855f7" stroke-width="2" stroke-dasharray="4 2"/>
+  <polygon points="655,181 663,185 655,189" fill="#a855f7"/>
+  <path d="M655 215 L620 215" stroke="#00d9ff" stroke-width="2" stroke-dasharray="4 2"/>
+  <polygon points="620,211 612,215 620,219" fill="#00d9ff"/>
+  <text x="638" y="176" text-anchor="middle" font-family="ui-monospace, monospace" font-size="9" fill="#c89bff">POSTGRES</text>
+  <text x="638" y="233" text-anchor="middle" font-family="ui-monospace, monospace" font-size="9" fill="#00d9ff">REALTIME</text>
 
-    <!-- Sub-node: Android App -->
-    <g transform="translate(14, 154)">
-      <rect x="3" y="3" width="192" height="106" rx="6" fill="#000000"/>
-      <rect x="0" y="0" width="192" height="106" rx="6" fill="#141424" stroke="#c8f31d" stroke-width="1.5"/>
-      <circle cx="16" cy="18" r="4" fill="#c8f31d"/>
-      <text class="box-title" x="28" y="21" fill="#c8f31d">KAZE ANDROID</text>
-      <text class="arch-sub" x="16" y="44">Kotlin 2.0 + Compose</text>
-      <text class="arch-sub" x="16" y="60">Media3 ExoPlayer · PiP</text>
-      <text class="arch-sub" x="16" y="76">Room Local Cache</text>
-      <text class="arch-sub" x="16" y="92" fill="#c8f31d">Auto OTA Update</text>
-    </g>
+  <path d="M930 185 L965 185" stroke="#00d9ff" stroke-width="2" stroke-dasharray="4 2"/>
+  <polygon points="965,181 973,185 965,189" fill="#00d9ff"/>
+  <path d="M965 215 L930 215" stroke="#6d5ef8" stroke-width="2" stroke-dasharray="4 2"/>
+  <polygon points="930,211 922,215 930,219" fill="#6d5ef8"/>
+  <text x="948" y="176" text-anchor="middle" font-family="ui-monospace, monospace" font-size="9" fill="#00d9ff">AUTH</text>
+  <text x="948" y="233" text-anchor="middle" font-family="ui-monospace, monospace" font-size="9" fill="#6d5ef8">SYNC</text>
+
+  <!-- Node 1: Cloudflare Edge -->
+  <g transform="translate(35 65)">
+    <rect width="275" height="310" rx="4" fill="#0c0c18" stroke="#f59e0b" stroke-width="1.8"/>
+    <rect x="0" y="0" width="275" height="36" fill="#181520" rx="4"/>
+    <text x="14" y="23" font-family="ui-monospace, monospace" font-size="12" font-weight="800" fill="#f59e0b" letter-spacing="1">01 · CLOUDFLARE EDGE</text>
+    <rect x="200" y="8" width="62" height="20" fill="#f59e0b" rx="2"/>
+    <text x="231" y="22" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" font-weight="800" fill="#080810">PERÍMETRO</text>
+    
+    <text x="16" y="65" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">DNS UNIFICADO &amp; SSL</text>
+    <text x="16" y="83" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">Certificado estricto + HTTP/3</text>
+    
+    <text x="16" y="115" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">WAF FIREWALL &amp; RATELIMIT</text>
+    <text x="16" y="133" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">Bloqueo perimetral y anti-bot</text>
+    
+    <text x="16" y="165" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">WORKER M3U8 PROXY</text>
+    <text x="16" y="183" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">Bypass de CORS y referrers</text>
+    
+    <text x="16" y="215" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">COMPRESIÓN BROTLI</text>
+    <text x="16" y="233" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">Caché global de estáticos</text>
+    
+    <rect x="14" y="260" width="247" height="34" fill="#141424" stroke="#252440" rx="3"/>
+    <text x="137" y="281" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10.5" font-weight="700" fill="#f59e0b">ORIGIN IP SHIELDED</text>
   </g>
 
-  <!-- ══════════════ 2. CLOUDFLARE EDGE & PROXY ══════════════ -->
-  <g transform="translate(290, 56)">
-    <rect x="0" y="0" width="220" height="280" rx="8" fill="#0d0d1a" stroke="#2a2a40" stroke-width="1.2"/>
-    <rect x="0" y="0" width="220" height="28" rx="8 8 0 0" fill="#131326"/>
-    <text class="arch-mono" x="14" y="18" fill="#f38020" font-size="10" letter-spacing="1.5">02 // CLOUDFLARE EDGE</text>
-
-    <!-- Node: Cloudflare DNS / Cache / WAF -->
-    <g transform="translate(14, 42)">
-      <rect x="3" y="3" width="192" height="96" rx="6" fill="#000000"/>
-      <rect x="0" y="0" width="192" height="96" rx="6" fill="#18131d" stroke="#f38020" stroke-width="1.5"/>
-      <circle cx="16" cy="18" r="4" fill="#f38020"/>
-      <text class="box-title" x="28" y="21" fill="#f7f5ff">CF DNS &amp; CACHE</text>
-      <text class="arch-sub" x="16" y="44">Edge Reverse Proxy</text>
-      <text class="arch-sub" x="16" y="60">DDoS &amp; WAF Ruleset</text>
-      <text class="arch-sub" x="16" y="76" fill="#f38020">orunei.sbs / kaze.apk</text>
-    </g>
-
-    <!-- Node: Video Proxy Worker -->
-    <g transform="translate(14, 154)">
-      <rect x="3" y="3" width="192" height="106" rx="6" fill="#000000"/>
-      <rect x="0" y="0" width="192" height="106" rx="6" fill="#18131d" stroke="#00d9ff" stroke-width="1.5"/>
-      <circle cx="16" cy="18" r="4" fill="#00d9ff"/>
-      <text class="box-title" x="28" y="21" fill="#00d9ff">CF STREAM WORKER</text>
-      <text class="arch-sub" x="16" y="44">HLS M3U8 Rewriter</text>
-      <text class="arch-sub" x="16" y="60">CORS &amp; Referer Bypass</text>
-      <text class="arch-sub" x="16" y="76">Dual Failover Stream</text>
-      <text class="arch-sub" x="16" y="92" fill="#00d9ff">Zero Buffer Latency</text>
-    </g>
+  <!-- Node 2: Next.js 16 VPS -->
+  <g transform="translate(345 65)">
+    <rect width="275" height="310" rx="4" fill="#0c0c18" stroke="#a855f7" stroke-width="1.8"/>
+    <rect x="0" y="0" width="275" height="36" fill="#1b122c" rx="4"/>
+    <text x="14" y="23" font-family="ui-monospace, monospace" font-size="12" font-weight="800" fill="#a855f7" letter-spacing="1">02 · NEXT.JS 16 VPS</text>
+    <rect x="200" y="8" width="62" height="20" fill="#a855f7" rx="2"/>
+    <text x="231" y="22" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" font-weight="800" fill="#080810">STANDALONE</text>
+    
+    <text x="16" y="65" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">APP ROUTER &amp; CACHE</text>
+    <text x="16" y="83" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">React 19 + use cache granular</text>
+    
+    <text x="16" y="115" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">CADDY 2 &amp; SYSTEMD</text>
+    <text x="16" y="133" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">Despliegue con reversión auto</text>
+    
+    <text x="16" y="165" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">HLS REPRODUCTOR WEB</text>
+    <text x="16" y="183" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">AniSkip OP/ED + failover</text>
+    
+    <text x="16" y="215" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">STORY BRIDGE ENGINE</text>
+    <text x="16" y="233" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">Mapeo Anime -> Manga</text>
+    
+    <rect x="14" y="260" width="247" height="34" fill="#141424" stroke="#252440" rx="3"/>
+    <text x="137" y="281" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10.5" font-weight="700" fill="#c89bff">RAM ACORRALADA &lt; 200MB</text>
   </g>
 
-  <!-- ══════════════ 3. VPS STANDALONE INFRA ══════════════ -->
-  <g transform="translate(550, 56)">
-    <rect x="0" y="0" width="360" height="280" rx="8" fill="#0d0d1a" stroke="#2a2a40" stroke-width="1.2"/>
-    <rect x="0" y="0" width="360" height="28" rx="8 8 0 0" fill="#131326"/>
-    <text class="arch-mono" x="14" y="18" fill="#00d9ff" font-size="10" letter-spacing="1.5">03 // DEDICATED VPS HOST (UBUNTU)</text>
-
-    <!-- Sub-node: Caddy Reverse Proxy -->
-    <g transform="translate(14, 42)">
-      <rect x="3" y="3" width="156" height="96" rx="6" fill="#000000"/>
-      <rect x="0" y="0" width="156" height="96" rx="6" fill="#141926" stroke="#00d9ff" stroke-width="1.5"/>
-      <circle cx="16" cy="18" r="4" fill="#00d9ff"/>
-      <text class="box-title" x="28" y="21" fill="#f7f5ff">CADDY 2</text>
-      <text class="arch-sub" x="14" y="44">Auto TLS / HTTPS</text>
-      <text class="arch-sub" x="14" y="60">CF-IP Filtering</text>
-      <text class="arch-sub" x="14" y="76" fill="#00d9ff">Upstream Proxy</text>
-    </g>
-
-    <!-- Sub-node: Next.js Standalone -->
-    <g transform="translate(186, 42)">
-      <rect x="3" y="3" width="156" height="96" rx="6" fill="#000000"/>
-      <rect x="0" y="0" width="156" height="96" rx="6" fill="#141424" stroke="#a855f7" stroke-width="1.5"/>
-      <circle cx="16" cy="18" r="4" fill="#a855f7"/>
-      <text class="box-title" x="28" y="21" fill="#f7f5ff">NEXT.JS DAEMON</text>
-      <text class="arch-sub" x="14" y="44">Standalone Node</text>
-      <text class="arch-sub" x="14" y="60">Systemd Service</text>
-      <text class="arch-sub" x="14" y="76" fill="#a855f7">Zero-Downtime Rollback</text>
-    </g>
-
-    <!-- Sub-node: Resolver Node & Redis -->
-    <g transform="translate(14, 154)">
-      <rect x="3" y="3" width="156" height="106" rx="6" fill="#000000"/>
-      <rect x="0" y="0" width="156" height="106" rx="6" fill="#171424" stroke="#ff4fd8" stroke-width="1.5"/>
-      <circle cx="16" cy="18" r="4" fill="#ff4fd8"/>
-      <text class="box-title" x="28" y="21" fill="#ff4fd8">STREAM RESOLVER</text>
-      <text class="arch-sub" x="14" y="44">Node.js Engine</text>
-      <text class="arch-sub" x="14" y="60">Redis Stream Cache</text>
-      <text class="arch-sub" x="14" y="76">Auto Fallback</text>
-      <text class="arch-sub" x="14" y="92" fill="#ff4fd8">&lt; 150ms Response</text>
-    </g>
-
-    <!-- Sub-node: APK & Static files -->
-    <g transform="translate(186, 154)">
-      <rect x="3" y="3" width="156" height="106" rx="6" fill="#000000"/>
-      <rect x="0" y="0" width="156" height="106" rx="6" fill="#161c14" stroke="#c8f31d" stroke-width="1.5"/>
-      <circle cx="16" cy="18" r="4" fill="#c8f31d"/>
-      <text class="box-title" x="28" y="21" fill="#c8f31d">APK DISTRIBUTION</text>
-      <text class="arch-sub" x="14" y="44">kaze.apk (v0.3.0)</text>
-      <text class="arch-sub" x="14" y="60">version.json Hash</text>
-      <text class="arch-sub" x="14" y="76">Release Manifest</text>
-      <text class="arch-sub" x="14" y="92" fill="#c8f31d">Instant Download</text>
-    </g>
+  <!-- Node 3: Supabase Cloud -->
+  <g transform="translate(655 65)">
+    <rect width="275" height="310" rx="4" fill="#0c0c18" stroke="#00d9ff" stroke-width="1.8"/>
+    <rect x="0" y="0" width="275" height="36" fill="#0e1b28" rx="4"/>
+    <text x="14" y="23" font-family="ui-monospace, monospace" font-size="12" font-weight="800" fill="#00d9ff" letter-spacing="1">03 · SUPABASE DATA</text>
+    <rect x="200" y="8" width="62" height="20" fill="#00d9ff" rx="2"/>
+    <text x="231" y="22" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" font-weight="800" fill="#080810">POSTGRES</text>
+    
+    <text x="16" y="65" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">ROW LEVEL SECURITY</text>
+    <text x="16" y="83" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">Aislamiento por usuario en DB</text>
+    
+    <text x="16" y="115" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">REALTIME WEBSOCKETS</text>
+    <text x="16" y="133" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">Watch Parties y chat sincronizado</text>
+    
+    <text x="16" y="165" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">CIFRADO AES-256-GCM</text>
+    <text x="16" y="183" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">Tokens AniList seguros</text>
+    
+    <text x="16" y="215" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">HISTORIAL Y LOGROS</text>
+    <text x="16" y="233" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">Progreso por segundo y Wrapped</text>
+    
+    <rect x="14" y="260" width="247" height="34" fill="#141424" stroke="#252440" rx="3"/>
+    <text x="137" y="281" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10.5" font-weight="700" fill="#00d9ff">POLÍTICAS RLS AUDITADAS</text>
   </g>
 
-  <!-- ══════════════ 4. SUPABASE & ANILIST ══════════════ -->
-  <g transform="translate(950, 56)">
-    <rect x="0" y="0" width="300" height="280" rx="8" fill="#0d0d1a" stroke="#2a2a40" stroke-width="1.2"/>
-    <rect x="0" y="0" width="300" height="28" rx="8 8 0 0" fill="#131326"/>
-    <text class="arch-mono" x="14" y="18" fill="#3ecf8e" font-size="10" letter-spacing="1.5">04 // STATE, DATA &amp; APIS</text>
-
-    <!-- Node: Supabase -->
-    <g transform="translate(14, 42)">
-      <rect x="3" y="3" width="270" height="96" rx="6" fill="#000000"/>
-      <rect x="0" y="0" width="270" height="96" rx="6" fill="#111c18" stroke="#3ecf8e" stroke-width="1.5"/>
-      <circle cx="16" cy="18" r="4" fill="#3ecf8e"/>
-      <text class="box-title" x="28" y="21" fill="#3ecf8e">SUPABASE (POSTGRES + RT)</text>
-      <text class="arch-sub" x="16" y="44">Row Level Security (RLS) Policies</text>
-      <text class="arch-sub" x="16" y="60">Realtime Presence &amp; Watch Party Chat</text>
-      <text class="arch-sub" x="16" y="76" fill="#3ecf8e">Auth + Encrypted Tokens (AES-256-GCM)</text>
-    </g>
-
-    <!-- Node: AniList GraphQL API -->
-    <g transform="translate(14, 154)">
-      <rect x="3" y="3" width="270" height="106" rx="6" fill="#000000"/>
-      <rect x="0" y="0" width="270" height="106" rx="6" fill="#101928" stroke="#00d9ff" stroke-width="1.5"/>
-      <circle cx="16" cy="18" r="4" fill="#00d9ff"/>
-      <text class="box-title" x="28" y="21" fill="#00d9ff">ANILIST GRAPHQL API</text>
-      <text class="arch-sub" x="16" y="44">Anime &amp; Manga Comprehensive Metadata</text>
-      <text class="arch-sub" x="16" y="60">Characters, Airing Schedule &amp; Relations</text>
-      <text class="arch-sub" x="16" y="76">User List Import &amp; Export Sync</text>
-      <text class="arch-sub" x="16" y="92" fill="#00d9ff">OAuth 2.0 PKCE Handshake</text>
-    </g>
+  <!-- Node 4: Native Android Client -->
+  <g transform="translate(965 65)">
+    <rect width="275" height="310" rx="4" fill="#0c0c18" stroke="#6d5ef8" stroke-width="1.8"/>
+    <rect x="0" y="0" width="275" height="36" fill="#16152e" rx="4"/>
+    <text x="14" y="23" font-family="ui-monospace, monospace" font-size="12" font-weight="800" fill="#6d5ef8" letter-spacing="1">04 · ANDROID APP</text>
+    <rect x="200" y="8" width="62" height="20" fill="#6d5ef8" rx="2"/>
+    <text x="231" y="22" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" font-weight="800" fill="#f7f5ff">KOTLIN</text>
+    
+    <text x="16" y="65" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">JETPACK COMPOSE</text>
+    <text x="16" y="83" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">UI declarativa y animaciones</text>
+    
+    <text x="16" y="115" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">MEDIA3 &amp; EXOPLAYER</text>
+    <text x="16" y="133" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">PiP + gestos de brillo/volumen</text>
+    
+    <text x="16" y="165" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">ROOM DB OFFLINE</text>
+    <text x="16" y="183" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">Biblioteca local SQLite</text>
+    
+    <text x="16" y="215" font-family="ui-monospace, monospace" font-size="12" font-weight="700" fill="#f7f5ff">ACTUALIZACIÓN OTA</text>
+    <text x="16" y="233" font-family="ui-monospace, monospace" font-size="11" fill="#a9a6c4">Update directo con 1 toque</text>
+    
+    <rect x="14" y="260" width="247" height="34" fill="#141424" stroke="#252440" rx="3"/>
+    <text x="137" y="281" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10.5" font-weight="700" fill="#c89bff">DESACOPLADO DE WEB</text>
   </g>
-
-  <!-- ══════════════ DATA BUS CONNECTIONS ══════════════ -->
-  <!-- Client to Cloudflare -->
-  <line x1="250" y1="145" x2="290" y2="145" stroke="#00d9ff" stroke-width="2" marker-end="url(#arrow-cyan)"/>
-  <!-- Cloudflare to Caddy -->
-  <line x1="510" y1="145" x2="550" y2="145" stroke="#00d9ff" stroke-width="2" marker-end="url(#arrow-cyan)"/>
-  <!-- Next.js to Supabase & AniList -->
-  <line x1="910" y1="145" x2="950" y2="145" stroke="#c8f31d" stroke-width="2" marker-end="url(#arrow-lime)"/>
-  <!-- Stream Worker to Cloudflare / Client -->
-  <line x1="400" y1="260" x2="400" y2="280" stroke="#ff4fd8" stroke-width="1.5" stroke-dasharray="4 4"/>
 </svg>
