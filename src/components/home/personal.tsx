@@ -10,7 +10,7 @@ import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { LibraryEntry } from "@/lib/library/types";
 import type { MediaCard } from "@/lib/anilist/types";
 import { useLibrary } from "@/stores/library";
-import { recentProgress, useProgress } from "@/stores/progress";
+import { continueByAnime, useProgress } from "@/stores/progress";
 import { useAuth } from "@/stores/auth";
 import { buildGenreProfile, pickSeed, recommend } from "@/lib/recommend";
 import { api } from "@/lib/api-client";
@@ -28,30 +28,38 @@ function useLibraryList() {
   return { list: useMemo(() => Object.values(entries), [entries]), hydrated };
 }
 
+// Filtrar exclusivamente animes reales con AniList ID numérico positivo, omitiendo demos
+function isRealAnime(p: { seriesId: string; isDemo?: boolean; seriesTitle?: string | null; title?: string | null }) {
+  if (p.isDemo) return false;
+  const num = Number(p.seriesId);
+  if (!Number.isInteger(num) || num <= 0) return false;
+  const sTitle = (p.seriesTitle || "").toLowerCase();
+  const epTitle = (p.title || "").toLowerCase();
+  if (sTitle.includes("demo") || sTitle.includes("open cinema")) return false;
+  if (epTitle.includes("big buck bunny") || epTitle.includes("sintel") || epTitle.includes("elephants dream")) return false;
+  return true;
+}
+
 /** 1 · Continue Watching: real playback progress + series marked Watching. */
 export function ContinueWatching() {
   const items = useProgress((s) => s.items);
   const hydrated = useProgress((s) => s.hydrated);
   const { list } = useLibraryList();
 
-  // Filtrar exclusivamente animes reales con AniList ID numérico positivo, omitiendo demos
-  const isRealAnime = (p: { seriesId: string; isDemo?: boolean; seriesTitle?: string | null; title?: string | null }) => {
-    if (p.isDemo) return false;
-    const num = Number(p.seriesId);
-    if (!Number.isInteger(num) || num <= 0) return false;
-    const sTitle = (p.seriesTitle || "").toLowerCase();
-    const epTitle = (p.title || "").toLowerCase();
-    if (sTitle.includes("demo") || sTitle.includes("open cinema")) return false;
-    if (epTitle.includes("big buck bunny") || epTitle.includes("sintel") || epTitle.includes("elephants dream")) return false;
-    return true;
-  };
-  const playable = recentProgress(items, 12).filter(isRealAnime);
-  const watching = list.filter((e) => e.status === "CURRENT" || e.status === "REPEATING").sort((a, b) => b.updatedAt - a.updatedAt);
+  // Una tarjeta por anime: el último episodio a medias, o el siguiente si ya lo terminaste.
+  const continueList = useMemo(
+    () => continueByAnime(Object.fromEntries(Object.entries(items).filter(([, p]) => isRealAnime(p))), 12),
+    [items],
+  );
+  const inProgressIds = new Set(continueList.map((c) => Number(c.progress.seriesId)));
+  const watching = list
+    .filter((e) => (e.status === "CURRENT" || e.status === "REPEATING") && !inProgressIds.has(e.mediaId))
+    .sort((a, b) => b.updatedAt - a.updatedAt);
 
   // Obtener metadatos de AniList para las series en progreso de reproducción
   const aniIds = useMemo(
-    () => Array.from(new Set(playable.map((p) => Number(p.seriesId)).filter((id) => Number.isInteger(id) && id > 0))),
-    [playable]
+    () => Array.from(new Set(continueList.map((c) => Number(c.progress.seriesId)).filter((id) => Number.isInteger(id) && id > 0))),
+    [continueList]
   );
   const { data: batchData } = useQuery({
     queryKey: ["continue-batch", aniIds],
@@ -67,22 +75,35 @@ export function ContinueWatching() {
 
   const airing = useAiringStatus(watching);
 
+  // Quitar "siguiente episodio" cuando aún no sale o el anime ya terminó.
+  const playable = continueList.filter((c) => {
+    if (c.kind !== "next") return true;
+    const media = mediaMap.get(Number(c.progress.seriesId));
+    if (!media) return true;
+    const aired = media.nextAiringEpisode ? media.nextAiringEpisode.episode - 1 : media.episodes;
+    return !aired || c.nextEpisode <= aired;
+  });
+
   if (!hydrated || (!playable.length && !watching.length)) return null;
   return (
     <section aria-labelledby="continue-h" className="container-k relative z-[1] mt-12 sm:mt-16 pb-6">
       <SectionHeader id="continue-h" title="Continuar viendo" jp="続きから" />
       <Rail label="Continuar viendo" itemClassName="w-[78vw] xs:w-[56vw] sm:w-[40vw] md:w-[30vw] lg:w-[23vw] xl:w-[19vw] 3xl:w-[320px]">
         {[
-          ...playable.map((p) => {
+          ...playable.map((c) => {
+            const p = c.progress;
+            const isNext = c.kind === "next";
             const media = mediaMap.get(Number(p.seriesId));
             const seriesTitle = p.seriesTitle || media?.title.english || media?.title.romaji || "Anime";
-            const epNum = p.episodeNumber || parseInt(p.episodeId, 10) || 1;
-            const epTitle = p.title && !p.title.startsWith("Episodio") && p.title !== `Episode ${epNum}` ? p.title : `Episodio ${epNum}`;
-            const thumb = p.thumbnail || media?.bannerImage || media?.coverImage.extraLarge || media?.coverImage.large || null;
-            const pct = p.duration ? Math.min(100, Math.max(0, (p.position / p.duration) * 100)) : 0;
+            const epNum = isNext ? c.nextEpisode : p.episodeNumber || parseInt(p.episodeId, 10) || 1;
+            const epTitle = isNext
+              ? `Episodio ${epNum}`
+              : p.title && !p.title.startsWith("Episodio") && p.title !== `Episode ${epNum}` ? p.title : `Episodio ${epNum}`;
+            const thumb = (isNext ? null : p.thumbnail) || media?.bannerImage || media?.coverImage.extraLarge || media?.coverImage.large || p.thumbnail || null;
+            const pct = !isNext && p.duration ? Math.min(100, Math.max(0, (p.position / p.duration) * 100)) : 0;
 
             return (
-              <Link key={`p-${p.seriesId}-${p.episodeId}`} href={`/watch/${p.seriesId}/${p.episodeId}`} prefetch={false} className="k-card group block overflow-hidden">
+              <Link key={`p-${p.seriesId}`} href={`/watch/${p.seriesId}/${isNext ? epNum : p.episodeId}`} prefetch={false} className="k-card group block overflow-hidden">
                 <div className="relative aspect-video bg-elevated overflow-hidden">
                   {thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -113,7 +134,7 @@ export function ContinueWatching() {
                   </p>
                   <p className="truncate text-sm font-semibold mt-0.5">{epTitle}</p>
                   <p className="text-xs text-muted mt-0.5">
-                    Reanudar en {formatDuration(p.position)} de {formatDuration(p.duration)}
+                    {isNext ? `Siguiente episodio · viste el ${epNum - 1}` : `Reanudar en ${formatDuration(p.position)} de ${formatDuration(p.duration)}`}
                   </p>
                 </div>
               </Link>

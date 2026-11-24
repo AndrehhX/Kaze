@@ -102,3 +102,37 @@ export function recentProgress(items: Record<string, WatchProgress>, limit = 12)
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, limit);
 }
+
+/** Casi terminado para "Continuar viendo": los créditos suelen durar 1,5–2 min. */
+export function isPracticallyDone(p: Pick<WatchProgress, "completed" | "position" | "duration">) {
+  if (p.completed) return true;
+  if (!p.duration) return false;
+  return p.position >= p.duration * 0.85 || p.position >= p.duration - 150;
+}
+
+export type ContinueItem =
+  | { kind: "resume"; progress: WatchProgress }
+  | { kind: "next"; progress: WatchProgress; nextEpisode: number };
+
+/**
+ * Una sola entrada por anime, como en la app: se mira el último episodio tocado.
+ * Si está a medias → reanudar; si ya se terminó → siguiente episodio.
+ */
+export function continueByAnime(items: Record<string, WatchProgress>, limit = 12): ContinueItem[] {
+  const latest = new Map<string, WatchProgress>();
+  for (const p of Object.values(items)) {
+    const cur = latest.get(p.seriesId);
+    if (!cur || p.updatedAt > cur.updatedAt) latest.set(p.seriesId, p);
+  }
+  const out: ContinueItem[] = [];
+  for (const p of [...latest.values()].sort((a, b) => b.updatedAt - a.updatedAt)) {
+    if (isPracticallyDone(p)) {
+      const n = p.episodeNumber || Number(p.episodeId);
+      if (Number.isInteger(n) && n > 0 && String(n) === p.episodeId) out.push({ kind: "next", progress: p, nextEpisode: n + 1 });
+    } else if (p.position > 5) {
+      out.push({ kind: "resume", progress: p });
+    }
+    if (out.length >= limit) break;
+  }
+  return out;
+}
