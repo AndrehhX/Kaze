@@ -11,7 +11,7 @@ export function ServiceWorkerRegister() {
     ) {
       window.addEventListener("load", () => {
         navigator.serviceWorker
-          .register("/sw.js")
+          .register("/sw.js?v=2")
           .then((reg) => {
             console.log("[KAZE PWA] Service Worker registrado con alcance:", reg.scope);
           })

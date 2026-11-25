@@ -10,6 +10,7 @@ import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { useAuth } from "@/stores/auth";
 import { cn, relativeTime } from "@/lib/utils";
 import { useNow } from "@/lib/hooks";
+import { PushToggle } from "@/components/shell/push-toggle";
 
 export type Notification = {
   id: string;
@@ -136,6 +137,7 @@ function NotificationBellContent({ userId }: { userId: string }) {
               <CheckCheck className="size-3.5" /> Marcar leídas
             </button>
           </div>
+          <PushToggle />
           <div className="max-h-[60dvh] overflow-y-auto">
             {items.length === 0 && <p className="px-3 py-8 text-center text-sm text-muted">Estás al día. Las solicitudes, respuestas e invitaciones aparecerán aquí.</p>}
             {items.map((n) => {

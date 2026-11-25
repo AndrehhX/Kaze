@@ -2,6 +2,7 @@ import "server-only";
 import { anilistRequest } from "@/lib/anilist/client";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { siteUrl } from "@/lib/env";
+import { sendPushToUsers, type PushMessage } from "@/lib/push/send";
 
 /**
  * Avisos de episodios nuevos.
@@ -9,7 +10,8 @@ import { siteUrl } from "@/lib/env";
  *  1. Pide a AniList los episodios emitidos en la última ventana.
  *  2. Crea una notificación (kind "system", payload.type "new_episode") a cada usuario que
  *     tiene ese anime en Viendo / Planeado / Re-viendo, sin duplicar (payload.key).
- *  3. Si existe DISCORD_EPISODES_WEBHOOK_URL, publica los estrenos más populares en Discord.
+ *  3. Envía un aviso push al navegador de quien lo activó (src/lib/push).
+ *  4. Si existe DISCORD_EPISODES_WEBHOOK_URL, publica los estrenos más populares en Discord.
  */
 
 const AIRED_QUERY = /* GraphQL */ `
@@ -48,7 +50,7 @@ type Aired = {
   } | null;
 };
 
-export type EpisodeAlertsResult = { aired: number; notified: number; skippedDuplicates: number; discordPosted: number; errors: string[]; dryRun: boolean; sample: string[] };
+export type EpisodeAlertsResult = { aired: number; notified: number; skippedDuplicates: number; discordPosted: number; pushed: number; errors: string[]; dryRun: boolean; sample: string[] };
 
 const FOLLOWING = ["CURRENT", "PLANNING", "REPEATING"];
 /** Popularidad mínima en AniList para anunciarlo en Discord (evita spam de series muy nicho). */
@@ -71,7 +73,7 @@ export async function fetchAiredEpisodes(fromSec: number, toSec: number): Promis
 }
 
 export async function runEpisodeAlerts({ windowMinutes = 75, now = Date.now(), dryRun = false } = {}): Promise<EpisodeAlertsResult> {
-  const result: EpisodeAlertsResult = { aired: 0, notified: 0, skippedDuplicates: 0, discordPosted: 0, errors: [], dryRun, sample: [] };
+  const result: EpisodeAlertsResult = { aired: 0, notified: 0, skippedDuplicates: 0, discordPosted: 0, pushed: 0, errors: [], dryRun, sample: [] };
   const db = getSupabaseAdmin();
   if (!db) {
     result.errors.push("Supabase admin no configurado");
@@ -135,6 +137,10 @@ export async function runEpisodeAlerts({ windowMinutes = 75, now = Date.now(), d
       if (insErr) result.errors.push(`insert: ${insErr.message}`);
       else result.notified += Math.min(500, fresh.length - i);
     }
+    result.pushed = await sendPushToUsers(pushMessages(fresh)).catch((e: Error) => {
+      result.errors.push(`push: ${e.message}`);
+      return 0;
+    });
   }
 
   if (dryRun) return result; // en modo prueba nunca se publica en Discord
@@ -143,6 +149,30 @@ export async function runEpisodeAlerts({ windowMinutes = 75, now = Date.now(), d
     return 0;
   });
   return result;
+}
+
+type AlertRow = { user_id: string; payload: { message: string; href: string; cover: string; key: string } };
+
+/** Un aviso push por usuario: si salieron varios episodios a la vez, se agrupan. */
+function pushMessages(rows: AlertRow[]): Map<string, PushMessage> {
+  const byUser = new Map<string, AlertRow[]>();
+  for (const r of rows) byUser.set(r.user_id, [...(byUser.get(r.user_id) ?? []), r]);
+  const out = new Map<string, PushMessage>();
+  for (const [user, list] of byUser) {
+    const first = list[0].payload;
+    out.set(
+      user,
+      list.length === 1
+        ? { title: "Nuevo episodio", body: first.message.replace(/^Nuevo episodio: /, ""), url: first.href, icon: first.cover || undefined, tag: first.key }
+        : {
+            title: `${list.length} episodios nuevos`,
+            body: list.map((r) => r.payload.message.replace(/^Nuevo episodio: /, "")).slice(0, 4).join(" · "),
+            url: "/library",
+            tag: "kaze-episodes",
+          },
+    );
+  }
+  return out;
 }
 
 /** Publica en un canal de Discord (webhook) los estrenos más populares de la ventana. */

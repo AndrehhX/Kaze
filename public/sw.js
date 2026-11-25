@@ -102,3 +102,42 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request).catch(() => caches.match(event.request))
   );
 });
+
+// ── Avisos push (episodios nuevos). El servidor envía { title, body, url, icon, tag } ──
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+  const title = data.title || 'KAZE';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || '',
+      icon: data.icon || '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: data.tag || undefined,
+      renotify: Boolean(data.tag),
+      data: { url: data.url || '/' },
+      lang: 'es',
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin);
+  if (target.origin !== self.location.origin) return; // solo enlaces propios
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      for (const w of wins) {
+        if (new URL(w.url).origin === self.location.origin && 'focus' in w) {
+          w.navigate(target.href);
+          return w.focus();
+        }
+      }
+      return self.clients.openWindow(target.href);
+    })
+  );
+});
