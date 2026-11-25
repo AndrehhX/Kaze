@@ -4,7 +4,7 @@
 //   - Se avisa al staff con una mención al abrirlo.
 //   - Solo quien lo abrió o el staff pueden cerrarlo. Al cerrar se pide confirmación.
 //   - Apertura y cierre quedan en #Logs (quién, tipo, cuánto duró y cuántos mensajes tuvo).
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, PermissionFlagsBits as P } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, MessageFlags, PermissionFlagsBits as P } from "discord.js";
 
 const STAFF_ROLES = (process.env.STAFF_ROLE_IDS || "1573416756972757162,1573416759573356594").split(",").filter(Boolean); // Co-Owner, Moderador
 const LOGS_CHANNEL = process.env.CHANNEL_LOGS_ID || "1556527794018848838";
@@ -32,7 +32,7 @@ async function logEmbed(guild, embed) {
 async function openTicket(interaction) {
   const type = TYPES[interaction.customId] ?? TYPES.ticket_general;
   const { guild, user } = interaction;
-  await interaction.deferReply({ ephemeral: true }).catch(() => {});
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
 
   // ¿Ya tiene uno abierto?
   const existing = guild.channels.cache.find((c) => parseTopic(c.topic)?.userId === user.id);
@@ -81,14 +81,14 @@ async function openTicket(interaction) {
 
 async function askClose(interaction) {
   const info = parseTopic(interaction.channel?.topic);
-  if (!info) return interaction.reply({ content: "Este canal no es un ticket.", ephemeral: true });
+  if (!info) return interaction.reply({ content: "Este canal no es un ticket.", flags: MessageFlags.Ephemeral });
   if (interaction.user.id !== info.userId && !isStaff(interaction.member))
-    return interaction.reply({ content: "Solo quien abrió el ticket o el staff pueden cerrarlo.", ephemeral: true });
+    return interaction.reply({ content: "Solo quien abrió el ticket o el staff pueden cerrarlo.", flags: MessageFlags.Ephemeral });
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("close_ticket_yes").setLabel("Sí, cerrar").setEmoji("🔒").setStyle(ButtonStyle.Danger),
     new ButtonBuilder().setCustomId("close_ticket_no").setLabel("Cancelar").setStyle(ButtonStyle.Secondary),
   );
-  return interaction.reply({ content: "¿Seguro que quieres cerrar el ticket? El canal se borrará.", components: [row], ephemeral: true });
+  return interaction.reply({ content: "¿Seguro que quieres cerrar el ticket? El canal se borrará.", components: [row], flags: MessageFlags.Ephemeral });
 }
 
 async function closeTicket(interaction) {
@@ -137,7 +137,7 @@ export async function handleTicketButton(interaction) {
     log("error:", err.message);
     const msg = `❌ No se pudo completar: ${err.message}`;
     if (interaction.deferred || interaction.replied) await interaction.editReply(msg).catch(() => {});
-    else await interaction.reply({ content: msg, ephemeral: true }).catch(() => {});
+    else await interaction.reply({ content: msg, flags: MessageFlags.Ephemeral }).catch(() => {});
   }
   return true;
 }

@@ -10,7 +10,10 @@ import {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
-  Events
+  Events,
+  MessageFlags,
+  AuditLogEvent,
+  Partials
 } from 'discord.js';
 import { 
   joinVoiceChannel, 
@@ -44,6 +47,12 @@ const chanDespedidaId = "1573415016181403759";
 const chanNewGeneralId = "1573861292119298209";
 const chanAfkVoiceId = "1573415508223598733";
 const chanUpdatesId = "1573415038587240468"; // Canal exclusivo para updates y novedades de Orunei
+const chanNivelesId = "1573415019801223350";
+const chanOfertasId = "1556526261013057576";
+const roleVerificadoId = "1573416793840554156"; // 🧈 Panita Verificado: se da al aceptar las reglas
+const MIN_STAY_FOR_GOODBYE_MS = 10 * 60_000; // quien se va antes de 10 min no recibe despedida
+const OFERTAS_PING_COOLDOWN_MS = 3 * 3600_000;
+const EPH = { flags: MessageFlags.Ephemeral };
 
 const bienvenidaBannerPath = path.join(__dirname, "bienvenida_banner.jpg");
 const despedidaBannerPath = path.join(__dirname, "despedida_banner.jpg");
@@ -385,8 +394,10 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildMessageReactions, // ⭐ de #Destacados
     GatewayIntentBits.GuildModeration // baneos para el registro de #Logs
-  ]
+  ],
+  partials: [Partials.Message, Partials.Reaction, Partials.User] // reacciones en mensajes antiguos
 });
 
 // Cache inicial de miembros que ya tienen bienvenida
@@ -446,8 +457,33 @@ Lee las <#1556896259846045766>, elige tus roles en <#1573415025836826658> y salu
   }
 }
 
+/** Da el rol de verificado (aceptó las reglas). */
+async function giveVerified(member) {
+  if (member.user.bot || member.roles.cache.has(roleVerificadoId)) return;
+  await member.roles.add(roleVerificadoId, "Aceptó las reglas").catch((e) => console.error("Rol verificado:", e.message));
+}
+
+/** ¿Merece despedida? No para bots, baneados, expulsados, quien nunca aceptó las reglas ni quien estuvo menos de 10 min. */
+async function shouldSayGoodbye(member) {
+  if (member.user?.bot) return false;
+  if (member.pending) return false;
+  if (member.joinedTimestamp && Date.now() - member.joinedTimestamp < MIN_STAY_FOR_GOODBYE_MS) return false;
+  await sleep(2500); // el baneo y el registro de auditoría llegan un poco después de la salida
+  const banned = await member.guild.bans.fetch({ user: member.id, force: true }).then(() => true).catch(() => false);
+  if (banned) return false;
+  try {
+    const logs = await member.guild.fetchAuditLogs({ type: AuditLogEvent.MemberKick, limit: 5 });
+    if (logs.entries.some((e) => e.target?.id === member.id && Date.now() - e.createdTimestamp < 30_000)) return false;
+  } catch { /* sin permiso de auditoría: se despide igual */ }
+  return true;
+}
+
 async function sendLeave(member) {
   try {
+    if (!(await shouldSayGoodbye(member))) {
+      console.log(`🤐 Sin despedida para @${member.user?.username || member.id} (bot, baneo, expulsión, sin verificar o estancia corta)`);
+      return;
+    }
     const chan = member.guild.channels.cache.get(chanDespedidaId);
     if (!chan) return;
     const user = member.user;
@@ -521,7 +557,7 @@ function connectToAfkChannel(guild) {
 // ------------------------------------------
 // EVENTO: BOT LISTO
 // ------------------------------------------
-client.once('ready', async () => {
+client.once(Events.ClientReady, async () => {
   console.log(`🤖 ¡PanBot 24/7 ONLINE y CONECTADA como ${client.user.tag}!`);
   const guild = client.guilds.cache.get(GUILD_ID);
   if (guild) {
@@ -550,8 +586,12 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 // ------------------------------------------
 // EVENTO: NUEVO MIEMBRO
 // ------------------------------------------
+// La bienvenida sale cuando la persona acepta las reglas (el servidor tiene la verificación de Discord activa).
+// Si entra sin verificación pendiente, sale al momento.
 client.on('guildMemberAdd', async (member) => {
-  console.log(`✨ Nuevo miembro detectado: @${member.user.username}`);
+  console.log(`✨ Nuevo miembro detectado: @${member.user.username}${member.pending ? " (pendiente de aceptar las reglas)" : ""}`);
+  if (member.user.bot || member.pending) return;
+  await giveVerified(member);
   if (!welcomedUsers.has(member.user.id)) {
     welcomedUsers.add(member.user.id);
     await sendWelcome(member);
@@ -559,9 +599,12 @@ client.on('guildMemberAdd', async (member) => {
 });
 
 client.on('guildMemberUpdate', async (oldMember, newMember) => {
-  if (oldMember.pending && !newMember.pending && !welcomedUsers.has(newMember.user.id)) {
+  if (!oldMember.pending || newMember.pending || newMember.user.bot) return;
+  if (newMember.roles.cache.has(roleVerificadoId)) return; // ya pasó por aquí antes
+  console.log(`✨ Miembro aceptó las reglas: @${newMember.user.username}`);
+  await giveVerified(newMember);
+  if (!welcomedUsers.has(newMember.user.id)) {
     welcomedUsers.add(newMember.user.id);
-    console.log(`✨ Miembro completó verificación/screening: @${newMember.user.username}`);
     await sendWelcome(newMember);
   }
 });
@@ -577,12 +620,31 @@ client.on('guildMemberRemove', async (member) => {
 // ------------------------------------------
 // EVENTO: MENSAJES (MENCIÓN EN TEXTO)
 // ------------------------------------------
+let lastOfertasPing = 0;
 client.on('messageCreate', async (message) => {
+  // Ofertas: cuando el bot de ofertas publica, se avisa a quien eligió el rol (como mucho cada 3 h).
+  if (message.author.bot && message.channelId === chanOfertasId && message.author.id !== client.user.id) {
+    if (Date.now() - lastOfertasPing < OFERTAS_PING_COOLDOWN_MS) return;
+    const role = message.guild?.roles.cache.find((r) => !r.managed && /ofertas gratis/i.test(r.name));
+    if (!role) return;
+    lastOfertasPing = Date.now();
+    await message.reply({ content: `🎁 <@&${role.id}> ¡hay juegos gratis nuevos!`, allowedMentions: { roles: [role.id], repliedUser: false } }).catch((e) => console.error("Aviso de ofertas:", e.message));
+    return;
+  }
   if (message.author.bot) return;
 
-  const isMentioned = message.mentions.has(client.user);
-  if (isMentioned) {
-    await message.reply("¡Qué onda! Me encuentro en modo silencioso descansando en el canal de <#1573415508223598733> 💤. ¡Aquí sigo activa 24/7 para bienvenidas, roles y soporte del server!");
+  // Solo una mención directa (no @everyone ni respuestas a sus mensajes).
+  if (message.mentions.users.has(client.user.id)) {
+    await message.reply({
+      content: [
+        "¡Qué onda, panita! 🧈 Esto es lo que hago:",
+        "• `/anime` busca un anime · `/hoy` estrenos de hoy · `/ruleta` uno al azar",
+        "• `/seguir` te aviso por DM cuando sale el capítulo nuevo de tu anime",
+        "• `/nivel` y `/top` niveles del server · `/cumple` tu cumpleaños",
+        `• ¿Problemas con Orunei o con el server? Abre un ticket en <#1573415030857404446>`,
+      ].join("\n"),
+      allowedMentions: { repliedUser: false },
+    }).catch(() => {});
   }
 });
 
@@ -597,14 +659,14 @@ client.on('interactionCreate', async (interaction) => {
     if (cmd === 'hablar' || cmd === 'panbot') {
       return interaction.reply({
         content: "💤 ¡Hola! El modo de voz automática está pausado por los administradores. Me mantengo silenciosa y ensordecida en <#1573415508223598733> para acompañar el server sin interrumpir las partidas.",
-        ephemeral: true
+        ...EPH
       });
     }
 
     if (cmd === 'salir') {
       return interaction.reply({
         content: "💤 PanBot ya se encuentra descansando ensordecida en el canal de AFK.",
-        ephemeral: true
+        ...EPH
       });
     }
   }
@@ -620,7 +682,7 @@ client.on('interactionCreate', async (interaction) => {
   if (customId === "voice_call") {
     return interaction.reply({
       content: "💤 ¡Hola! El modo de voz automática está pausado por los administradores. PanBot se mantiene ensordecida y tranquila en el canal de AFK <#1573415508223598733>.",
-      ephemeral: true
+      ...EPH
     });
   }
 
@@ -628,35 +690,30 @@ client.on('interactionCreate', async (interaction) => {
   if (customId === "voice_leave") {
     return interaction.reply({
       content: "💤 PanBot ya se encuentra descansando ensordecida en el canal de AFK.",
-      ephemeral: true
+      ...EPH
     });
   }
 
   // ROLES
   if (customId.startsWith("role_")) {
     const roleId = customId.replace("role_", "");
-    const hasRole = member.roles.cache.has(roleId);
-
+    // Se responde primero (Discord da 3 s) y luego se cambia el rol.
+    await interaction.deferReply(EPH).catch(() => {});
+    const role = interaction.guild.roles.cache.get(roleId);
+    if (!role || role.managed) {
+      return interaction.editReply("⚠️ Ese rol ya no existe. Avísale al staff para que actualice el panel.").catch(() => {});
+    }
     try {
-      if (hasRole) {
-        await member.roles.remove(roleId);
-        await interaction.reply({
-          content: `❌ Se te ha retirado el rol <@&${roleId}> correctamente.`,
-          ephemeral: true
-        });
+      if (member.roles.cache.has(roleId)) {
+        await member.roles.remove(roleId, "Panel de roles");
+        await interaction.editReply(`❌ Te quité el rol <@&${roleId}>.`);
       } else {
-        await member.roles.add(roleId);
-        await interaction.reply({
-          content: `✅ ¡Te has asignado el rol <@&${roleId}> con éxito!`,
-          ephemeral: true
-        });
+        await member.roles.add(roleId, "Panel de roles");
+        await interaction.editReply(`✅ Ya tienes el rol <@&${roleId}>.`);
       }
     } catch (err) {
       console.error("Error cambiando rol:", err.message);
-      await interaction.reply({
-        content: `⚠️ No se pudo cambiar el rol. (Asegúrate de que el rol de PanBot esté por encima en Discord).`,
-        ephemeral: true
-      });
+      await interaction.editReply("⚠️ No pude cambiar el rol. Avísale al staff (el rol de PanBot tiene que estar por encima).").catch(() => {});
     }
     return;
   }
@@ -667,7 +724,12 @@ client.on('interactionCreate', async (interaction) => {
 
 registerKazeFeatures(client);
 registerLogs(client, { guildId: GUILD_ID, channelId: process.env.CHANNEL_LOGS_ID || "1556527794018848838" });
-registerLevels(client, { guildId: GUILD_ID, levelUpChannelId: process.env.CHANNEL_LEVELUP_ID || chanNewGeneralId, afkChannelId: chanAfkVoiceId });
+registerLevels(client, {
+  guildId: GUILD_ID,
+  levelUpChannelId: process.env.CHANNEL_LEVELUP_ID || chanNivelesId, // todas las subidas
+  rankUpChannelId: process.env.CHANNEL_RANKUP_ID || chanNewGeneralId, // solo rangos nuevos y resumen semanal
+  afkChannelId: chanAfkVoiceId,
+});
 // Todos los comandos se registran juntos: registrar por partes borraría los del otro módulo.
 client.once(Events.ClientReady, async () => {
   const all = [...KAZE_COMMANDS, ...LEVEL_COMMANDS];

@@ -3,6 +3,7 @@
 // cambios de roles y de apodo, y canales creados o borrados. Cuando se puede, dice quién lo hizo (registro de auditoría).
 import { AuditLogEvent, EmbedBuilder, Events } from "discord.js";
 
+const QUIET_ROLES = new Set((process.env.QUIET_ROLE_IDS || "1573416793840554156").split(",")); // 🧈 Panita Verificado
 const C = { join: 0x22c55e, leave: 0xef4444, mod: 0xf97316, roles: 0xa855f7, info: 0x64748b };
 const log = (...a) => console.log("[logs]", ...a);
 const DAY = 86400_000;
@@ -84,6 +85,9 @@ export function registerLogs(client, cfg) {
     if (added.size || removed.size) {
       const ex = await executor(after.guild, AuditLogEvent.MemberRoleUpdate, after.id);
       const byBot = ex?.by?.id === client.user.id;
+      // Roles que PanBot da en automático a todo el mundo (verificado): no llenan #Logs.
+      const changed = [...added.keys(), ...removed.keys()];
+      if (byBot && changed.every((id) => QUIET_ROLES.has(id))) return;
       const lines = [...added.map((r) => `➕ ${r.name}`), ...removed.map((r) => `➖ ${r.name}`)].join("\n");
       const e = new EmbedBuilder()
         .setColor(C.roles)
@@ -126,7 +130,7 @@ export function registerLogs(client, cfg) {
   client.on(Events.ChannelDelete, async (ch) => {
     if (!mine(ch.guild)) return;
     const ex = await executor(ch.guild, AuditLogEvent.ChannelDelete, ch.id);
-    if (ex?.by?.id === client.user.id && ch.name.startsWith("ticket-")) return;
+    if (ex?.by?.id === client.user.id && (ch.name.startsWith("ticket-") || ch.name.startsWith("🔊"))) return; // tickets y salas de voz temporales
     await send(new EmbedBuilder().setColor(C.leave).setAuthor({ name: "Canal borrado" }).setDescription(`\`#${ch.name}\`${ex ? `\nPor ${who(ex.by)}` : ""}`));
   });
 

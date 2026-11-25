@@ -9,7 +9,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Events, SlashCommandBuilder } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Events, MessageFlags, SlashCommandBuilder } from "discord.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const STATE_FILE = path.join(DIR, "state.json");
@@ -211,7 +211,7 @@ async function randomAnime(genre) {
 
 async function ruletaReply(genre) {
   const m = await randomAnime(genre);
-  if (!m) return { content: "No encontré nada con ese género. Prueba otro.", ephemeral: true };
+  if (!m) return { content: "No encontré nada con ese género. Prueba otro.", flags: MessageFlags.Ephemeral };
   const again = new ButtonBuilder().setCustomId(`kaze_ruleta:${genre || ""}`).setLabel("Otra").setEmoji("🎲").setStyle(ButtonStyle.Secondary);
   return {
     embeds: [animeEmbed(m, `🎲 Ruleta${genre ? ` · ${genreEs(genre)}` : ""}`)],
@@ -277,7 +277,7 @@ async function handleInteraction(interaction) {
     const msg = "AniList no responde ahora mismo. Prueba en un minuto.";
     if (interaction.isAutocomplete()) return interaction.respond([]).catch(() => {});
     if (interaction.deferred || interaction.replied) return interaction.editReply(msg).catch(() => {});
-    return interaction.reply({ content: msg, ephemeral: true }).catch(() => {});
+    return interaction.reply({ content: msg, flags: MessageFlags.Ephemeral }).catch(() => {});
   }
 }
 

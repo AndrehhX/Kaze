@@ -105,7 +105,10 @@ async function api(method, url, body) {
 async function publish(key) {
   const p = PANELS[key];
   const me = await api("GET", "/users/@me");
-  const before = (await api("GET", `/channels/${p.channel}/messages?limit=50`)).filter((m) => m.author.id === me.id);
+  // Solo los paneles anteriores (mensajes de PanBot con la cabecera panel.gif), nunca los avisos de nivel ni otros mensajes.
+  const before = (await api("GET", `/channels/${p.channel}/messages?limit=100`)).filter(
+    (m) => m.author.id === me.id && m.attachments?.some((a) => a.filename === "panel.gif"),
+  );
   const gif = await headerGif(p.header);
   const form = new FormData();
   const payload = { embeds: [{ ...p.embed, color: PINK, image: { url: "attachment://panel.gif" } }], components: p.components ?? [], attachments: [{ id: 0, filename: "panel.gif" }] };
@@ -117,7 +120,9 @@ async function publish(key) {
     await api("DELETE", `/channels/${p.channel}/messages/${old.id}`);
     console.log(`  borrado el panel anterior ${old.id}`);
   }
-  const stateFile = path.join(DIR, "state.json");
+  if (p.pin) await api("PUT", `/channels/${p.channel}/pins/${msg.id}`).catch((e) => console.log("  no se pudo fijar:", e.message));
+  // Registro aparte de state.json: el bot reescribe state.json desde memoria y borraría esta clave.
+  const stateFile = path.join(DIR, "panels.json");
   const state = (() => {
     try {
       return JSON.parse(fs.readFileSync(stateFile, "utf8"));
@@ -125,7 +130,7 @@ async function publish(key) {
       return {};
     }
   })();
-  state.panels = { ...(state.panels ?? {}), [key]: { channel: p.channel, message: msg.id } };
+  state[key] = { channel: p.channel, message: msg.id };
   fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
 }
 
