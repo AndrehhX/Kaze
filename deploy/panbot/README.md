@@ -45,3 +45,4 @@ Si cambias `package.json`: `ssh vps "cd /opt/panbot && npm ci --omit=dev && pm2 
 - **Paneles**: `node panels.mjs publish roles levels` solo borra los paneles anteriores (mensajes con la cabecera `panel.gif`), nunca los avisos de nivel. El de niveles queda fijado.
 - **Chats generales**: #Chat-General es el público (aquí entran los nuevos, mensajes del sistema y celebraciones); #Chat-general es solo para los OG.
 - **MCP de Discord**: en la VPS hay un servidor MCP (`/opt/panbot-mcp/run.sh`, `discord-mcp`) que usa el token de PanBot para que un agente de IA pueda administrar el server; sin acceso a los comandos slash para no pisar los de PanBot.
+- **Staff** (25/11/2026): 👑 Co-Owner → CriXX (dueño del server) y Andreh; 🛡️ Moderador → Denyer. Ven #Staff, #Logs y los tickets.

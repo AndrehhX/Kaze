@@ -1,6 +1,7 @@
 // Permisos de los canales del servidor (se puede volver a ejecutar: deja todo igual si ya está bien).
 //   node server-permissions.mjs          muestra lo que cambiaría (no toca nada)
 //   node server-permissions.mjs --apply  lo aplica
+// Ofertas-Gratis: solo publica el bot Game Deals; los demás leen y reaccionan.
 // Solo edita las reglas de los roles indicados en cada canal; no borra ninguna otra.
 import path from "path";
 import { fileURLToPath } from "url";
@@ -17,11 +18,12 @@ const B = {
   View: 1n << 10n, Send: 1n << 11n, React: 1n << 6n, History: 1n << 16n, Attach: 1n << 15n, Embed: 1n << 14n,
   PubThreads: 1n << 35n, PrivThreads: 1n << 36n, SendThreads: 1n << 38n, MentionAll: 1n << 17n,
 };
-const ROLE = { everyone: GUILD, coowner: "1573416756972757162", mod: "1573416759573356594", dev: "1573416767357984903" };
+const ROLE = { everyone: GUILD, coowner: "1573416756972757162", mod: "1573416759573356594", dev: "1573416767357984903", gamedeals: "1556541196677939274" };
 
 const READ_ONLY = { allow: B.View | B.History | B.React, deny: B.Send | B.PubThreads | B.PrivThreads | B.SendThreads };
 const STAFF_WRITE = { allow: B.View | B.Send | B.History | B.Attach | B.Embed | B.React, deny: 0n };
 const STAFF_READ = { allow: B.View | B.History, deny: B.Send };
+const BOT_POST = { allow: B.View | B.Send | B.Embed | B.Attach | B.History, deny: 0n };
 
 // canal → { rol: regla }
 const PLAN = [
@@ -35,6 +37,8 @@ const PLAN = [
   ["1573415025836826658", "Roles", { everyone: READ_ONLY }],
   ["1573415038587240468", "Orunei-Updates", { everyone: READ_ONLY, coowner: STAFF_WRITE, dev: STAFF_WRITE }],
   ["1573415030857404446", "Tickets (panel)", { everyone: READ_ONLY }],
+  ["1556526261013057576", "Ofertas-Gratis (solo publica el bot)", { everyone: READ_ONLY, gamedeals: BOT_POST }],
+  ["1575032739063795743", "Destacados", { everyone: READ_ONLY }],
   ["1556527678734082048", "Staff", { coowner: STAFF_WRITE, mod: STAFF_WRITE }],
   ["1556527794018848838", "Logs", { coowner: STAFF_READ, mod: STAFF_READ }],
 ];
