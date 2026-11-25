@@ -360,15 +360,12 @@ function every(ms, name, fn) {
 }
 
 // ── Registro ────────────────────────────────────────────────────────
-export function registerKazeFeatures(client, guildId) {
+/** Los comandos se registran todos juntos en panbot-service.mjs (registrar por partes borraría los demás). */
+export const KAZE_COMMANDS = COMMANDS;
+
+export function registerKazeFeatures(client) {
   client.on(Events.InteractionCreate, handleInteraction);
   client.once(Events.ClientReady, async () => {
-    try {
-      await client.application.commands.set(COMMANDS, guildId);
-      log("comandos registrados:", COMMANDS.map((c) => `/${c.name}`).join(" "));
-    } catch (e) {
-      log("no se pudieron registrar los comandos (¿falta el permiso applications.commands?):", e.message);
-    }
     every(60_000, "estrenos", () => dailyEstrenos(client));
     every(15 * 60_000, "apk", () => watchApk(client));
     every(2 * 60_000, "salas", () => watchParties(client));

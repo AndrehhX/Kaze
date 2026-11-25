@@ -9,7 +9,8 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  EmbedBuilder
+  EmbedBuilder,
+  Events
 } from 'discord.js';
 import { 
   joinVoiceChannel, 
@@ -27,7 +28,9 @@ import { Readable } from 'stream';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Secretos y ajustes en /opt/panbot/.env (nunca en el código). Ver .env.example.
 try { process.loadEnvFile(path.join(__dirname, ".env")); } catch { /* sin .env: se usan las variables del entorno */ }
-const { registerKazeFeatures } = await import("./kaze-features.mjs");
+const { registerKazeFeatures, KAZE_COMMANDS } = await import("./kaze-features.mjs");
+const { registerLevels, LEVEL_COMMANDS } = await import("./levels.mjs");
+const { welcomeGif } = await import("./pixel-welcome.mjs");
 
 const TOKEN = process.env.DISCORD_TOKEN;
 if (!TOKEN) throw new Error("Falta DISCORD_TOKEN en /opt/panbot/.env");
@@ -404,29 +407,36 @@ async function sendWelcome(member) {
   try {
     const chan = member.guild.channels.cache.get(chanBienvenidaId);
     if (!chan) return;
-
-    const avatarUrl = member.user.displayAvatarURL({ size: 256, extension: 'png' });
+    const id = member.user.id;
     const memberCount = member.guild.memberCount;
-
+    const embed = {
+      title: "Pan con mantequilla 🧈",
+      description: `Siéntete como en casa, panita. 💛
+Lee las <#1556896259846045766>, elige tus roles en <#1573415025836826658> y saluda en <#${chanNewGeneralId}>.`,
+      color: 0xf3a9c0,
+      footer: { text: `Miembro #${memberCount} · Pan con mantequilla × Orunei` }
+    };
+    let files;
+    try {
+      const gif = await welcomeGif({
+        name: member.displayName || member.user.globalName || member.user.username,
+        username: member.user.username,
+        avatarUrl: member.user.displayAvatarURL({ size: 256, extension: "png" }),
+        memberNumber: memberCount
+      });
+      files = [{ attachment: gif, name: "bienvenida.gif" }];
+      embed.image = { url: "attachment://bienvenida.gif" };
+    } catch (err) {
+      console.error("Tarjeta de bienvenida falló, uso el banner:", err.message);
+      files = [{ attachment: bienvenidaBannerPath, name: "bienvenida_banner.jpg" }];
+      embed.image = { url: "attachment://bienvenida_banner.jpg" };
+    }
     await chan.send({
-      content: `👋 ¡Hola <@${member.user.id}>, bienvenido/a a **Pan con mantequilla**! ✨`,
-      embeds: [
-        {
-          title: "✨ ¡NUEVO MIEMBRO EN LA COMUNIDAD! ✨",
-          description: `🌸 ¡Qué bueno tenerte con nosotros, **<@${member.user.id}>**!\n\nPásate por los canales principales para que disfrutes de la comunidad:\n\n📜 **Normas:** <#1556896259846045766>\n🔔 **Roles:** <#1573415025836826658>\n💬 **Chat General:** <#${chanNewGeneralId}>\n🍿 **Web Orunei:** [orunei.sbs](https://www.orunei.sbs)`,
-          color: 0xf47fff,
-          thumbnail: { url: avatarUrl },
-          fields: [
-            { name: "👤 Usuario", value: `@${member.user.username}`, inline: true },
-            { name: "🔢 Miembro #", value: `#${memberCount}`, inline: true }
-          ],
-          image: { url: "attachment://bienvenida_banner.jpg" },
-          footer: { text: "Pan con mantequilla × Orunei • Disfruta tu estadía 🧈" }
-        }
-      ],
-      files: [{ attachment: bienvenidaBannerPath, name: "bienvenida_banner.jpg" }]
+      content: `🧈 **¡Atentos, panitas!** Acaba de llegar <@${id}>`,
+      embeds: [embed],
+      files,
+      allowedMentions: { users: [id] }
     });
-
     console.log(`✅ Bienvenida enviada para @${member.user.username}`);
   } catch (err) {
     console.error("Error al enviar bienvenida:", err.message);
@@ -650,6 +660,8 @@ client.on('interactionCreate', async (interaction) => {
       ? "💡 Sugerencia" 
       : "📩 Soporte General";
 
+    // Crear el canal tarda más de 3 s: se responde "pensando…" para que Discord no caduque la interacción.
+    await interaction.deferReply({ ephemeral: true }).catch(() => {});
     try {
       const staffCat = interaction.guild.channels.cache.find(
         c => c.type === ChannelType.GuildCategory && (c.name.includes("𝗦𝗧𝗔𝗙𝗙") || c.name.includes("STAFF"))
@@ -697,17 +709,15 @@ client.on('interactionCreate', async (interaction) => {
         components: [row]
       });
 
-      await interaction.reply({
-        content: `✅ ¡Tu ticket ha sido creado con éxito! Puedes verlo aquí: <#${newChannel.id}>`,
-        ephemeral: true
+      await interaction.editReply({
+        content: `✅ ¡Tu ticket ha sido creado con éxito! Puedes verlo aquí: <#${newChannel.id}>`
       });
 
     } catch (err) {
       console.error("Error creando ticket:", err.message);
-      await interaction.reply({
-        content: `❌ Ocurrió un error al crear tu ticket: ${err.message}`,
-        ephemeral: true
-      });
+      await interaction.editReply({
+        content: `❌ Ocurrió un error al crear tu ticket: ${err.message}`
+      }).catch(() => {});
     }
     return;
   }
@@ -724,5 +734,16 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-registerKazeFeatures(client, GUILD_ID);
+registerKazeFeatures(client);
+registerLevels(client, { guildId: GUILD_ID, levelUpChannelId: process.env.CHANNEL_LEVELUP_ID || chanNewGeneralId, afkChannelId: chanAfkVoiceId });
+// Todos los comandos se registran juntos: registrar por partes borraría los del otro módulo.
+client.once(Events.ClientReady, async () => {
+  const all = [...KAZE_COMMANDS, ...LEVEL_COMMANDS];
+  try {
+    await client.application.commands.set(all, GUILD_ID);
+    console.log("[comandos] registrados:", all.map((c) => "/" + c.name).join(" "));
+  } catch (e) {
+    console.error("[comandos] no se pudieron registrar:", e.message);
+  }
+});
 client.login(TOKEN).catch(console.error);
