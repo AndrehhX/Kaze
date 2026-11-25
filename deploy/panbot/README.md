@@ -17,6 +17,7 @@ Corre en la VPS con PM2 (`pm2 status` → `panbot`), en `/opt/panbot`.
 | `tempvoice.mjs` | "➕ Crear sala": crea una sala de voz propia y la borra al quedar vacía; desde Plata el dueño la puede renombrar. Datos en `tempvoice.json`. |
 | `starboard.mjs` | #Destacados: con 3 ⭐ (las de Oro valen doble) se reenvía el mensaje. Solo canales públicos. Datos en `starboard.json`. |
 | `server-setup.mjs` | Orden del servidor (repetible): rol Ofertas Gratis, categoría Archivo, #Destacados, ➕ Crear sala, canal del sistema, pantalla de bienvenida, onboarding, permisos de Jockie, AutoMod y rol de verificado. `node server-setup.mjs` simula, `--apply` aplica. |
+| `channel-names.mjs` | Nombres de canales y categorías con un solo estilo (emoji + ・ + negrita Unicode, en español). `node channel-names.mjs` simula, `--apply` aplica. |
 | `server-permissions.mjs` | Permisos de canales: solo lectura en reglas, bienvenida, despedida, anuncios, niveles, roles, updates, caidas y el panel de tickets; el staff escribe en anuncios/updates y ve #Staff y #Logs. `node server-permissions.mjs` simula, `--apply` aplica. |
 | `panels.mjs` | Publica los paneles de reglas, roles, niveles y tickets con cabecera animada (`node panels.mjs publish [clave]`) y borra los anteriores de PanBot. Edita los textos aquí y vuelve a publicar. |
 | `cards.mjs` | Tarjeta PNG de `/nivel` (y una tarjeta estática de bienvenida que ya no se usa). Fuentes en `fonts/`. |
@@ -43,6 +44,7 @@ Si cambias `package.json`: `ssh vps "cd /opt/panbot && npm ci --omit=dev && pm2 
 - Antes del 24/11/2026 el token estaba escrito en el código. Hay copias de esa versión en `/opt/panbot/backup-*` (solo root). Si alguna vez se filtra, regenera el token en el portal de desarrolladores de Discord y cámbialo en `.env`.
 - **Rangos de nivel**: el rol de PanBot tiene que estar por encima de los roles "Nivel N+" (y de los de notificaciones) en Ajustes del servidor → Roles; si no, el bot no puede darlos. Revisa los rangos cada hora.
 - **Paneles**: `node panels.mjs publish roles levels` solo borra los paneles anteriores (mensajes con la cabecera `panel.gif`), nunca los avisos de nivel. El de niveles queda fijado.
-- **Chats generales**: #Chat-General es el público (aquí entran los nuevos, mensajes del sistema y celebraciones); #Chat-general es solo para los OG.
+- **Chats generales**: 💬・chat-general es el público (aquí entran los nuevos, mensajes del sistema y celebraciones); 🧈・chat-og es solo para los OG.
+- **Onboarding** (al entrar por invitación, antes de ver el server): "¿Qué te trae por aquí?" (obligatoria: anime, manga, juegos, ver anime en grupo) y "¿De qué quieres que te avisemos?" (novedades, juegos gratis, anuncios, beta de la app). Cada opción da su rol.
 - **MCP de Discord**: en la VPS hay un servidor MCP (`/opt/panbot-mcp/run.sh`, `discord-mcp`) que usa el token de PanBot para que un agente de IA pueda administrar el server; sin acceso a los comandos slash para no pisar los de PanBot.
 - **Staff** (25/11/2026): 👑 Co-Owner → CriXX (dueño del server) y Andreh; 🛡️ Moderador → Denyer. Ven #Staff, #Logs y los tickets.
