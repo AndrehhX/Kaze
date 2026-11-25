@@ -8,7 +8,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { ActionRowBuilder, EmbedBuilder, Events, MessageFlags, SlashCommandBuilder } from "discord.js";
-import { anilist, searchAnime, animeById, titleOf, kazeButton, colorOf } from "./kaze-features.mjs";
+import { anilist, searchAnime, animeById, titleOf, kazeButton, colorOf, kazeUrl } from "./kaze-features.mjs";
+import { card } from "./ui.mjs";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const FILE = path.join(DIR, "follows.json");
@@ -145,18 +146,19 @@ async function checkAiring(client) {
     const entry = data.media[a.media.id];
     if (!entry) continue;
     const last = a.media.episodes && a.episode >= a.media.episodes;
-    const e = new EmbedBuilder()
-      .setColor(colorOf(a.media))
-      .setAuthor({ name: "📺 Capítulo nuevo" })
-      .setTitle(`${titleOf(a.media)} · episodio ${a.episode}${last ? " (final)" : ""}`)
-      .setDescription(`Salió <t:${a.airingAt}:R>. Si aún no aparece en KAZE, espera un ratito: se suben poco después del estreno.`)
-      .setThumbnail(a.media.coverImage?.large || null)
-      .setFooter({ text: "Pan con mantequilla × Orunei · /dejar-de-seguir para no recibir más" });
-    const row = new ActionRowBuilder().addComponents(kazeButton(a.media, "Ver en KAZE"));
+    const msg = card({
+      accent: colorOf(a.media),
+      kicker: "📺 Capítulo nuevo de un anime que sigues",
+      title: `${titleOf(a.media)} · episodio ${a.episode}${last ? " (final)" : ""}`,
+      thumbnail: a.media.coverImage?.large || null,
+      body: `Salió <t:${a.airingAt}:R>. Si aún no aparece en KAZE, espera un ratito: se sube poco después del estreno.${last ? "\n🏁 ¡Es el último capítulo! Ya no te llegarán más avisos de este anime." : ""}`,
+      footer: "Pan con mantequilla × Orunei · /dejar-de-seguir para no recibir más",
+      buttons: [{ label: "Ver en KAZE", emoji: "▶️", url: kazeUrl(a.media) }],
+    });
     let ok = 0;
     for (const uid of entry.users) {
       const u = await client.users.fetch(uid).catch(() => null);
-      if (await u?.send({ embeds: [e], components: [row] }).then(() => true).catch(() => false)) ok++;
+      if (await u?.send(msg).then(() => true).catch(() => false)) ok++;
     }
     log(`aviso ${key} → ${ok}/${entry.users.length}`);
     // Serie terminada: se deja de seguir sola.

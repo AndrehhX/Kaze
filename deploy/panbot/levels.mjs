@@ -14,6 +14,7 @@ import { fileURLToPath } from "url";
 import { AttachmentBuilder, EmbedBuilder, Events, SlashCommandBuilder } from "discord.js";
 import { rankCard } from "./cards.mjs";
 import { levelUpGif } from "./pixel.mjs";
+import { card, COLORS } from "./ui.mjs";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const FILE = path.join(DIR, "levels.json");
@@ -202,26 +203,35 @@ async function addXp(member, amount, cfg, { voice = false } = {}) {
   // 1) Siempre en #Niveles. La mención no notifica: solo se ve el nombre.
   if (levelsCh?.isTextBased()) {
     const files = await gif();
-    const e = new EmbedBuilder()
-      .setColor(0xf3a9c0)
-      .setDescription(
-        gained
-          ? `🎉 <@${member.id}> subió a **nivel ${after}** y desbloqueó el rango **${gained.name}**. ¡Qué nivel, panita! 🧈`
-          : `🎉 <@${member.id}> subió a **nivel ${after}**. ¡Sigue así! 🧈`,
-      );
-    if (files.length) e.setImage("attachment://nivel.gif");
-    await levelsCh.send({ embeds: [e], files, allowedMentions: { parse: [] } }).catch((err) => log("aviso de nivel:", err.message));
+    const msg = card({
+      accent: gained ? gained.color || COLORS.pink : COLORS.pink,
+      kicker: gained ? "🏆 Rango nuevo" : "🎉 Subida de nivel",
+      title: `${member.displayName} · nivel ${after}`,
+      body: gained ? `<@${member.id}> desbloqueó **${gained.name}**. ¡Qué nivel, panita! 🧈` : `<@${member.id}> sigue subiendo. ¡Así se hace! 🧈`,
+      image: files.length ? "attachment://nivel.gif" : null,
+      imageAlt: `${member.displayName} subió a nivel ${after}`,
+      files,
+    });
+    await levelsCh.send(msg).catch((err) => log("aviso de nivel:", err.message));
   }
   // 2) Solo los rangos nuevos se celebran en el chat general (con aviso a la persona).
   if (gained && cfg.rankUpChannelId) {
     const ch = await fetchCh(cfg.rankUpChannelId);
     if (ch?.isTextBased()) {
       const files = await gif();
-      const e = new EmbedBuilder()
-        .setColor(gained.color || 0xf3a9c0)
-        .setDescription(`🏆 <@${member.id}> llegó a **nivel ${after}** y ahora es **${gained.name}**. ¡Felicidades, panita! 🧈\n-# Todos los niveles en <#${cfg.levelUpChannelId}> · \`/nivel\` para ver tu tarjeta`);
-      if (files.length) e.setImage("attachment://nivel.gif");
-      await ch.send({ embeds: [e], files, allowedMentions: { users: [member.id] } }).catch((err) => log("aviso de rango:", err.message));
+      const msg = card({
+        accent: gained.color || COLORS.pink,
+        kicker: "🏆 ¡Rango nuevo en el server!",
+        title: `${member.displayName} ahora es ${gained.name}`,
+        body: `<@${member.id}> llegó a **nivel ${after}**. ¡Felicidades, panita! 🧈`,
+        thumbnail: member.displayAvatarURL({ extension: "png", size: 256 }),
+        image: files.length ? "attachment://nivel.gif" : null,
+        imageAlt: `${member.displayName} llegó a nivel ${after}`,
+        footer: `Todas las subidas en #niveles · /nivel para ver tu tarjeta`,
+        files,
+        mentions: { users: [member.id] },
+      });
+      await ch.send(msg).catch((err) => log("aviso de rango:", err.message));
     }
   }
 }
@@ -284,17 +294,22 @@ async function weeklySummary(client, cfg) {
   const voice = rows.filter((r) => r.voice > 0).sort((a, b) => b.voice - a.voice)[0];
   const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
   const h = (min) => (min >= 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min} min`);
-  const e = new EmbedBuilder()
-    .setColor(BUTTER)
-    .setTitle("📅 Resumen de la semana")
-    .setDescription(byXp.slice(0, 5).map((r, i) => `${medals[i]} <@${r.id}> · +${r.xp.toLocaleString("es-MX")} XP`).join("\n"))
-    .addFields(
-      { name: "👥 Activos", value: `${byXp.length} panas ganaron XP`, inline: true },
-      ...(voice ? [{ name: "🎙️ Más tiempo en llamada", value: `<@${voice.id}> · ${h(voice.voice)}`, inline: true }] : []),
-    )
-    .setFooter({ text: "Nueva semana, nuevo ranking · /nivel para ver tu tarjeta" });
+  const podium = byXp.slice(0, 5).map((r, i) => `${medals[i]} <@${r.id}> · **+${r.xp.toLocaleString("es-MX")} XP**`).join("\n");
   const ch = await client.channels.fetch(cfg.rankUpChannelId).catch(() => null);
-  if (ch?.isTextBased()) await ch.send({ embeds: [e], allowedMentions: { parse: [] } });
+  const guild = client.guilds.cache.get(cfg.guildId);
+  const winner = guild?.members.cache.get(byXp[0].id);
+  if (ch?.isTextBased())
+    await ch.send(
+      card({
+        accent: COLORS.butter,
+        kicker: "📅 Resumen de la semana",
+        title: winner ? `👑 ${winner.displayName} fue el más activo` : "Los más activos de la semana",
+        thumbnail: winner?.displayAvatarURL({ extension: "png", size: 256 }) ?? null,
+        body: podium,
+        extra: [`👥 **${byXp.length}** panas ganaron XP`, voice ? `🎙️ Más tiempo en llamada: <@${voice.id}> · **${h(voice.voice)}**` : null].filter(Boolean).join("\n"),
+        footer: "Nueva semana, nuevo ranking · /nivel para ver tu tarjeta · /top para el ranking total",
+      }),
+    );
   log("resumen semanal publicado", prev);
 }
 

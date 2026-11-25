@@ -4,7 +4,10 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { EmbedBuilder, Events } from "discord.js";
+import { Events } from "discord.js";
+import { card, COLORS } from "./ui.mjs";
+
+const TICKETS_URL = "https://discord.com/channels/1425279597632815167/1573415030857404446";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const FILE = path.join(DIR, "status.json");
@@ -49,15 +52,35 @@ async function tick(client) {
         s.down = true;
         s.since = Date.now();
         log(`${c.key} caído: ${err}`);
-        const e = new EmbedBuilder().setColor(0xef4444).setTitle(`🔴 ${c.label}: caído`).setDescription(`Estamos en ello. Te avisamos aquí cuando vuelva.\n-# ${err}`).setTimestamp();
-        const msg = await ch?.send({ embeds: [e] }).catch((x) => log(x.message));
+        const since = Math.floor(s.since / 1000);
+        const msg = await ch
+          ?.send(
+            card({
+              accent: COLORS.red,
+              kicker: "🚨 Estado de Orunei",
+              title: `🔴 ${c.label}: caído`,
+              body: `Estamos en ello. Te avisamos aquí mismo en cuanto vuelva.\nDesde <t:${since}:t> (<t:${since}:R>).`,
+              footer: `Detalle técnico: ${err}`,
+              buttons: [{ label: "Reportar un problema", emoji: "🎫", url: TICKETS_URL }],
+            }),
+          )
+          .catch((x) => log(x.message));
         if (msg?.crosspostable) await msg.crosspost().catch(() => {}); // #caidas es un canal de anuncios: se puede seguir desde otros servers
       }
     } else {
       if (s.down) {
         log(`${c.key} volvió`);
-        const e = new EmbedBuilder().setColor(0x22c55e).setTitle(`🟢 ${c.label}: funcionando otra vez`).setDescription(`Estuvo caído **${dur(Date.now() - s.since)}**. ¡Gracias por la paciencia! 🧈`).setTimestamp();
-        const msg = await ch?.send({ embeds: [e] }).catch((x) => log(x.message));
+        const msg = await ch
+          ?.send(
+            card({
+              accent: COLORS.green,
+              kicker: "✅ Estado de Orunei",
+              title: `🟢 ${c.label}: funcionando otra vez`,
+              body: `Estuvo caído **${dur(Date.now() - s.since)}**. ¡Gracias por la paciencia! 🧈`,
+              buttons: [{ label: "Abrir Orunei", emoji: "▶️", url: SITE }],
+            }),
+          )
+          .catch((x) => log(x.message));
         if (msg?.crosspostable) await msg.crosspost().catch(() => {});
       }
       Object.assign(s, { fails: 0, down: false, since: 0 });

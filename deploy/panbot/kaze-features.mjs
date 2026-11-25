@@ -14,6 +14,7 @@ import {
   MessageFlags, SeparatorBuilder, SeparatorSpacingSize, SlashCommandBuilder, TextDisplayBuilder,
 } from "discord.js";
 import { estrenosPoster } from "./cards.mjs";
+import { card, COLORS } from "./ui.mjs";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const STATE_FILE = path.join(DIR, "state.json");
@@ -380,15 +381,23 @@ async function watchApk(client) {
   if (v.versionCode <= state.apkVersionCode) return;
   state.apkVersionCode = v.versionCode;
   saveState(state);
-  const e = new EmbedBuilder()
-    .setColor(COLOR)
-    .setTitle(`📱 Nueva versión de KAZE para Android · ${v.versionName}`)
-    .setURL(`${SITE}/kaze.apk`)
-    .setDescription(`${v.notes || "Mejoras y correcciones."}\n\nDescárgala e instálala encima de la que tienes: no pierdes nada. Si ya la tienes, la app te avisará sola.`)
-    .setFooter({ text: "KAZE · orunei.sbs" })
-    .setTimestamp();
-  const btn = new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Descargar APK").setEmoji("⬇️").setURL(v.url || `${SITE}/kaze.apk`);
-  await send(client, CH_UPDATES, { embeds: [e], components: [new ActionRowBuilder().addComponents(btn)] });
+  await send(
+    client,
+    CH_UPDATES,
+    card({
+      accent: COLORS.purple,
+      kicker: "KAZE para Android",
+      title: `📱 Nueva versión ${v.versionName}`,
+      thumbnail: `${SITE}/icon-512.png`,
+      body: `${v.notes || "Mejoras y correcciones."}`.slice(0, 1500),
+      extra: "**¿Cómo actualizo?** Descárgala e instálala encima de la que tienes: no pierdes nada. Si ya la tienes, la app te avisará sola.",
+      footer: "KAZE · orunei.sbs",
+      buttons: [
+        { label: "Descargar APK", emoji: "⬇️", url: v.url || `${SITE}/kaze.apk` },
+        { label: "Abrir la web", emoji: "🌐", url: SITE },
+      ],
+    }),
+  );
   log("APK anunciada", v.versionName);
 }
 
@@ -406,17 +415,21 @@ async function watchParties(client) {
     saveState(state);
     const m = /^\d+$/.test(String(r.series_id)) ? await animeById(Number(r.series_id)).catch(() => null) : null;
     const host = r.host?.display_name || r.host?.username || "Alguien";
-    const e = new EmbedBuilder()
-      .setColor(m ? colorOf(m) : COLOR)
-      .setAuthor({ name: `${host} abrió una sala de cine`, iconURL: r.host?.avatar_url || undefined })
-      .setTitle(r.title || "Sala de cine")
-      .setURL(`${SITE}/watch-parties/${r.id}`)
-      .setDescription(`${m ? `**${titleOf(m)}**` : "Anime"}${r.episode_id ? ` · Episodio ${r.episode_id}` : ""}\n\nEntra y velo en sincronía con chat en vivo. Necesitas una cuenta de KAZE.`)
-      .setThumbnail(m?.coverImage?.large || null)
-      .setFooter({ text: "KAZE · salas de cine" })
-      .setTimestamp(new Date(r.created_at));
-    const btn = new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Unirme a la sala").setEmoji("🍿").setURL(`${SITE}/watch-parties/${r.id}`);
-    await send(client, CH_PARTY, { embeds: [e], components: [new ActionRowBuilder().addComponents(btn)] });
+    await send(
+      client,
+      CH_PARTY,
+      card({
+        accent: m ? colorOf(m) : COLORS.rose,
+        kicker: `🍿 ${host} abrió una sala de cine`,
+        title: r.title || "Sala de cine",
+        thumbnail: m?.coverImage?.large || r.host?.avatar_url || null,
+        body: `${m ? `**${titleOf(m)}**` : "Anime"}${r.episode_id ? ` · episodio ${r.episode_id}` : ""}\nVelo en sincronía con chat en vivo. <t:${Math.floor(Date.parse(r.created_at) / 1000)}:R>`,
+        image: m?.bannerImage || null,
+        imageAlt: m ? titleOf(m) : "Sala de cine",
+        footer: "Necesitas una cuenta de KAZE · las salas públicas se anuncian solas",
+        buttons: [{ label: "Unirme a la sala", emoji: "🍿", url: `${SITE}/watch-parties/${r.id}` }],
+      }),
+    );
     log("sala anunciada", r.id);
   }
 }

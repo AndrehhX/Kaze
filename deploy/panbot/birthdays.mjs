@@ -9,6 +9,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { EmbedBuilder, Events, MessageFlags, SlashCommandBuilder } from "discord.js";
 import { localDay } from "./levels.mjs";
+import { card, COLORS } from "./ui.mjs";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const FILE = path.join(DIR, "birthdays.json");
@@ -89,10 +90,19 @@ async function daily(client, cfg) {
   const ch = await client.channels.fetch(cfg.channelId).catch(() => null);
   if (!ch?.isTextBased()) return;
   const who = today.map((id) => `<@${id}>`).join(", ");
-  await ch.send({
-    content: `🎂 ¡Hoy es el cumple de ${who}! Feliz cumpleaños, panita${today.length > 1 ? "s" : ""} 🧈🎉`,
-    allowedMentions: { users: today },
-  });
+  const first = guild.members.cache.get(today[0]);
+  const many = today.length > 1;
+  await ch.send(
+    card({
+      accent: COLORS.pink,
+      kicker: "🎂 Cumpleaños en el server",
+      title: many ? "¡Hoy hay doble pastel!" : `¡Feliz cumple, ${first?.displayName ?? "panita"}!`,
+      thumbnail: first?.displayAvatarURL({ extension: "png", size: 256 }) ?? null,
+      body: `Hoy cumple${many ? "n" : ""} ${who}. ¡Que lo pasen bonito, panita${many ? "s" : ""}! 🧈🎉\nDéjenles un mensaje aquí abajo 👇`,
+      footer: "¿Quieres que te feliciten? /cumple poner",
+      mentions: { users: today },
+    }),
+  );
   log("felicitados", today.length);
 }
 

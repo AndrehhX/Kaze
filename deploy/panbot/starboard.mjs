@@ -7,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { EmbedBuilder, Events, PermissionFlagsBits as P } from "discord.js";
 import { levelOf } from "./levels.mjs";
+import { card, COLORS } from "./ui.mjs";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const FILE = path.join(DIR, "starboard.json");
@@ -43,11 +44,16 @@ async function onReact(reaction, user) {
     if (!dest?.isTextBased()) return;
     posted = [...posted, msg.id].slice(-2000);
     fs.writeFileSync(FILE, JSON.stringify(posted));
-    const e = new EmbedBuilder()
-      .setColor(0xfde047)
-      .setAuthor({ name: msg.member?.displayName || msg.author.username, iconURL: msg.author.displayAvatarURL() })
-      .setDescription(`⭐ **${users.filter((u) => !u.bot).size}** en <#${msg.channelId}> · [ir al mensaje](${msg.url})`);
-    await dest.send({ embeds: [e], allowedMentions: { parse: [] } });
+    await dest.send(
+      card({
+        accent: COLORS.butter,
+        kicker: `⭐ ${users.filter((u) => !u.bot).size} estrellas · en <#${msg.channelId}>`,
+        title: `${msg.member?.displayName || msg.author.username} brilló`,
+        thumbnail: msg.author.displayAvatarURL({ extension: "png", size: 128 }),
+        body: "El mensaje original va justo aquí abajo 👇",
+        buttons: [{ label: "Ir al mensaje", emoji: "↗️", url: msg.url }],
+      }),
+    );
     await msg.forward(dest);
     log(`destacado ${msg.id} de ${msg.author.username}`);
   } catch (err) {
