@@ -51,7 +51,7 @@ const POPULAR_ANIME: AnimeChoice[] = [
 
 export function WatchPartiesIndex() {
   return (
-    <AuthGate feature="watch parties" jp="宴">
+    <AuthGate feature="las salas de visionado" jp="宴">
       <Inner />
     </AuthGate>
   );

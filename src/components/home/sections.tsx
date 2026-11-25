@@ -109,7 +109,7 @@ export function RecentlyReleased({ items }: { items: AiringItem[] }) {
   return (
     <section aria-labelledby="recent-h" className="container-k mt-20 k-offscreen-section">
       <SectionHeader id="recent-h" kicker="Últimas 72 horas" title="Episodios recientes" jp="最新話" />
-      <Rail label="Recently released episodes" itemClassName="w-[78vw] xs:w-[60vw] sm:w-[44vw] md:w-[32vw] lg:w-[25vw] xl:w-[21vw] 3xl:w-[340px]">
+      <Rail label="Episodios recién estrenados" itemClassName="w-[78vw] xs:w-[60vw] sm:w-[44vw] md:w-[32vw] lg:w-[25vw] xl:w-[21vw] 3xl:w-[340px]">
         {items.map((a) => (
           <Link key={a.id} href={`/anime/${a.media.id}/episodes`} className="k-card group flex h-full gap-3 overflow-hidden p-2.5 transition-shadow hover:shadow-[var(--k-hover-glow)]">
             <div className="k-poster relative aspect-[2/3] w-16 shrink-0">
@@ -225,20 +225,20 @@ export function OpenCinemaBanner() {
     <section aria-labelledby="cinema-h" className="container-k mt-20">
       <div className="k-card relative grid overflow-hidden md:grid-cols-[1.2fr_1fr]">
         <div className="relative z-[1] p-6 sm:p-10">
-          <p className="k-label text-primary-ink">Playable now · Demo</p>
+          <p className="k-label text-primary-ink">Ya disponible · Demo</p>
           <h2 id="cinema-h" className="font-display text-title mt-3">
             KAZE Open Cinema
           </h2>
           <p className="mt-3 max-w-md text-sm text-muted">
-            Try the full player — adaptive HLS, subtitles, skip markers, theater &amp; ambient modes, resume — with open-licensed Blender Foundation films. These are not anime and not
-            AniList titles.
+            Prueba el reproductor completo (HLS adaptativo, subtítulos, saltos de opening, modos cine y ambiente, reanudar) con películas de la Blender Foundation con licencia libre. No son anime ni
+            títulos de AniList.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <Link href="/watch/open-cinema/1" className="k-btn k-btn-primary">
-              Start the demo
+              Ver la demo
             </Link>
             <Link href="/watch-parties" className="k-btn k-btn-outline">
-              Host a watch party
+              Crear una sala de cine
             </Link>
           </div>
         </div>

@@ -139,7 +139,7 @@ export function AppearanceSettings() {
 
 export function AccountSettings() {
   return (
-    <AuthGate feature="account settings">
+    <AuthGate feature="los ajustes de la cuenta">
       <AccountInner />
     </AuthGate>
   );
@@ -200,7 +200,7 @@ function AccountInner() {
       {reset && <p className="mb-6 rounded-[var(--k-radius-card)] bg-primary/15 p-4 text-sm">Has seguido un enlace de recuperación. Elige una nueva contraseña a continuación.</p>}
       <Panel title="Correo electrónico" description={user.emailConfirmed ? "Verificado" : "Pendiente de verificación — revisa tu correo."}>
         <form onSubmit={updateEmail} className="flex flex-wrap gap-2">
-          <label htmlFor="acc-email" className="sr-only">Email</label>
+          <label htmlFor="acc-email" className="sr-only">Correo electrónico</label>
           <input id="acc-email" type="email" className="k-input flex-1" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
           <button className="k-btn k-btn-outline" disabled={busy === "email" || email === user.email}>
             {busy === "email" && <Loader2 className="size-4 animate-spin" />} Actualizar correo
@@ -249,7 +249,7 @@ function AccountInner() {
       />
       <Dialog open={del} onOpenChange={setDel} title="¿Eliminar tu cuenta definitivamente?" description="Escribe ELIMINAR para confirmar.">
         <div className="space-y-3 px-5 pb-5 pt-2">
-          <label htmlFor="del-confirm" className="sr-only">Type DELETE</label>
+          <label htmlFor="del-confirm" className="sr-only">Escribe DELETE</label>
           <input id="del-confirm" className="k-input" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder="ELIMINAR" autoComplete="off" />
           <div className="flex justify-end gap-2">
             <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => setDel(false)}>Cancelar</button>
@@ -268,7 +268,7 @@ export function PrivacySettings() {
   const setGamification = useSettings((s) => s.setGamification);
   return (
     <>
-      <AuthGate feature="privacy settings">
+      <AuthGate feature="los ajustes de privacidad">
         <PrivacyInner />
       </AuthGate>
       <Panel title="Gamificación y Logros" description="Insignias, hitos y metas de temporada. Totalmente opcional y sin presiones.">
@@ -311,7 +311,7 @@ function PrivacyInner() {
         <Switch id="p-online" label="Mostrar cuándo estoy en línea" description="Desactivado por defecto." checked={profile.show_online_status} onChange={(v) => save(v ? { show_online_status: true } : { show_online_status: false, last_seen_at: null } as Partial<typeof profile>)} disabled={saving} />
       </div>
       <p className="mt-4 text-xs text-muted">
-        Blocked users can&apos;t see your profile, reviews or comments. Manage blocks in <Link href="/friends" className="underline">Friends</Link>.
+        Los usuarios bloqueados no pueden ver tu perfil, tus reseñas ni tus comentarios. Gestiona los bloqueos en <Link href="/friends" className="underline">Amigos</Link>.
       </p>
     </Panel>
   );
@@ -335,7 +335,7 @@ function remoteFromAniList(e: AniListListEntry): RemoteEntry {
 
 export function IntegrationSettings() {
   return (
-    <AuthGate feature="integrations">
+    <AuthGate feature="las integraciones">
       <IntegrationInner />
     </AuthGate>
   );
@@ -357,15 +357,15 @@ function IntegrationInner() {
     const r = sp.get("anilist");
     if (!r) return;
     const msg: Record<string, [string, "success" | "error"]> = {
-      connected: ["AniList connected", "success"],
-      state: ["The connection request expired or was tampered with. Try again.", "error"],
-      session: ["Your session changed during connection. Try again.", "error"],
-      exchange: ["AniList didn't accept the authorization. Try again.", "error"],
-      "in-use": ["That AniList account is already linked to another KAZE account.", "error"],
-      save: ["Couldn't save the connection.", "error"],
-      unconfigured: ["AniList OAuth isn't configured on this deployment.", "error"],
+      connected: ["AniList conectado", "success"],
+      state: ["La solicitud de conexión caducó o fue alterada. Inténtalo de nuevo.", "error"],
+      session: ["Tu sesión cambió durante la conexión. Inténtalo de nuevo.", "error"],
+      exchange: ["AniList no aceptó la autorización. Inténtalo de nuevo.", "error"],
+      "in-use": ["Esa cuenta de AniList ya está vinculada a otra cuenta de KAZE.", "error"],
+      save: ["No se pudo guardar la conexión.", "error"],
+      unconfigured: ["El inicio de sesión con AniList no está configurado en este entorno.", "error"],
     };
-    const [text, kind] = msg[r] ?? ["Unknown result", "error"];
+    const [text, kind] = msg[r] ?? ["Resultado desconocido", "error"];
     if (kind === "success") toast.success(text);
     else toast.error(text);
     window.history.replaceState(null, "", "/settings/integrations");
@@ -381,7 +381,7 @@ function IntegrationInner() {
       const decisions = reconcile(Object.values(entries), list.map(remoteFromAniList), lastSyncAt);
       setPlan({ decisions, media: new Map(list.map((e) => [e.mediaId, e])) });
     } catch (err) {
-      toast.error((err as Error).message || "Couldn't read your AniList list");
+      toast.error((err as Error).message || "No se pudo leer tu lista de AniList");
     } finally {
       setBusy(null);
     }
@@ -435,7 +435,7 @@ function IntegrationInner() {
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error(body.error ?? "AniList rejected the sync");
+        toast.error(body.error ?? "AniList rechazó la sincronización");
         break;
       }
       pushed += body.pushed;
@@ -445,13 +445,13 @@ function IntegrationInner() {
     setBusy(null);
     setPlan(null);
     qc.invalidateQueries({ queryKey: ["anilist-status"] });
-    toast.success(direction === "import" ? `Imported ${n} entries from AniList` : `Sync complete: ${n} updated here, ${pushed} sent to AniList${failed ? `, ${failed} failed` : ""}`);
+    toast.success(direction === "import" ? `${n} entradas importadas de AniList` : `Sincronización completa: ${n} actualizadas aquí, ${pushed} enviadas a AniList${failed ? `, ${failed} con error` : ""}`);
   };
 
   if (isLoading) return <div className="k-skeleton h-48" />;
   if (!data?.configured)
     return (
-      <Panel title="AniList" description="Connect your AniList account to import and sync your anime list.">
+      <Panel title="AniList" description="Conecta tu cuenta de AniList para importar y sincronizar tu lista de anime.">
         <p className="text-sm text-muted">
           AniList OAuth isn&apos;t configured on this deployment. An administrator needs to register a client at{" "}
           <a href="https://anilist.co/settings/developer" className="underline" target="_blank" rel="noreferrer">
@@ -469,7 +469,7 @@ function IntegrationInner() {
 
   return (
     <>
-      <Panel title="AniList" description="Your KAZE login stays separate. AniList is a connected service you can disconnect at any time.">
+      <Panel title="AniList" description="Tu cuenta de KAZE sigue siendo independiente. AniList es un servicio conectado que puedes desvincular cuando quieras.">
         {acct ? (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -485,7 +485,7 @@ function IntegrationInner() {
                   </a>
                 </p>
                 <p className="text-xs text-muted">
-                  {acct.last_synced_at ? `Last synced ${now ? relativeTime(new Date(acct.last_synced_at).getTime(), now) : ""}` : "Never synced"}
+                  {acct.last_synced_at ? `Última sincronización ${now ? relativeTime(new Date(acct.last_synced_at).getTime(), now) : ""}` : "Nunca sincronizado"}
                   {acct.last_sync_status && acct.last_sync_status !== "ok" ? ` · ${acct.last_sync_message ?? acct.last_sync_status}` : ""}
                 </p>
               </div>
@@ -495,7 +495,7 @@ function IntegrationInner() {
                 {busy === "preview" ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" aria-hidden />} Compare lists
               </button>
               <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => setDisconnect(true)}>
-                <Unlink className="size-4" aria-hidden /> Disconnect
+                <Unlink className="size-4" aria-hidden /> Desvincular
               </button>
             </div>
           </div>
@@ -507,15 +507,15 @@ function IntegrationInner() {
       </Panel>
 
       {plan && counts && (
-        <Panel title="Sync preview" description="Nothing changes until you choose an action. Conflicts never silently overwrite: progress takes the higher value, other fields follow the most recent edit.">
+        <Panel title="Vista previa de la sincronización" description="No cambia nada hasta que elijas una acción. Los conflictos nunca se sobrescriben en silencio: el progreso toma el valor más alto y el resto de campos, la edición más reciente.">
           <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
             {[
-              ["import", "New from AniList"],
-              ["pull", "Updated on AniList"],
-              ["export", "Only on KAZE"],
-              ["push", "Updated on KAZE"],
-              ["merge", "Changed on both"],
-              ["noop", "Already identical"],
+              ["import", "Nuevos desde AniList"],
+              ["pull", "Actualizados en AniList"],
+              ["export", "Solo en KAZE"],
+              ["push", "Actualizados en KAZE"],
+              ["merge", "Cambiados en ambos"],
+              ["noop", "Ya idénticos"],
             ].map(([k, l]) => (
               <div key={k} className="k-card p-3">
                 <dt className="text-xs text-muted">{l}</dt>
@@ -543,7 +543,7 @@ function IntegrationInner() {
               {busy === "sync" ? <Loader2 className="size-4 animate-spin" /> : <CloudUpload className="size-4" aria-hidden />} Two-way sync
             </button>
             <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => setPlan(null)}>
-              Cancel
+              Cancelar
             </button>
           </div>
           <p className="mt-3 text-xs text-muted">Two-way sync sends up to 25 changes per batch and pauses between writes to respect AniList&apos;s rate limit.</p>
@@ -555,12 +555,12 @@ function IntegrationInner() {
       <ConfirmDialog
         open={disconnect}
         onOpenChange={setDisconnect}
-        title="Disconnect AniList?"
+        title="¿Desvincular AniList?"
         body={
           <>
-            KAZE deletes its stored token. Your KAZE library stays as it is. To fully revoke access, also remove KAZE in{" "}
+            KAZE borra el token guardado. Tu biblioteca de KAZE se queda como está. Para retirar el acceso por completo, quita también KAZE en{" "}
             <a href="https://anilist.co/settings/apps" target="_blank" rel="noreferrer" className="underline">
-              AniList → Settings → Apps
+              AniList → Settings → Apps (Ajustes → Aplicaciones)
             </a>
             .
           </>
@@ -570,7 +570,7 @@ function IntegrationInner() {
         onConfirm={async () => {
           const res = await fetch("/api/integrations/anilist/disconnect", { method: "POST" });
           setDisconnect(false);
-          if (!res.ok) return toast.error("Couldn't disconnect");
+          if (!res.ok) return toast.error("No se pudo desvincular");
           toast("AniList disconnected");
           qc.invalidateQueries({ queryKey: ["anilist-status"] });
         }}

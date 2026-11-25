@@ -20,7 +20,7 @@ export function ListMenu({ media, size = "md", className, align = "start" }: { m
   const upsert = useLibrary((s) => s.upsert);
   const remove = useLibrary((s) => s.remove);
   const toggleInCollection = useLibrary((s) => s.toggleInCollection);
-  const title = media.title.english || media.title.userPreferred || media.title.romaji || "this title";
+  const title = media.title.english || media.title.userPreferred || media.title.romaji || "este título";
 
   const setStatus = (status: LibraryStatus) => {
     const progress = status === "COMPLETED" ? (media.episodes ?? entry?.progress ?? 0) : entry?.progress;
@@ -34,7 +34,7 @@ export function ListMenu({ media, size = "md", className, align = "start" }: { m
         <button
           type="button"
           className={cn("k-btn", entry ? "k-btn-outline" : "k-btn-ghost", size === "sm" && "k-btn-sm", className)}
-          aria-label={entry ? `${statusMeta(entry.status).short}: change list status for ${title}` : `Add to list: ${title}`}
+          aria-label={entry ? `${statusMeta(entry.status).short}: cambiar el estado de ${title}` : `Añadir a la lista: ${title}`}
           disabled={!hydrated}
         >
           {entry ? <Check className="size-4 text-primary-ink" aria-hidden /> : <Plus className="size-4" aria-hidden />}
@@ -122,7 +122,7 @@ export function FavoriteButton({ media, className, size = "md" }: { media: Media
     <button
       type="button"
       aria-pressed={on}
-      aria-label={on ? "Remove from favorites" : "Add to favorites"}
+      aria-label={on ? "Quitar de favoritos" : "Añadir a favoritos"}
       disabled={!hydrated}
       className={cn("k-btn k-btn-ghost k-btn-icon", size === "sm" && "k-btn-sm", className)}
       onClick={(e) => {

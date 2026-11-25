@@ -343,7 +343,7 @@ export function Player({
         onAdaptCodec();
         return;
       }
-      if (video.error && !hls.current) setMediaError("This video couldn't be played.");
+      if (video.error && !hls.current) setMediaError("No se pudo reproducir este video.");
     };
     const onVolume = () => setPrefs({ volume: video.volume, muted: video.muted });
     const onRate = () => setPrefs({ rate: video.playbackRate });
@@ -407,7 +407,7 @@ export function Player({
       else if (el.requestFullscreen) await el.requestFullscreen();
       else (video as HTMLVideoElement & { webkitEnterFullscreen?: () => void })?.webkitEnterFullscreen?.();
     } catch {
-      toast.error("Fullscreen isn't available here");
+      toast.error("La pantalla completa no está disponible aquí");
     }
   }, [video, fullscreenTarget]);
 
@@ -417,7 +417,7 @@ export function Player({
       if (document.pictureInPictureElement) await document.exitPictureInPicture();
       else await video.requestPictureInPicture();
     } catch {
-      toast.error("Picture-in-picture isn't supported in this browser");
+      toast.error("Este navegador no admite la imagen en imagen");
     }
   }, [video]);
 
@@ -442,7 +442,7 @@ export function Player({
   const togglePlay = useCallback(() => {
     if (!video || locked) return;
     if (video.paused) {
-      video.play().catch(() => toast.error("Playback was blocked by the browser. Press play again."));
+      video.play().catch(() => toast.error("El navegador bloqueó la reproducción. Pulsa reproducir otra vez."));
       sync?.onLocalAction?.({ type: "play", position: video.currentTime });
       flashIcon(<Play className="size-8 fill-current" />, "Play");
     } else {
@@ -605,7 +605,7 @@ export function Player({
         Rendition: lvl ? `${lvl.label} · ${Math.round(lvl.bitrate / 1000)} kbps${hs.autoLevel ? " (auto)" : ""}` : "—",
         Bandwidth: hls.current ? `${Math.round(hls.current.bandwidthEstimate / 1000)} kbps` : "—",
         "Buffer ahead": `${ahead.toFixed(1)} s`,
-        "Dropped frames": q ? `${q.droppedVideoFrames} / ${q.totalVideoFrames}` : "—",
+        "Fotogramas perdidos": q ? `${q.droppedVideoFrames} / ${q.totalVideoFrames}` : "—",
         Session: grant.sessionId.slice(0, 8),
       });
     }, 1000);
@@ -784,7 +784,7 @@ export function Player({
         {fatal && !isAdapting && (
           <div role="alert" className="absolute inset-0 z-[20] grid place-items-center bg-black/80 p-6 text-center text-white">
             <div>
-              <p className="font-display text-xl">Playback stopped</p>
+              <p className="font-display text-xl">Reproducción detenida</p>
               <p className="mt-2 max-w-sm text-sm text-white/75">{fatal}</p>
               <button
                 className="k-btn k-btn-primary mt-5"
@@ -793,7 +793,7 @@ export function Player({
                   setRetryKey((k) => k + 1);
                 }}
               >
-                <RotateCcw className="size-4" aria-hidden /> Retry
+                <RotateCcw className="size-4" aria-hidden /> Reintentar
               </button>
             </div>
           </div>
@@ -880,7 +880,7 @@ export function Player({
 
         {/* Stats */}
         {prefs.showStats && (
-          <div className="absolute left-3 top-3 z-[15] rounded-md bg-black/80 p-3 font-mono text-[0.6875rem] leading-5 text-white/90" aria-label="Playback statistics">
+          <div className="absolute left-3 top-3 z-[15] rounded-md bg-black/80 p-3 font-mono text-[0.6875rem] leading-5 text-white/90" aria-label="Estadísticas de reproducción">
             {Object.entries(stats).map(([k, v]) => (
               <div key={k} className="flex gap-4">
                 <span className="w-28 text-white/50">{k}</span>
@@ -958,13 +958,13 @@ export function Player({
                 {playing ? <Pause className="size-5 fill-current" /> : <Play className="size-5 fill-current" />}
               </CtrlButton>
               {grant.prev && onNavigateEpisode && !locked && (
-                <CtrlButton label="Previous episode (Shift+P)" onClick={() => onNavigateEpisode(grant.prev!.id)} className="@max-2xl:hidden">
+                <CtrlButton label="Episodio anterior (Shift+P)" onClick={() => onNavigateEpisode(grant.prev!.id)} className="@max-2xl:hidden">
                   <SkipBack className="size-5" />
                 </CtrlButton>
               )}
               {grant.next && onNavigateEpisode && !locked && (
                 <CtrlButton
-                  label="Next episode (Shift+N)"
+                  label="Siguiente episodio (Shift+N)"
                   onClick={() => {
                     if (!isLoggedIn && (isEffectivelyComplete(time, duration) || time > duration * 0.85)) {
                       setShowAuthGate(true);
@@ -987,7 +987,7 @@ export function Player({
                   step={0.02}
                   value={prefs.muted ? 0 : prefs.volume}
                   onChange={(e) => changeVolume(Number(e.target.value))}
-                  aria-label="Volume"
+                  aria-label="Volumen"
                   className="w-0 accent-white opacity-0 transition-all duration-200 focus:w-20 focus:opacity-100 group-hover/vol:w-20 group-hover/vol:opacity-100 @max-md:hidden"
                 />
               </div>
@@ -1015,7 +1015,7 @@ export function Player({
               <CtrlButton label="Configuración" onClick={() => setMenu(menu ? null : "root")} pressed={Boolean(menu && menu !== "subs" && menu !== "quality")}>
                 <Settings2 className={cn("size-5 transition-transform", menu && menu !== "subs" && menu !== "quality" && "rotate-45")} />
               </CtrlButton>
-              <CtrlButton label="Picture-in-picture (I)" onClick={togglePip} pressed={pip} className="@max-xl:hidden">
+              <CtrlButton label="Imagen en imagen (I)" onClick={togglePip} pressed={pip} className="@max-xl:hidden">
                 <PictureInPicture2 className="size-5" />
               </CtrlButton>
               <CtrlButton label={prefs.theater ? "Salir de modo teatro (T)" : "Modo teatro (T)"} onClick={() => setPrefs({ theater: !prefs.theater })} pressed={prefs.theater} className="max-lg:hidden @max-lg:hidden">
@@ -1033,7 +1033,7 @@ export function Player({
           {menu && (
             <motion.div
               role="menu"
-              aria-label="Player settings"
+              aria-label="Ajustes del reproductor"
               initial={{ opacity: 0, y: 8, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8 }}
@@ -1148,7 +1148,7 @@ export function Player({
                       </button>
                     ))}
                   </div>
-                  <p className="px-3 pt-1 text-xs text-white/60">Background</p>
+                  <p className="px-3 pt-1 text-xs text-white/60">Fondo</p>
                   <div className="flex gap-1 px-2 py-1.5">
                     {(["none", "shadow", "box"] as const).map((b) => (
                       <button key={b} className={cn("flex-1 rounded py-1.5 text-xs capitalize", prefs.subtitleStyle.background === b ? "bg-white text-black" : "bg-white/10")} onClick={() => setPrefs({ subtitleStyle: { ...prefs.subtitleStyle, background: b } })} aria-pressed={prefs.subtitleStyle.background === b}>
@@ -1172,7 +1172,7 @@ export function Player({
               transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 380, damping: 38 }}
               className="absolute inset-y-0 right-0 z-[25] w-[min(85%,320px)] overflow-y-auto bg-black/90 p-3 text-white backdrop-blur"
               role="dialog"
-              aria-label="Episodes"
+              aria-label="Episodios"
             >
               <p className="px-2 pb-2 text-xs uppercase tracking-wider text-white/60">{grant.series.title}</p>
               <ul className="space-y-1">
@@ -1251,7 +1251,7 @@ function SubMenu({ title, back, children }: { title: string; back?: () => void; 
     <div>
       <div className="flex items-center gap-2 border-b border-white/10 px-2 pb-1.5 pt-1">
         {back && (
-          <button onClick={back} className="rounded px-1.5 py-1 text-white/70 hover:bg-white/10" aria-label="Back">
+          <button onClick={back} className="rounded px-1.5 py-1 text-white/70 hover:bg-white/10" aria-label="Atrás">
             ‹
           </button>
         )}

@@ -157,7 +157,7 @@ export function MobileNav() {
                   Comunidad de Discord
                   <span className="text-[10px] text-[#5865F2] font-mono">公式</span>
                 </p>
-                <p className="text-[0.6875rem] text-muted">Watch Parties, anime y debates</p>
+                <p className="text-[0.6875rem] text-muted">Salas, anime y debates</p>
               </div>
             </div>
             <span className="k-btn k-btn-ghost k-btn-icon k-btn-sm text-[#5865F2]">

@@ -84,51 +84,51 @@ export function AnimeDna({ d }: { d: ProfileData }) {
   const dna = useMemo(() => computeDna(d.entries), [d.entries]);
   const gamification = useSettings((s) => s.gamification);
   const ach = useAchievements(d.entries, d.guest ? null : (d.profile?.id ?? null), d.isMe);
-  if (d.listsHidden) return <EmptyState jp="秘" title="This DNA is private" />;
+  if (d.listsHidden) return <EmptyState jp="秘" title="Este ADN es privado" />;
   if (dna.total < 1)
-    return <EmptyState jp="遺" title="No DNA to sequence yet" body="Anime DNA is computed only from real library data. Add and complete a few titles to see your taste take shape." action={d.isMe ? <Link href="/discover" className="k-btn k-btn-primary k-btn-sm">Discover anime</Link> : undefined} />;
+    return <EmptyState jp="遺" title="Aún no hay ADN que secuenciar" body="El ADN anime se calcula solo con datos reales de tu biblioteca. Añade y completa algunos títulos para ver cómo toma forma tu gusto." action={d.isMe ? <Link href="/discover" className="k-btn k-btn-primary k-btn-sm">Descubrir anime</Link> : undefined} />;
   const top = dna.genres[0];
   return (
     <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-        <Card title="Genre helix">
-          {dna.genres.length ? <Helix genres={dna.genres} /> : <p className="text-sm text-muted">Genres appear once you&apos;ve started something.</p>}
+        <Card title="Hélice de géneros">
+          {dna.genres.length ? <Helix genres={dna.genres} /> : <p className="text-sm text-muted">Los géneros aparecen cuando empiezas algo.</p>}
         </Card>
         <div className="grid gap-6 sm:grid-cols-2">
-          <Card title="Signature" className="sm:col-span-2">
+          <Card title="Firma" className="sm:col-span-2">
             <p className="font-display text-2xl leading-snug">
               {top ? (
                 <>
-                  A <span className="text-primary-ink">{top.name}</span> soul
+                  Alma de <span className="text-primary-ink">{top.name}</span>
                   {dna.genres[1] ? (
                     <>
-                      {" "}with a streak of <span className="text-primary-ink">{dna.genres[1].name}</span>
+                      {" "}con un toque de <span className="text-primary-ink">{dna.genres[1].name}</span>
                     </>
                   ) : null}
                   .
                 </>
               ) : (
-                "Still forming."
+                "Todavía tomando forma."
               )}
             </p>
             <p className="mt-2 text-sm text-muted">
-              {dna.completed} completed · {Math.round(dna.hours)} hours logged · {dna.meanScore != null ? `mean score ${dna.meanScore}` : "no scores yet"}
-              {dna.completionRate != null ? ` · finishes ${Math.round(dna.completionRate * 100)}% of what they don't drop` : ""}
+              {dna.completed} completados · {Math.round(dna.hours)} horas registradas · {dna.meanScore != null ? `nota media ${dna.meanScore}` : "sin notas todavía"}
+              {dna.completionRate != null ? ` · termina el ${Math.round(dna.completionRate * 100)}% de lo que no abandona` : ""}
             </p>
           </Card>
-          <Card title="Favorite studios">{dna.studios.length ? <Bars label="Studios" items={dna.studios.map((s) => ({ label: s.name, value: s.count }))} /> : <p className="text-sm text-muted">No studio data.</p>}</Card>
-          <Card title="Favorite eras">{dna.eras.length ? <Bars label="Decades" items={dna.eras.map((e) => ({ label: e.decade, value: e.count }))} /> : <p className="text-sm text-muted">No release years.</p>}</Card>
-          <Card title="Score distribution">
-            {dna.scored ? <Bars label="Scores" items={dna.scoreBuckets.map((b) => ({ label: b.bucket, value: b.count }))} /> : <p className="text-sm text-muted">Rate titles (0–100) to see how you score.</p>}
+          <Card title="Estudios favoritos">{dna.studios.length ? <Bars label="Estudios" items={dna.studios.map((s) => ({ label: s.name, value: s.count }))} /> : <p className="text-sm text-muted">Sin datos de estudios.</p>}</Card>
+          <Card title="Épocas favoritas">{dna.eras.length ? <Bars label="Décadas" items={dna.eras.map((e) => ({ label: e.decade, value: e.count }))} /> : <p className="text-sm text-muted">Sin años de estreno.</p>}</Card>
+          <Card title="Distribución de notas">
+            {dna.scored ? <Bars label="Notas" items={dna.scoreBuckets.map((b) => ({ label: b.bucket, value: b.count }))} /> : <p className="text-sm text-muted">Puntúa títulos (0–100) para ver cómo calificas.</p>}
           </Card>
-          <Card title="Watch distribution">
+          <Card title="Distribución por estado">
             <Bars label="Statuses" items={LIBRARY_STATUSES.map((s) => ({ label: s.label, value: dna.statuses.find((x) => x.status === s.value)?.count ?? 0 }))} />
           </Card>
           <Card title="Formats">
             <Bars label="Formats" items={dna.formats.map((f) => ({ label: titleCase(f.name), value: f.count }))} />
           </Card>
-          <Card title="Watching pattern">
-            <p className="mb-3 text-xs text-muted">Days you last updated each title (your local time).</p>
+          <Card title="Patrón de visionado">
+            <p className="mb-3 text-xs text-muted">Días en que actualizaste cada título por última vez (tu hora local).</p>
             <div className="flex h-28 items-end gap-2" role="img" aria-label={dna.weekdays.map((w) => `${w.day} ${w.count}`).join(", ")}>
               {dna.weekdays.map((w, i) => {
                 const max = Math.max(1, ...dna.weekdays.map((x) => x.count));
@@ -145,7 +145,7 @@ export function AnimeDna({ d }: { d: ProfileData }) {
       </div>
       {d.isMe && gamification && <SeasonGoal entries={d.entries} userId={d.guest ? null : (d.profile?.id ?? null)} remoteGoal={ach.goal} onSaved={() => ach.refetch()} />}
       {(gamification || !d.isMe) && (
-        <Card title="All achievements">
+        <Card title="Todos los logros">
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {ach.achievements.map((a) => (
               <Badge key={a.id} a={a} />
@@ -176,7 +176,7 @@ function SeasonGoal({ entries, userId, remoteGoal, onSaved }: { entries: Library
     } catch {}
     if (!userId) return;
     const { error } = await saveSeasonGoal(userId, n);
-    if (error) toast.error("Couldn't save your goal");
+    if (error) toast.error("No se pudo guardar tu meta");
     else onSaved();
   };
   return (
@@ -186,9 +186,9 @@ function SeasonGoal({ entries, userId, remoteGoal, onSaved }: { entries: Library
         <h3 className="font-display text-lg">
           {titleCase(season)} {year} goal
         </h3>
-        <p className="text-sm text-muted">{target ? `${done} of ${target} completed this season${done >= target ? " — goal reached!" : ""}` : "Set a gentle target — no streaks, no penalties."}</p>
+        <p className="text-sm text-muted">{target ? `${done} de ${target} completados esta temporada${done >= target ? " · ¡meta cumplida!" : ""}` : "Ponte una meta tranquila: sin rachas ni castigos."}</p>
         {target > 0 && (
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={done} aria-valuemin={0} aria-valuemax={target} aria-label="Seasonal goal">
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={done} aria-valuemin={0} aria-valuemax={target} aria-label="Meta de temporada">
             <div className="h-full rounded-full bg-gradient-to-r from-primary to-accent" style={{ width: `${Math.min(100, (done / target) * 100)}%` }} />
           </div>
         )}
@@ -215,11 +215,11 @@ function SeasonGoal({ entries, userId, remoteGoal, onSaved }: { entries: Library
 
 export function ProfileLists({ d }: { d: ProfileData }) {
   const [status, setStatus] = useState<LibraryEntry["status"]>("CURRENT");
-  if (d.listsHidden) return <EmptyState jp="秘" title="These lists are private" />;
+  if (d.listsHidden) return <EmptyState jp="秘" title="Estas listas son privadas" />;
   const list = d.entries.filter((e) => e.status === status).sort((a, b) => b.updatedAt - a.updatedAt);
   return (
     <div>
-      <div className="mb-6 flex flex-wrap gap-1.5" role="group" aria-label="Status">
+      <div className="mb-6 flex flex-wrap gap-1.5" role="group" aria-label="Estado">
         {LIBRARY_STATUSES.map((s) => (
           <button key={s.value} className="k-chip" aria-pressed={status === s.value} onClick={() => setStatus(s.value)}>
             {s.label} · {d.entries.filter((e) => e.status === s.value).length}
@@ -227,7 +227,7 @@ export function ProfileLists({ d }: { d: ProfileData }) {
         ))}
       </div>
       {list.length === 0 ? (
-        <EmptyState title={`Nothing in ${statusMeta(status).label}`} />
+        <EmptyState title={`Nada en ${statusMeta(status).label}`} />
       ) : (
         <ul className="k-card divide-y divide-line">
           {list.map((e) => (

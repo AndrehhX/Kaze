@@ -28,7 +28,7 @@ test.describe("KAZE critical flows", () => {
 
   test("search with URL-persisted filters", async ({ page }) => {
     await page.goto("/discover?genres=Drama&sort=SCORE_DESC");
-    await expect(page.getByRole("button", { name: "Remove filter Drama" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Quitar filtro Drama" })).toBeVisible();
     await page.getByRole("searchbox", { name: "Search anime", exact: true }).fill("frieren");
     await expect(page).toHaveURL(/q=frieren/);
     await expect(page.getByRole("link", { name: /Frieren/ }).first()).toBeVisible();
@@ -36,9 +36,9 @@ test.describe("KAZE critical flows", () => {
 
   test("library operations persist on the device", async ({ page }) => {
     await page.goto("/anime/154587");
-    await page.getByRole("button", { name: /^Add to list: / }).first().click();
+    await page.getByRole("button", { name: /^Añadir a la lista: / }).first().click();
     await page.getByRole("menuitem", { name: /Watching/ }).click();
-    await page.getByRole("button", { name: "Mark next episode watched" }).click();
+    await page.getByRole("button", { name: "Marcar el siguiente episodio como visto" }).click();
     await page.goto("/library?tab=CURRENT");
     await expect(page.getByText(/Frieren/).first()).toBeVisible();
     await page.reload();
@@ -77,7 +77,7 @@ test.describe("KAZE critical flows", () => {
   test("command palette is keyboard-first", async ({ page }) => {
     await page.goto("/");
     // Shortcuts attach on hydration; list buttons enable once the client stores load.
-    await expect(page.getByRole("button", { name: /^Add to list: / }).first()).toBeEnabled();
+    await expect(page.getByRole("button", { name: /^Añadir a la lista: / }).first()).toBeEnabled();
     await page.keyboard.press("Control+k");
     const input = page.getByRole("combobox");
     await expect(input).toBeFocused();

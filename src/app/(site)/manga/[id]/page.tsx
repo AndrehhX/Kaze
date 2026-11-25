@@ -110,7 +110,7 @@ function AniListDetail({ m, chapters = [], volumes = [] }: { m: MangaDetail; cha
             </div>
           )}
           <div>
-            <h2 className="k-label mb-2 text-muted">Staff</h2>
+            <h2 className="k-label mb-2 text-muted">Equipo</h2>
             <MangaStaff m={m} />
           </div>
         </div>

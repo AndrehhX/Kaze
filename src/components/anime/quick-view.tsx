@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { ArrowRight, Clapperboard } from "lucide-react";
 import type { MediaCard } from "@/lib/anilist/types";
+import { genreLabel } from "@/lib/anilist/browse-params";
 import { api } from "@/lib/api-client";
 import { cleanDescription, formatLabel, statusLabel } from "@/lib/utils";
 import { Dialog } from "@/components/ui/dialog";
@@ -49,7 +50,7 @@ export function QuickView({ media, open, onOpenChange, layoutId }: { media: Medi
           <div className="mt-3 flex flex-wrap gap-1.5">
             {media.genres.map((g) => (
               <Link key={g} href={`/discover?genres=${encodeURIComponent(g)}`} className="k-chip" onClick={() => onOpenChange(false)}>
-                {g}
+                {genreLabel(g)}
               </Link>
             ))}
           </div>
@@ -62,7 +63,7 @@ export function QuickView({ media, open, onOpenChange, layoutId }: { media: Medi
               </div>
             )}
             {isError && <p className="text-muted">Couldn&apos;t load the synopsis right now.</p>}
-            {d && <p className="clamp-3 whitespace-pre-line sm:[-webkit-line-clamp:5]">{cleanDescription(d.description) || "No synopsis on AniList yet."}</p>}
+            {d && <p className="clamp-3 whitespace-pre-line sm:[-webkit-line-clamp:5]">{cleanDescription(d.description) || "AniList aún no tiene sinopsis."}</p>}
           </div>
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <Link href={`/anime/${media.id}`} className="k-btn k-btn-primary" onClick={() => onOpenChange(false)}>
@@ -72,7 +73,7 @@ export function QuickView({ media, open, onOpenChange, layoutId }: { media: Medi
             <FavoriteButton media={media} />
             {d?.trailer?.site === "youtube" && (
               <Link href={`/anime/${media.id}#trailer`} className="k-btn k-btn-ghost" onClick={() => onOpenChange(false)}>
-                <Clapperboard className="size-4" aria-hidden /> Trailer
+                <Clapperboard className="size-4" aria-hidden /> Tráiler
               </Link>
             )}
           </div>

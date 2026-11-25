@@ -23,10 +23,10 @@ export function AuthGate({ children, feature, jp = "門" }: { children: ReactNod
         action={
           <>
             <Link href={`/login?next=${encodeURIComponent(path)}`} className="k-btn k-btn-primary k-btn-sm">
-              Sign in
+              Iniciar sesión
             </Link>
             <Link href="/register" className="k-btn k-btn-outline k-btn-sm">
-              Create account
+              Crear cuenta
             </Link>
           </>
         }
@@ -40,12 +40,12 @@ export function BackendMissing({ feature }: { feature: string }) {
     <EmptyState
       icon={<Server className="size-6" />}
       jp="未"
-      title={`${feature} no está configurado en este entorno`}
+      title={`${feature}: no disponible en este entorno`}
       body={
         <>
-          Accounts and social features run on Supabase. Set <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
-          <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> and apply the migrations — see the README. Catalog browsing, the player and your on-device library work
-          without it.
+          Las cuentas y las funciones sociales funcionan con Supabase. Configura <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> y{" "}
+          <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> y aplica las migraciones (ver el README). El catálogo, el reproductor y la biblioteca del dispositivo funcionan
+          sin ello.
         </>
       }
     />

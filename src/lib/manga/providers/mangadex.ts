@@ -158,7 +158,7 @@ export const mangaDexProvider: ChapterCatalogProvider & ChapterContentProvider &
     return [
       { id: "mdx-es-la", seriesKey: key, language: "es-la", label: "Español (Latinoamérica)", publisher: "MangaDex", region: "LATAM", readingDirection: "rtl" },
       { id: "mdx-es", seriesKey: key, language: "es", label: "Español (Castellano)", publisher: "MangaDex", region: "ES", readingDirection: "rtl" },
-      { id: "mdx-en", seriesKey: key, language: "en", label: "English", publisher: "MangaDex", region: "US", readingDirection: "rtl" },
+      { id: "mdx-en", seriesKey: key, language: "en", label: "Inglés", publisher: "MangaDex", region: "US", readingDirection: "rtl" },
     ];
   },
 

@@ -12,13 +12,13 @@ export function SiteFooter() {
           <Logo />
           <p className="mt-4 max-w-sm text-sm text-muted">Anime isn&apos;t just something you watch. It&apos;s a universe you live in.</p>
         </div>
-        <nav aria-label="Explore" className="text-sm">
-          <p className="k-label mb-3 text-muted">Explore</p>
+        <nav aria-label="Explorar" className="text-sm">
+          <p className="k-label mb-3 text-muted">Explorar</p>
           <ul className="space-y-2">
-            <li><Link className="hover:text-primary-ink" href="/discover">Discover</Link></li>
+            <li><Link className="hover:text-primary-ink" href="/discover">Descubrir</Link></li>
             <li><Link className="hover:text-primary-ink" href="/discover/moods">Mood Explorer</Link></li>
-            <li><Link className="hover:text-primary-ink" href="/discover/roulette">Anime Roulette</Link></li>
-            <li><Link className="hover:text-primary-ink" href="/seasonal">Seasonal chart</Link></li>
+            <li><Link className="hover:text-primary-ink" href="/discover/roulette">Ruleta de anime</Link></li>
+            <li><Link className="hover:text-primary-ink" href="/seasonal">Tabla de temporada</Link></li>
             <li>
               <a className="hover:text-primary-ink flex items-center gap-1.5" href={APK_DOWNLOAD_URL} rel="noopener noreferrer" download="kaze.apk">
                 <Smartphone className="size-3.5 text-primary" aria-hidden />
@@ -49,13 +49,13 @@ export function SiteFooter() {
             </li>
           </ul>
         </nav>
-        <nav aria-label="You" className="text-sm">
-          <p className="k-label mb-3 text-muted">You</p>
+        <nav aria-label="Tú" className="text-sm">
+          <p className="k-label mb-3 text-muted">Tú</p>
           <ul className="space-y-2">
-            <li><Link className="hover:text-primary-ink" href="/library">Library</Link></li>
-            <li><Link className="hover:text-primary-ink" href="/watch-parties">Watch parties</Link></li>
+            <li><Link className="hover:text-primary-ink" href="/library">Biblioteca</Link></li>
+            <li><Link className="hover:text-primary-ink" href="/watch-parties">Salas de visionado</Link></li>
             <li><Link className="hover:text-primary-ink" href="/settings/appearance">Themes</Link></li>
-            <li><Link className="hover:text-primary-ink" href="/settings/privacy">Privacy</Link></li>
+            <li><Link className="hover:text-primary-ink" href="/settings/privacy">Privacidad</Link></li>
           </ul>
         </nav>
         <div className="text-xs leading-relaxed text-muted">

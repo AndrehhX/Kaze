@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div aria-busy="true" aria-label="Loading anime">
+    <div aria-busy="true" aria-label="Cargando anime">
       <div className="k-skeleton -mt-[var(--k-nav-h)] h-[min(62svh,560px)] w-full !rounded-none opacity-50" />
       <div className="container-k -mt-48 grid gap-8 md:grid-cols-[minmax(200px,280px)_1fr]">
         <div className="k-skeleton mx-auto aspect-[2/3] w-[min(56vw,240px)] md:w-full" />

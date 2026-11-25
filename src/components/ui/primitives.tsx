@@ -138,7 +138,7 @@ export function EmptyState({
   );
 }
 
-export function ErrorPanel({ title = "Something went wrong", message, onRetry }: { title?: string; message?: string; onRetry?: () => void }) {
+export function ErrorPanel({ title = "Algo salió mal", message, onRetry }: { title?: string; message?: string; onRetry?: () => void }) {
   return (
     <div role="alert" className="k-card flex flex-col items-start gap-3 p-6">
       <p className="k-label text-danger">Error</p>
@@ -146,7 +146,7 @@ export function ErrorPanel({ title = "Something went wrong", message, onRetry }:
       {message && <p className="text-sm text-muted">{message}</p>}
       {onRetry && (
         <button className="k-btn k-btn-outline k-btn-sm" onClick={onRetry}>
-          Try again
+          Reintentar
         </button>
       )}
     </div>
@@ -155,7 +155,7 @@ export function ErrorPanel({ title = "Something went wrong", message, onRetry }:
 
 export function DemoBadge({ className }: { className?: string }) {
   return (
-    <span className={cn("k-chip !min-h-6 border-accent/60 !bg-transparent text-[0.6875rem] font-semibold uppercase tracking-wider", className)} title="Open-licensed demo media, not licensed anime">
+    <span className={cn("k-chip !min-h-6 border-accent/60 !bg-transparent text-[0.6875rem] font-semibold uppercase tracking-wider", className)} title="Contenido de demostración con licencia libre, no anime con licencia">
       Demo media
     </span>
   );

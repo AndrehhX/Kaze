@@ -17,14 +17,14 @@ export type Mood = {
 };
 
 export const MOODS: Mood[] = [
-  { id: "emotional", label: "Emotional", jp: "感動", blurb: "Stories that stay with you.", hue: 330, rule: "Drama genre, community score ≥ 75", query: { genres: ["Drama"], minScore: 75, sort: "SCORE_DESC" } },
-  { id: "relaxing", label: "Relaxing", jp: "癒し", blurb: "Low stakes, warm light.", hue: 150, rule: "Slice of Life with the Iyashikei tag", query: { genres: ["Slice of Life"], tags: ["Iyashikei"], sort: "POPULARITY_DESC" } },
-  { id: "action", label: "Action-packed", jp: "熱血", blurb: "Big fights, bigger stakes.", hue: 10, rule: "Action genre, score ≥ 70, by popularity", query: { genres: ["Action"], minScore: 70, sort: "POPULARITY_DESC" } },
-  { id: "romantic", label: "Romantic", jp: "恋愛", blurb: "Butterflies guaranteed.", hue: 345, rule: "Romance genre, score ≥ 70", query: { genres: ["Romance"], minScore: 70, sort: "POPULARITY_DESC" } },
-  { id: "mysterious", label: "Mysterious", jp: "謎", blurb: "Questions worth chasing.", hue: 260, rule: "Mystery genre, score ≥ 70", query: { genres: ["Mystery"], minScore: 70, sort: "SCORE_DESC" } },
-  { id: "dark", label: "Dark", jp: "闇", blurb: "Unsettling, heavy, unforgettable.", hue: 280, rule: "Psychological genre, excluding Comedy and Slice of Life", query: { genres: ["Psychological"], excludedGenres: ["Comedy", "Slice of Life"], sort: "SCORE_DESC" } },
-  { id: "comforting", label: "Comforting", jp: "安心", blurb: "Like a blanket and tea.", hue: 40, rule: "Comedy + Slice of Life, excluding Horror and Psychological", query: { genres: ["Comedy", "Slice of Life"], excludedGenres: ["Horror", "Psychological"], minScore: 70, sort: "POPULARITY_DESC" } },
-  { id: "epic", label: "Epic", jp: "壮大", blurb: "Worlds worth getting lost in.", hue: 210, rule: "Adventure + Fantasy, 20+ episodes, score ≥ 72", query: { genres: ["Adventure", "Fantasy"], minEpisodes: 20, minScore: 72, sort: "SCORE_DESC" } },
+  { id: "emotional", label: "Emotivo", jp: "感動", blurb: "Historias que se quedan contigo.", hue: 330, rule: "Género drama, nota de la comunidad ≥ 75", query: { genres: ["Drama"], minScore: 75, sort: "SCORE_DESC" } },
+  { id: "relaxing", label: "Relajante", jp: "癒し", blurb: "Sin presión, con luz cálida.", hue: 150, rule: "Recuentos de la vida con la etiqueta Iyashikei", query: { genres: ["Slice of Life"], tags: ["Iyashikei"], sort: "POPULARITY_DESC" } },
+  { id: "action", label: "Pura acción", jp: "熱血", blurb: "Grandes peleas, todavía más en juego.", hue: 10, rule: "Género acción, nota ≥ 70, por popularidad", query: { genres: ["Action"], minScore: 70, sort: "POPULARITY_DESC" } },
+  { id: "romantic", label: "Romántico", jp: "恋愛", blurb: "Mariposas en el estómago garantizadas.", hue: 345, rule: "Género romance, nota ≥ 70", query: { genres: ["Romance"], minScore: 70, sort: "POPULARITY_DESC" } },
+  { id: "mysterious", label: "Misterioso", jp: "謎", blurb: "Preguntas que merece la pena perseguir.", hue: 260, rule: "Género misterio, nota ≥ 70", query: { genres: ["Mystery"], minScore: 70, sort: "SCORE_DESC" } },
+  { id: "dark", label: "Oscuro", jp: "闇", blurb: "Inquietante, intenso, inolvidable.", hue: 280, rule: "Género psicológico, sin comedia ni recuentos de la vida", query: { genres: ["Psychological"], excludedGenres: ["Comedy", "Slice of Life"], sort: "SCORE_DESC" } },
+  { id: "comforting", label: "Reconfortante", jp: "安心", blurb: "Como una manta y un té.", hue: 40, rule: "Comedia + recuentos de la vida, sin terror ni psicológico", query: { genres: ["Comedy", "Slice of Life"], excludedGenres: ["Horror", "Psychological"], minScore: 70, sort: "POPULARITY_DESC" } },
+  { id: "epic", label: "Épico", jp: "壮大", blurb: "Mundos en los que perderse.", hue: 210, rule: "Aventura + fantasía, 20+ episodios, nota ≥ 72", query: { genres: ["Adventure", "Fantasy"], minEpisodes: 20, minScore: 72, sort: "SCORE_DESC" } },
 ];
 
 export function moodById(id: string) {

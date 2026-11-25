@@ -8,10 +8,10 @@ export default function NotFound() {
           迷
         </p>
         <h1 className="font-display text-title mt-4">This anime isn&apos;t in the catalog</h1>
-        <p className="mt-3 text-muted">The id may be wrong, or AniList may not list it publicly.</p>
+        <p className="mt-3 text-muted">Puede que el enlace sea incorrecto o que AniList no lo muestre públicamente.</p>
         <div className="mt-6 flex justify-center gap-2">
           <Link href="/discover" className="k-btn k-btn-primary">
-            Search the catalog
+            Buscar en el catálogo
           </Link>
           <Link href="/" className="k-btn k-btn-ghost">
             Home

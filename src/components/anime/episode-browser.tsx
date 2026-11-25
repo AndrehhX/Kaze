@@ -38,7 +38,7 @@ export function EpisodeBrowser({ media }: { media: MediaDetail }) {
         )}
       </div>
       {pages > 1 && (
-        <div className="scrollbar-none mb-5 flex gap-1.5 overflow-x-auto" role="tablist" aria-label="Episode ranges">
+        <div className="scrollbar-none mb-5 flex gap-1.5 overflow-x-auto" role="tablist" aria-label="Rangos de episodios">
           {Array.from({ length: pages }, (_, i) => {
             const a = filtered[i * PAGE]?.number;
             const b = filtered[Math.min(filtered.length, (i + 1) * PAGE) - 1]?.number;

@@ -14,7 +14,7 @@ import { AuthGate } from "./gate";
 /** Friends who have this title in their library — RLS hides lists that friends keep private. */
 export function FriendsWithTitle({ mediaId }: { mediaId: number }) {
   return (
-    <AuthGate feature="friend activity">
+    <AuthGate feature="la actividad de amigos">
       <Inner mediaId={mediaId} />
     </AuthGate>
   );
@@ -50,9 +50,9 @@ function Inner({ mediaId }: { mediaId: number }) {
     return (
       <EmptyState
         icon={<Users className="size-6" />}
-        title={data?.friends ? "None of your friends have this in a shared list" : "No friends yet"}
-        body={data?.friends ? "Friends who keep their lists private won't appear here." : "Add friends to see who's watching what."}
-        action={!data?.friends ? <Link href="/friends" className="k-btn k-btn-primary k-btn-sm">Find friends</Link> : undefined}
+        title={data?.friends ? "Ninguno de tus amigos lo tiene en una lista compartida" : "Aún no tienes amigos"}
+        body={data?.friends ? "Los amigos con listas privadas no aparecen aquí." : "Añade amigos para ver quién está viendo qué."}
+        action={!data?.friends ? <Link href="/friends" className="k-btn k-btn-primary k-btn-sm">Buscar amigos</Link> : undefined}
       />
     );
   return (

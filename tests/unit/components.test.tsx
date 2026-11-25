@@ -15,7 +15,7 @@ describe("Spoiler shield", () => {
     );
     const hidden = screen.getByText("The twist").parentElement!;
     expect(hidden).toHaveAttribute("aria-hidden", "true");
-    await userEvent.click(screen.getByRole("button", { name: /reveal/i }));
+    await userEvent.click(screen.getByRole("button", { name: /mostrar/i }));
     expect(screen.getByText("The twist").parentElement).not.toHaveAttribute("aria-hidden");
   });
 
@@ -32,7 +32,7 @@ describe("RatingInput", () => {
   }
   it("exposes an accessible radio group", async () => {
     render(<Harness />);
-    const seven = screen.getByRole("radio", { name: "7 out of 10" });
+    const seven = screen.getByRole("radio", { name: "7 sobre 10" });
     await userEvent.click(seven);
     expect(seven).toHaveAttribute("aria-checked", "true");
     expect(screen.getAllByRole("radio")).toHaveLength(10);

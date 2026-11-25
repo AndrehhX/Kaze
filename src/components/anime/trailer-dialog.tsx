@@ -6,7 +6,7 @@ import { Dialog } from "@/components/ui/dialog";
 export function TrailerDialog({ open, onOpenChange, youtubeId, title }: { open: boolean; onOpenChange: (o: boolean) => void; youtubeId: string; title: string }) {
   const safeId = /^[\w-]{6,20}$/.test(youtubeId) ? youtubeId : null;
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title={`${title} — trailer`} className="w-[min(96vw,1100px)]">
+    <Dialog open={open} onOpenChange={onOpenChange} title={`${title} · tráiler`} className="w-[min(96vw,1100px)]">
       <div className="p-3 pt-2">
         {safeId ? (
           <div className="relative aspect-video w-full overflow-hidden rounded-[min(var(--k-radius-card),14px)] bg-black">

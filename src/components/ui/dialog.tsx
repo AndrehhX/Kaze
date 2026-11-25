@@ -80,7 +80,7 @@ export function Dialog({
                     {description ? <D.Description className="mt-1 text-sm text-muted">{description}</D.Description> : <D.Description className="sr-only">{title}</D.Description>}
                   </div>
                 </div>
-                <D.Close className="k-btn k-btn-ghost k-btn-icon k-btn-sm absolute right-3 top-3 z-10" aria-label="Close">
+                <D.Close className="k-btn k-btn-ghost k-btn-icon k-btn-sm absolute right-3 top-3 z-10" aria-label="Cerrar">
                   <X className="size-4" />
                 </D.Close>
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
@@ -98,7 +98,7 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   body,
-  confirmLabel = "Confirm",
+  confirmLabel = "Confirmar",
   destructive,
   onConfirm,
   busy,
@@ -117,7 +117,7 @@ export function ConfirmDialog({
       <div className="px-5 pb-5 pt-2 text-sm text-muted">{body}</div>
       <div className="flex justify-end gap-2 border-t border-line px-5 py-4">
         <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => onOpenChange(false)}>
-          Cancel
+          Cancelar
         </button>
         <button
           className={cn("k-btn k-btn-sm", destructive ? "bg-danger text-white" : "k-btn-primary")}

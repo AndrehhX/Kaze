@@ -77,7 +77,7 @@ async function CachedWatchBody({ animeId, episodeId }: { animeId: string; episod
               </li>
             ))
           ) : (
-            <li className="text-sm text-muted">No official streaming service is listed on AniList.</li>
+            <li className="text-sm text-muted">AniList no registra ningún servicio oficial de streaming.</li>
           )}
         </ul>
         <div className="mt-6 flex justify-center gap-2">
@@ -85,7 +85,7 @@ async function CachedWatchBody({ animeId, episodeId }: { animeId: string; episod
             Back to {title}
           </Link>
           <Link href="/watch/open-cinema/1" className="k-btn k-btn-ghost k-btn-sm">
-            Try the demo player
+            Probar el reproductor de demostración
           </Link>
         </div>
       </div>

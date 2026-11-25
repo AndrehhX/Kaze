@@ -38,7 +38,7 @@ type LibraryState = {
 
 function remoteError(err: unknown) {
   console.warn("[kaze] library sync failed", err);
-  toast.error("Couldn't save to your account", { description: "Your change is kept on this device and will retry on the next edit." });
+  toast.error("No se pudo guardar en tu cuenta", { description: "El cambio se queda en este dispositivo y se reintentará en la próxima edición." });
 }
 
 const uid = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Math.random().toString(36).slice(2));

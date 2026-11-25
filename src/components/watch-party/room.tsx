@@ -44,7 +44,7 @@ const EMOJI = ["😂", "😭", "🔥", "😱", "❤️", "👏", "🤯", "💀"]
 
 export function WatchPartyRoom({ roomId }: { roomId: string }) {
   return (
-    <AuthGate feature="watch parties" jp="宴">
+    <AuthGate feature="las salas de visionado" jp="宴">
       <RoomInner roomId={roomId} />
     </AuthGate>
   );
@@ -195,7 +195,7 @@ function RoomInner({ roomId }: { roomId: string }) {
         setRoom(r);
         const s = rowToState(r);
         if (!stateRef.current || s.version >= stateRef.current.version) stateRef.current = s;
-        if (r.ended_at) toast("The host ended this party");
+        if (r.ended_at) toast("El anfitrión cerró la sala");
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "watch_party_messages", filter: `room_id=eq.${roomId}` }, (p) => {
         const m = p.new as Msg;
@@ -270,7 +270,7 @@ function RoomInner({ roomId }: { roomId: string }) {
   const control = useCallback(
     async (playing: boolean, position: number, episode?: string) => {
       const { error } = await db.rpc("watch_party_control", { room: roomId, playing, pos: position, episode: episode ?? null, rate: video.current?.playbackRate ?? 1 });
-      if (error) toast.error(`Sync failed: ${friendlyDbError(error)}`);
+      if (error) toast.error(`Error de sincronización: ${friendlyDbError(error)}`);
     },
     [db, roomId],
   );
@@ -309,7 +309,7 @@ function RoomInner({ roomId }: { roomId: string }) {
   };
   const copyLink = async () => {
     await navigator.clipboard.writeText(`${location.origin}/watch-parties/${roomId}`);
-    toast.success("Invite link copied", { description: room?.invite_only ? "Only friends and invited people can join this room." : "Anyone signed in with the link can join." });
+    toast.success("Enlace de invitación copiado", { description: room?.invite_only ? "Solo pueden entrar amigos y personas invitadas." : "Cualquiera con sesión iniciada y el enlace puede entrar." });
   };
 
   if (loadError)
@@ -354,7 +354,7 @@ function RoomInner({ roomId }: { roomId: string }) {
                   <span className="inline-flex items-center gap-2 rounded-full bg-black/70 px-3 py-1 text-xs font-semibold text-white">
                     {isHost ? <Crown className="size-3.5 text-accent" aria-hidden /> : null}
                     {isHost ? "Tú controlas la reproducción" : `Sincronizado con ${nameOf(room.host_id)}`}
-                    {!isHost && drift != null && <span className="font-mono text-white/60">{drift === 0 ? "in sync" : `${drift > 0 ? "+" : ""}${drift.toFixed(2)}s`}</span>}
+                    {!isHost && drift != null && <span className="font-mono text-white/60">{drift === 0 ? "sincronizado" : `${drift > 0 ? "+" : ""}${drift.toFixed(2)}s`}</span>}
                   </span>
                 ),
               }}
@@ -498,10 +498,10 @@ function RoomInner({ roomId }: { roomId: string }) {
               <li key={p.user_id} className="flex items-center gap-2.5 text-sm">
                 <span className="relative">
                   <Avatar src={p.profile?.avatar_url} name={p.profile?.display_name || p.profile?.username || "?"} size={28} />
-                  <span className={cn("absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-surface", online.has(p.user_id) ? "bg-success" : "bg-muted")} aria-label={online.has(p.user_id) ? "Connected" : "Not connected"} />
+                  <span className={cn("absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-surface", online.has(p.user_id) ? "bg-success" : "bg-muted")} aria-label={online.has(p.user_id) ? "Conectado" : "Desconectado"} />
                 </span>
-                <span className="flex-1 truncate">{p.user_id === me ? `${myProfile?.display_name || "You"} (you)` : p.profile?.display_name || p.profile?.username}</span>
-                {p.role === "host" && <Crown className="size-4 text-accent" aria-label="Host" />}
+                <span className="flex-1 truncate">{p.user_id === me ? `${myProfile?.display_name || "Tú"} (tú)` : p.profile?.display_name || p.profile?.username}</span>
+                {p.role === "host" && <Crown className="size-4 text-accent" aria-label="Anfitrión" />}
               </li>
             ))}
           </ul>
@@ -510,9 +510,9 @@ function RoomInner({ roomId }: { roomId: string }) {
           <h2 id="chat-h" className="font-display px-4 pt-4 text-base">Chat</h2>
           <ChatLog messages={messages} me={me} nameOf={nameOf} />
           <form onSubmit={send} className="flex gap-2 border-t border-line p-3">
-            <label htmlFor="chat-input" className="sr-only">Message</label>
+            <label htmlFor="chat-input" className="sr-only">Mensaje</label>
             <input id="chat-input" className="k-input !min-h-10 text-sm" maxLength={500} placeholder="Escribe un mensaje en el chat…" value={draft} onChange={(e) => setDraft(e.target.value)} autoComplete="off" />
-            <button className="k-btn k-btn-primary k-btn-icon k-btn-sm !size-10" aria-label="Send" disabled={!draft.trim()}>
+            <button className="k-btn k-btn-primary k-btn-icon k-btn-sm !size-10" aria-label="Enviar" disabled={!draft.trim()}>
               <Send className="size-4" />
             </button>
           </form>
@@ -639,7 +639,7 @@ function ChatLog({ messages, me, nameOf }: { messages: Msg[]; me: string; nameOf
   }, [messages.length]);
   return (
     <ol ref={ref} className="min-h-40 flex-1 space-y-2 overflow-y-auto px-4 py-3" aria-live="polite" aria-relevant="additions">
-      {messages.length === 0 && <li className="text-sm text-muted">No messages yet. Say hi!</li>}
+      {messages.length === 0 && <li className="text-sm text-muted">Todavía no hay mensajes. ¡Saluda!</li>}
       {messages.map((m) => (
         <li key={m.id} className={cn("group text-sm", m.user_id === me && "text-right")}>
           <span className="text-xs font-semibold text-primary-ink">{nameOf(m.user_id)}</span>
@@ -685,7 +685,7 @@ function InviteDialog({ roomId, roomTitle, onClose }: { roomId: string; roomTitl
                     kind: "watch_party_invite",
                     payload: {
                       room_id: roomId,
-                      title: roomTitle || "Watch Party",
+                      title: roomTitle || "Sala de cine",
                     },
                   }).then(() => {}, () => {});
                   toast.success(`Invitación enviada a ${f.display_name || f.username}`);

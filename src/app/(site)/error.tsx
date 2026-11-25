@@ -14,18 +14,18 @@ export default function SiteError({ error, reset }: { error: Error & { digest?: 
         <p className="k-jp text-7xl text-primary-ink" lang="ja" aria-hidden>
           嵐
         </p>
-        <h1 className="font-display text-title mt-4">{anilist ? "The catalog is catching its breath" : "Something went wrong"}</h1>
+        <h1 className="font-display text-title mt-4">{anilist ? "El catálogo está recuperando el aliento" : "Algo salió mal"}</h1>
         <p className="mt-3 text-muted">
           {anilist
-            ? "AniList is rate-limiting or unreachable right now. Your library and the demo player still work — try again in a minute."
-            : "An unexpected error interrupted this page. You can retry, or head back home."}
+            ? "AniList está limitando las peticiones o no responde ahora mismo. Tu biblioteca y el reproductor de demostración siguen funcionando: inténtalo de nuevo en un minuto."
+            : "Un error inesperado interrumpió esta página. Puedes reintentar o volver al inicio."}
         </p>
         <div className="mt-6 flex justify-center gap-2">
           <button className="k-btn k-btn-primary" onClick={reset}>
-            Try again
+            Reintentar
           </button>
           <Link href="/library" className="k-btn k-btn-ghost">
-            Open my library
+            Abrir mi biblioteca
           </Link>
         </div>
       </div>

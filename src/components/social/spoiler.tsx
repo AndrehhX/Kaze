@@ -15,7 +15,7 @@ export function Spoiler({ active, children, className }: { active: boolean; chil
       </div>
       <div className="absolute inset-0 grid place-items-center">
         <button className="k-btn k-btn-outline k-btn-sm bg-surface" onClick={() => setShown(true)}>
-          <ShieldAlert className="size-4 text-danger" aria-hidden /> Contains spoilers — <Eye className="size-4" aria-hidden /> Reveal
+          <ShieldAlert className="size-4 text-danger" aria-hidden /> Contiene spoilers · <Eye className="size-4" aria-hidden /> Mostrar
         </button>
       </div>
     </div>

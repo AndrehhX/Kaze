@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DiscussionThread } from "@/components/social/discussions";
 
-export const metadata: Metadata = { title: "Discussion" };
+export const metadata: Metadata = { title: "Debate" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

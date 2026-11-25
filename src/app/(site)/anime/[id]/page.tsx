@@ -95,7 +95,7 @@ async function CachedAnimeArticle({ id }: { id: number }) {
 
       <section id="overview" aria-labelledby="overview-h" className="container-k mt-10 grid scroll-mt-32 gap-6 lg:grid-cols-[1fr_340px]">
         <h2 id="overview-h" className="sr-only">
-          Overview
+          Resumen
         </h2>
         <div className="space-y-6">
           <TagCloud media={media} />
@@ -111,38 +111,38 @@ async function CachedAnimeArticle({ id }: { id: number }) {
         <AdBanner placement="anime-detail" />
       </div>
 
-      <DetailSection id="episodes" title="Episodes" jp="エピソード">
+      <DetailSection id="episodes" title="Episodios" jp="エピソード">
         <EpisodesPreview media={media} />
       </DetailSection>
-      <DetailSection id="characters" title="Characters & Voice Actors" jp="キャラクター">
+      <DetailSection id="characters" title="Personajes y seiyuus" jp="キャラクター">
         <CharacterGrid characters={media.characters.edges} />
       </DetailSection>
-      <DetailSection id="staff" title="Staff" jp="スタッフ">
+      <DetailSection id="staff" title="Equipo" jp="スタッフ">
         <StaffList media={media} />
       </DetailSection>
-      <DetailSection id="related" title="Related Anime" jp="関連">
+      <DetailSection id="related" title="Anime relacionado" jp="関連">
         <RelatedRail media={media} />
       </DetailSection>
       <DetailSection id="manga" title="Del anime al manga" jp="原作">
         <AnimeMangaBridge media={media} />
       </DetailSection>
-      <DetailSection id="recommendations" title="Fans Also Recommend" jp="おすすめ">
+      <DetailSection id="recommendations" title="Los fans también recomiendan" jp="おすすめ">
         <RecommendationRail media={media} />
       </DetailSection>
       <DetailSection id="trailer" title="Trailer" jp="予告編">
         <TrailerBlock media={media} />
       </DetailSection>
-      <DetailSection id="reviews" title="Reviews" jp="レビュー">
+      <DetailSection id="reviews" title="Reseñas" jp="レビュー">
         <MediaReviews mediaId={media.id} snapshot={snapshot} />
         <AniListReviews media={media} />
       </DetailSection>
-      <DetailSection id="discussions" title="Discussions" jp="掲示板">
+      <DetailSection id="discussions" title="Debates" jp="掲示板">
         <DiscussionList mediaId={media.id} snapshot={snapshot} limit={8} />
       </DetailSection>
-      <DetailSection id="friends" title="Friends Activity" jp="友達">
+      <DetailSection id="friends" title="Actividad de amigos" jp="友達">
         <FriendsWithTitle mediaId={media.id} />
       </DetailSection>
-      <DetailSection id="availability" title="Where to Watch" jp="配信">
+      <DetailSection id="availability" title="Dónde verlo" jp="配信">
         <Availability media={media} playable={playable} />
       </DetailSection>
     </article>

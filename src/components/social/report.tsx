@@ -9,15 +9,15 @@ import { useAuth } from "@/stores/auth";
 import { friendlyDbError } from "@/lib/social";
 
 const REASONS = [
-  ["spam", "Spam or advertising"],
-  ["harassment", "Harassment or bullying"],
-  ["spoilers", "Unmarked spoilers"],
-  ["hate", "Hate speech"],
-  ["sexual", "Sexual content"],
-  ["other", "Something else"],
+  ["spam", "Spam o publicidad"],
+  ["harassment", "Acoso o intimidación"],
+  ["spoilers", "Spoilers sin marcar"],
+  ["hate", "Discurso de odio"],
+  ["sexual", "Contenido sexual"],
+  ["other", "Otro motivo"],
 ] as const;
 
-export function ReportButton({ targetType, targetId, label = "Report" }: { targetType: "review" | "discussion" | "comment" | "profile" | "watch_party_message"; targetId: string; label?: string }) {
+export function ReportButton({ targetType, targetId, label = "Reportar" }: { targetType: "review" | "discussion" | "comment" | "profile" | "watch_party_message"; targetId: string; label?: string }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<(typeof REASONS)[number][0]>("spam");
   const [details, setDetails] = useState("");
@@ -32,7 +32,7 @@ export function ReportButton({ targetType, targetId, label = "Report" }: { targe
     setBusy(false);
     if (error && !/duplicate/i.test(error.message)) toast.error(friendlyDbError(error));
     else {
-      toast.success("Report sent", { description: "Thanks — moderators will review it." });
+      toast.success("Reporte enviado", { description: "Gracias. Los moderadores lo revisarán." });
       setOpen(false);
     }
   };
@@ -41,7 +41,7 @@ export function ReportButton({ targetType, targetId, label = "Report" }: { targe
       <button className="k-btn k-btn-ghost k-btn-sm !min-h-8 text-xs text-muted" onClick={() => setOpen(true)}>
         <Flag className="size-3.5" aria-hidden /> {label}
       </button>
-      <Dialog open={open} onOpenChange={setOpen} title="Report content" description="Reports are private. Abuse of reporting may limit your account.">
+      <Dialog open={open} onOpenChange={setOpen} title="Reportar contenido" description="Los reportes son privados. Abusar de ellos puede limitar tu cuenta.">
         <form
           className="space-y-3 px-5 pb-5 pt-2"
           onSubmit={(e) => {
@@ -58,13 +58,13 @@ export function ReportButton({ targetType, targetId, label = "Report" }: { targe
               </label>
             ))}
           </fieldset>
-          <textarea className="k-input text-sm" maxLength={1000} placeholder="Anything moderators should know (optional)" value={details} onChange={(e) => setDetails(e.target.value)} />
+          <textarea className="k-input text-sm" maxLength={1000} placeholder="¿Algo que deban saber los moderadores? (opcional)" value={details} onChange={(e) => setDetails(e.target.value)} />
           <div className="flex justify-end gap-2">
             <button type="button" className="k-btn k-btn-ghost k-btn-sm" onClick={() => setOpen(false)}>
-              Cancel
+              Cancelar
             </button>
             <button type="submit" className="k-btn k-btn-primary k-btn-sm" disabled={busy}>
-              {busy ? "Sending…" : "Send report"}
+              {busy ? "Enviando…" : "Enviar reporte"}
             </button>
           </div>
         </form>

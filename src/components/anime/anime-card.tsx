@@ -27,7 +27,7 @@ export function altTitle(m: Pick<MediaCard, "title">) {
 export function ScorePill({ score, className }: { score: number | null; className?: string }) {
   if (!score) return null;
   return (
-    <span className={cn("k-score text-xs", className)} aria-label={`Average score ${score} out of 100`}>
+    <span className={cn("k-score text-xs", className)} aria-label={`Puntuación media ${score} sobre 100`}>
       <Star className="size-3 fill-current text-accent" aria-hidden />
       {score}%
     </span>

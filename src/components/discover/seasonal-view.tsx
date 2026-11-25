@@ -13,7 +13,7 @@ import { EmptyState, ErrorPanel } from "@/components/ui/primitives";
 import { formatLabel } from "@/lib/utils";
 import { useMounted } from "@/lib/hooks";
 
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const ORDER: MediaSeason[] = ["WINTER", "SPRING", "SUMMER", "FALL"];
 type Sort = "popularity" | "score" | "title" | "day";
 
@@ -105,11 +105,11 @@ export function SeasonalView({
     if (sort !== "day" || !mounted) return null;
     const groups: Record<string, MediaCard[]> = {};
     for (const m of list) {
-      const key = m.nextAiringEpisode ? DAYS[new Date(m.nextAiringEpisode.airingAt * 1000).getDay()] : "Not currently airing";
+      const key = m.nextAiringEpisode ? DAYS[new Date(m.nextAiringEpisode.airingAt * 1000).getDay()] : "Sin emisión ahora mismo";
       (groups[key] ??= []).push(m);
     }
     const today = new Date().getDay();
-    const order = [...DAYS.slice(today), ...DAYS.slice(0, today), "Not currently airing"];
+    const order = [...DAYS.slice(today), ...DAYS.slice(0, today), "Sin emisión ahora mismo"];
     return order.filter((d) => groups[d]).map((d) => ({ day: d, items: groups[d].sort((a, b) => (a.nextAiringEpisode?.airingAt ?? 0) - (b.nextAiringEpisode?.airingAt ?? 0)) }));
   }, [list, sort, mounted]);
 
@@ -129,12 +129,12 @@ export function SeasonalView({
         <span className="k-jp pointer-events-none absolute -top-8 right-0 select-none text-[10rem] font-bold leading-none text-fg/[0.05]" lang="ja" aria-hidden>
           {meta.jp}
         </span>
-        <p className="k-label text-primary-ink">Seasonal chart</p>
+        <p className="k-label text-primary-ink">Tabla de temporada</p>
         <div className="mt-2 flex flex-wrap items-center gap-4">
           <h1 className="font-display text-title">
             {meta.label} {year}
           </h1>
-          <nav aria-label="Change season" className="flex items-center gap-1">
+          <nav aria-label="Cambiar de temporada" className="flex items-center gap-1">
             <Link href={`/seasonal?season=${prev.season}&year=${prev.year}`} prefetch={false} className="k-btn k-btn-ghost k-btn-sm">
               <ChevronLeft className="size-4" aria-hidden /> {SEASONS.find((s) => s.value === prev.season)!.label} {prev.year}
             </Link>
@@ -143,7 +143,7 @@ export function SeasonalView({
             </Link>
           </nav>
         </div>
-        <ul className="mt-4 flex flex-wrap gap-1.5" aria-label="Seasons">
+        <ul className="mt-4 flex flex-wrap gap-1.5" aria-label="Temporadas">
           {SEASONS.map((s) => (
             <li key={s.value}>
               <Link href={`/seasonal?season=${s.value}&year=${year}`} prefetch={false} className="k-chip" data-active={s.value === season} aria-current={s.value === season ? "page" : undefined}>
@@ -163,23 +163,23 @@ export function SeasonalView({
           <ErrorPanel title="No se pudo cargar la temporada" message={(query.error as Error).message} onRetry={() => query.refetch()} />
         </div>
       ) : !media.length ? (
-        <EmptyState className="mt-10" title="No titles announced for this season yet" body="AniList hasn't listed anything here. Check back closer to the season." />
+        <EmptyState className="mt-10" title="Aún no hay títulos anunciados para esta temporada" body="AniList todavía no registra nada. Vuelve a mirar cuando se acerque la temporada." />
       ) : (
         <div className="mt-8">
           <div className="mb-6 flex flex-wrap items-center gap-2">
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Format">
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Formato">
               {formats.map((f) => (
                 <button key={f} className="k-chip" aria-pressed={format === f} onClick={() => setFormat(f)}>
-                  {f === "ALL" ? "All formats" : formatLabel(f)}
+                  {f === "ALL" ? "Todos los formatos" : formatLabel(f)}
                 </button>
               ))}
             </div>
-            <label htmlFor="season-sort" className="sr-only">Sort</label>
+            <label htmlFor="season-sort" className="sr-only">Ordenar</label>
             <select id="season-sort" className="k-input ml-auto !min-h-9 w-auto text-sm" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-              <option value="popularity">Popularity</option>
-              <option value="score">Score</option>
-              <option value="title">Title</option>
-              <option value="day">Air day</option>
+              <option value="popularity">Popularidad</option>
+              <option value="score">Puntuación</option>
+              <option value="title">Título</option>
+              <option value="day">Día de emisión</option>
             </select>
             <span className="text-sm text-muted">{total} titles</span>
           </div>

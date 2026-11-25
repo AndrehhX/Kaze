@@ -46,7 +46,7 @@ export function Rail({ children, label, className, itemClassName }: { children: 
       </ul>
       <button
         type="button"
-        aria-label={`Scroll ${label} backward`}
+        aria-label={`Retroceder en ${label}`}
         onClick={() => page(-1)}
         disabled={edges.start}
         className="k-btn k-btn-icon k-panel absolute -left-3 top-[38%] z-10 hidden -translate-y-1/2 opacity-0 transition-opacity focus-visible:opacity-100 disabled:!opacity-0 group-hover/rail:opacity-100 md:inline-flex"
@@ -55,7 +55,7 @@ export function Rail({ children, label, className, itemClassName }: { children: 
       </button>
       <button
         type="button"
-        aria-label={`Scroll ${label} forward`}
+        aria-label={`Avanzar en ${label}`}
         onClick={() => page(1)}
         disabled={edges.end}
         className="k-btn k-btn-icon k-panel absolute -right-3 top-[38%] z-10 hidden -translate-y-1/2 opacity-0 transition-opacity focus-visible:opacity-100 disabled:!opacity-0 group-hover/rail:opacity-100 md:inline-flex"

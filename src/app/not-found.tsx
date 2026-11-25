@@ -7,10 +7,10 @@ export default function NotFound() {
         <p className="k-jp text-8xl text-primary-ink" lang="ja" aria-hidden>
           無
         </p>
-        <h1 className="font-display text-title mt-4">Page not found</h1>
+        <h1 className="font-display text-title mt-4">Página no encontrada</h1>
         <p className="mt-3 text-muted">This corner of the universe doesn&apos;t exist (yet).</p>
         <Link href="/" className="k-btn k-btn-primary mt-6">
-          Back to KAZE
+          Volver a KAZE
         </Link>
       </div>
     </main>

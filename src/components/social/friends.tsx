@@ -153,7 +153,7 @@ export function FriendButton({ target }: { target: PublicProfile }) {
             }
           }}
         >
-          Unblock
+          Desbloquear
         </button>
       ) : r.friends ? (
         <button className="k-btn k-btn-outline k-btn-sm" onClick={() => setConfirm("remove")}>
@@ -169,7 +169,7 @@ export function FriendButton({ target }: { target: PublicProfile }) {
             Aceptar solicitud
           </button>
           <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => r.requestId && m.respond.mutate({ request_id: r.requestId, accept: false })}>
-            Decline
+            Rechazar
           </button>
         </>
       ) : (
@@ -206,7 +206,7 @@ function isOnline(p: PublicProfile, now: number | null) {
 
 export function FriendsPage() {
   return (
-    <AuthGate feature="friends" jp="友">
+    <AuthGate feature="amigos" jp="友">
       <FriendsInner />
     </AuthGate>
   );
@@ -242,7 +242,7 @@ function FriendsInner() {
           <h2 id="find-h" className="font-display text-section">Buscar personas</h2>
           <div className="relative mt-4 max-w-lg">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
-            <label htmlFor="user-q" className="sr-only">Search by username or name</label>
+            <label htmlFor="user-q" className="sr-only">Buscar por usuario o nombre</label>
             <input id="user-q" className="k-input !pl-9" placeholder="Buscar por usuario o nombre para mostrar" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           {dq.length >= 2 && (
@@ -295,7 +295,7 @@ function FriendsInner() {
                 <Link href={`/profile/${f.username}`} className="flex items-center gap-3 py-2.5">
                   <span className="relative">
                     <Avatar src={f.avatar_url} name={f.display_name || f.username} size={36} />
-                    {isOnline(f, now) && <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-surface bg-success" aria-label="Online" />}
+                    {isOnline(f, now) && <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-surface bg-success" aria-label="En línea" />}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">{f.display_name || f.username}</span>
@@ -329,7 +329,7 @@ function FriendsInner() {
 
 export function RequestsPage() {
   return (
-    <AuthGate feature="friend requests">
+    <AuthGate feature="las solicitudes de amistad">
       <RequestsInner />
     </AuthGate>
   );

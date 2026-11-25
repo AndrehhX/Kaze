@@ -1,6 +1,6 @@
 export function RailSkeleton({ count = 7 }: { count?: number }) {
   return (
-    <div className="container-k mt-14" aria-busy="true" aria-label="Loading">
+    <div className="container-k mt-14" aria-busy="true" aria-label="Cargando">
       <div className="k-skeleton mb-5 h-7 w-56" />
       <div className="flex gap-4 overflow-hidden">
         {Array.from({ length: count }, (_, i) => (
@@ -17,7 +17,7 @@ export function RailSkeleton({ count = 7 }: { count?: number }) {
 
 export function GridSkeleton({ count = 18 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-8 xs:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" aria-busy="true" aria-label="Loading">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-8 xs:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" aria-busy="true" aria-label="Cargando">
       {Array.from({ length: count }, (_, i) => (
         <div key={i}>
           <div className="k-skeleton aspect-[2/3] w-full" />

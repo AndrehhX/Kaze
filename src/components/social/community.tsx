@@ -18,13 +18,13 @@ import { cn } from "@/lib/utils";
 export function CommunityTabs({ active }: { active: "hub" | "reviews" | "discussions" | "moderation" }) {
   const isMod = useIsModerator().data;
   const tabs = [
-    ["hub", "/community", "Overview"],
-    ["reviews", "/community/reviews", "Reviews"],
+    ["hub", "/community", "Resumen"],
+    ["reviews", "/community/reviews", "Reseñas"],
     ["discussions", "/community/discussions", "Discussions"],
     ...(isMod || active === "moderation" ? ([["moderation", "/community/moderation", "Moderation"]] as const) : []),
   ] as const;
   return (
-    <nav aria-label="Community" className="mt-6 flex gap-1 border-b border-line">
+    <nav aria-label="Comunidad" className="mt-6 flex gap-1 border-b border-line">
       {tabs.map(([k, href, label]) => (
         <Link key={k} href={href} aria-current={active === k ? "page" : undefined} className={cn("relative px-4 py-3 text-sm font-semibold text-muted hover:text-fg", active === k && "text-fg after:absolute after:inset-x-3 after:-bottom-px after:h-0.5 after:bg-primary")}>
           {label}
@@ -39,7 +39,7 @@ export function CommunityHub() {
     <div className="mt-8 grid gap-10 lg:grid-cols-[1.4fr_1fr]">
       <section aria-labelledby="top-reviews">
         <div className="mb-4 flex items-center justify-between">
-          <h2 id="top-reviews" className="font-display text-section">Most appreciated reviews</h2>
+          <h2 id="top-reviews" className="font-display text-section">Reseñas más valoradas</h2>
           <Link href="/community/reviews" className="k-btn k-btn-ghost k-btn-sm">
             All <ArrowUpRight className="size-3.5" aria-hidden />
           </Link>
@@ -55,11 +55,11 @@ export function CommunityHub() {
         </div>
         <DiscussionList limit={8} />
         <div className="k-card mt-6 p-5 text-sm text-muted">
-          <p className="font-display text-base text-fg">Community guidelines</p>
+          <p className="font-display text-base text-fg">Normas de la comunidad</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>Mark spoilers — readers must opt in to see them.</li>
-            <li>Critique shows, not people.</li>
-            <li>Report anything harmful; moderators review every report.</li>
+            <li>Marca los spoilers: cada lector decide si quiere verlos.</li>
+            <li>Critica las series, no a las personas.</li>
+            <li>Reporta cualquier cosa dañina: los moderadores revisan cada reporte.</li>
           </ul>
         </div>
       </section>
@@ -82,9 +82,9 @@ export function ReviewsPage() {
   return (
     <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_360px]">
       <div>
-        <div className="mb-4 flex gap-1.5" role="group" aria-label="Sort reviews">
-          <button className="k-chip" aria-pressed={sort === "recent"} onClick={() => setSort("recent")}>Newest</button>
-          <button className="k-chip" aria-pressed={sort === "top"} onClick={() => setSort("top")}>Most liked</button>
+        <div className="mb-4 flex gap-1.5" role="group" aria-label="Ordenar reseñas">
+          <button className="k-chip" aria-pressed={sort === "recent"} onClick={() => setSort("recent")}>Más recientes</button>
+          <button className="k-chip" aria-pressed={sort === "top"} onClick={() => setSort("top")}>Más gustadas</button>
         </div>
         <ReviewList sort={sort} showMedia limit={40} />
       </div>
@@ -111,8 +111,8 @@ export function ReviewsPage() {
               </p>
               <div className="relative mt-3">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
-                <label htmlFor="rv-pick" className="sr-only">Find an anime to review</label>
-                <input id="rv-pick" className="k-input !pl-9" placeholder="Which anime?" value={q} onChange={(e) => setQ(e.target.value)} />
+                <label htmlFor="rv-pick" className="sr-only">Busca un anime para reseñar</label>
+                <input id="rv-pick" className="k-input !pl-9" placeholder="¿Qué anime?" value={q} onChange={(e) => setQ(e.target.value)} />
               </div>
               <ul className="mt-2">
                 {suggest.data?.results.map((r) => (
@@ -127,7 +127,7 @@ export function ReviewsPage() {
           )
         ) : (
           <div className="k-card p-5 text-sm text-muted">
-            <Link href="/login" className="font-semibold text-primary-ink">Sign in</Link> to write reviews. Every review on KAZE comes from a real member.
+            <Link href="/login" className="font-semibold text-primary-ink">Inicia sesión</Link> para escribir reseñas. Todas las reseñas de KAZE son de miembros reales.
           </div>
         )}
       </aside>

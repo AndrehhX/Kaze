@@ -78,22 +78,22 @@ export function CommandPalette() {
   const commands: Command[] = useMemo(() => {
     const nav: Command[] = PRIMARY_NAV.map((n) => ({
       id: `nav-${n.href}`,
-      group: "Navigate",
+      group: "Navegar",
       label: n.label,
       hint: n.jp,
       icon: <n.icon className="size-4" />,
       run: () => go(n.href),
     }));
     const extra: Command[] = [
-      { id: "moods", group: "Discover", label: "Mood Explorer", icon: <Sparkles className="size-4" />, run: () => go("/discover/moods"), keywords: "feel emotion" },
-      { id: "roulette", group: "Discover", label: "Anime Roulette", icon: <Dices className="size-4" />, run: () => go("/discover/roulette"), keywords: "random spin" },
-      { id: "similar", group: "Discover", label: "Similarity Explorer", icon: <Shuffle className="size-4" />, run: () => go("/discover/similar"), keywords: "graph related" },
-      { id: "demo", group: "Discover", label: "Play the Open Cinema demo", icon: <Film className="size-4" />, run: () => go("/watch/open-cinema/1"), keywords: "player video watch" },
-      { id: "settings", group: "Settings", label: "Settings", icon: <Settings className="size-4" />, run: () => go("/settings") },
+      { id: "moods", group: "Descubrir", label: "Explorar por estado de ánimo", icon: <Sparkles className="size-4" />, run: () => go("/discover/moods"), keywords: "feel emotion animo emocion sentir" },
+      { id: "roulette", group: "Descubrir", label: "Ruleta de anime", icon: <Dices className="size-4" />, run: () => go("/discover/roulette"), keywords: "random spin azar aleatorio" },
+      { id: "similar", group: "Descubrir", label: "Explorador de similitud", icon: <Shuffle className="size-4" />, run: () => go("/discover/similar"), keywords: "graph related grafo parecidos similares" },
+      { id: "demo", group: "Descubrir", label: "Ver la demo de Open Cinema", icon: <Film className="size-4" />, run: () => go("/watch/open-cinema/1"), keywords: "player video watch reproductor ver" },
+      { id: "settings", group: "Ajustes", label: "Ajustes", icon: <Settings className="size-4" />, run: () => go("/settings") },
       ...THEME_IDS.map((id) => ({
         id: `theme-${id}`,
-        group: "Theme",
-        label: `Theme: ${THEMES[id].name}`,
+        group: "Tema",
+        label: `Tema: ${THEMES[id].name}`,
         hint: THEMES[id].jp,
         icon: <Palette className="size-4" />,
         run: () => {
@@ -133,7 +133,7 @@ export function CommandPalette() {
           {
             id: "search-all",
             group: "Anime",
-            label: `Search all results for “${query.trim()}”`,
+            label: `Ver todos los resultados de «${query.trim()}»`,
             icon: <Search className="size-4" />,
             run: () => {
               pushSearch(query);
@@ -197,14 +197,14 @@ export function CommandPalette() {
                   transition={reduced ? { duration: 0.1 } : m.spring}
                 >
                   <D.Title className="sr-only">Command palette</D.Title>
-                  <D.Description className="sr-only">Search anime, navigate, or switch themes. Use arrow keys to move and Enter to select.</D.Description>
+                  <D.Description className="sr-only">Busca anime, navega o cambia de tema. Usa las flechas para moverte y Enter para elegir.</D.Description>
                   <div className="flex items-center gap-3 border-b border-line px-4">
                     {search.isFetching ? <Loader2 className="size-5 animate-spin text-muted" aria-hidden /> : <Search className="size-5 text-muted" aria-hidden />}
                     <input
                       autoFocus
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Search anime, jump anywhere, change the atmosphere…"
+                      placeholder="Busca anime, salta a cualquier sitio, cambia la atmósfera…"
                       className="h-14 w-full bg-transparent text-base outline-none placeholder:text-muted"
                       role="combobox"
                       aria-expanded="true"
@@ -215,7 +215,7 @@ export function CommandPalette() {
                     <kbd className="hidden rounded border border-line px-1.5 py-0.5 font-mono text-[0.6875rem] text-muted sm:inline">Esc</kbd>
                   </div>
                   <div ref={listRef} id="kaze-palette-list" role="listbox" aria-label="Results" className="min-h-0 flex-1 overflow-y-auto p-2">
-                    {search.isError && <p className="px-3 py-2 text-sm text-danger">Search is unavailable right now. Navigation still works.</p>}
+                    {search.isError && <p className="px-3 py-2 text-sm text-danger">La búsqueda no está disponible ahora mismo. La navegación sigue funcionando.</p>}
                     {q.length >= 2 && !search.isFetching && search.data && results.length === 0 && (
                       <p className="px-3 py-2 text-sm text-muted">No anime match “{query.trim()}”.</p>
                     )}

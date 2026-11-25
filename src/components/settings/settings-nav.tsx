@@ -18,7 +18,7 @@ export function SettingsNav() {
   const path = useCurrentPath();
   return (
     <nav
-      aria-label="Settings"
+      aria-label="Ajustes"
       className="scrollbar-none -mx-[var(--k-gutter)] flex gap-1 overflow-x-auto px-[var(--k-gutter)] lg:sticky lg:top-[calc(var(--k-nav-h)+24px)] lg:mx-0 lg:flex-col lg:px-0"
     >
       {ITEMS.map((i) => {

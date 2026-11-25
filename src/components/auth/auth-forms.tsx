@@ -68,7 +68,7 @@ function PasswordInput({ id, value, onChange, autoComplete, invalid }: { id: str
   return (
     <div className="relative">
       <input id={id} type={show ? "text" : "password"} className="k-input pr-11" value={value} onChange={(e) => onChange(e.target.value)} autoComplete={autoComplete} aria-invalid={invalid} aria-describedby={invalid ? `${id}-err` : undefined} required />
-      <button type="button" className="absolute right-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center text-muted" onClick={() => setShow((s) => !s)} aria-label={show ? "Hide password" : "Show password"}>
+      <button type="button" className="absolute right-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center text-muted" onClick={() => setShow((s) => !s)} aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}>
         {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
       </button>
     </div>
@@ -93,7 +93,7 @@ export function LoginForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<"login" | "forgot" | "sent">("login");
-  if (!isSupabaseConfigured) return <BackendMissing feature="Sign-in" />;
+  if (!isSupabaseConfigured) return <BackendMissing feature="Inicio de sesión" />;
   const db = getSupabaseBrowser()!;
 
   const submit = async (e: React.FormEvent) => {
@@ -111,7 +111,7 @@ export function LoginForm() {
     const { error } = await db.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) return setError(authMessage(error.message));
-    toast.success("Welcome back");
+    toast.success("Bienvenido de nuevo");
     router.replace(next);
     router.refresh();
   };
@@ -120,19 +120,19 @@ export function LoginForm() {
     return (
       <div className="text-center">
         <MailCheck className="mx-auto size-10 text-primary-ink" aria-hidden />
-        <h2 className="font-display mt-4 text-xl">Check your inbox</h2>
+        <h2 className="font-display mt-4 text-xl">Revisa tu correo</h2>
         <p className="mt-2 text-sm text-muted">If an account exists for {email}, a reset link is on its way.</p>
-        <button className="k-btn k-btn-ghost k-btn-sm mt-6" onClick={() => setMode("login")}>Back to sign in</button>
+        <button className="k-btn k-btn-ghost k-btn-sm mt-6" onClick={() => setMode("login")}>Volver a iniciar sesión</button>
       </div>
     );
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
-      <Field id="email" label="Email">
+      <Field id="email" label="Correo electrónico">
         <input id="email" type="email" className="k-input" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       </Field>
       {mode === "login" && (
-        <Field id="password" label="Password">
+        <Field id="password" label="Contraseña">
           <PasswordInput id="password" value={password} onChange={setPassword} autoComplete="current-password" />
         </Field>
       )}
@@ -143,14 +143,14 @@ export function LoginForm() {
       )}
       <button className="k-btn k-btn-primary w-full !min-h-12" disabled={busy || !email || (mode === "login" && !password)}>
         {busy && <Loader2 className="size-4 animate-spin" aria-hidden />}
-        {mode === "login" ? "Sign in" : "Send reset link"}
+        {mode === "login" ? "Iniciar sesión" : "Enviar enlace de recuperación"}
       </button>
       <div className="flex justify-between text-sm">
         <button type="button" className="text-primary-ink hover:underline" onClick={() => (setMode(mode === "login" ? "forgot" : "login"), setError(""))}>
-          {mode === "login" ? "Forgot password?" : "Back to sign in"}
+          {mode === "login" ? "¿Olvidaste tu contraseña?" : "Volver a iniciar sesión"}
         </button>
         <Link href={`/register${next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`} className="text-muted hover:text-fg">
-          New here? Create an account
+          ¿Eres nuevo? Crea una cuenta
         </Link>
       </div>
     </form>
@@ -191,7 +191,7 @@ export function RegisterForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
-  if (!isSupabaseConfigured) return <BackendMissing feature="Accounts" />;
+  if (!isSupabaseConfigured) return <BackendMissing feature="Cuentas" />;
   const db = getSupabaseBrowser()!;
 
   const isFormIncomplete =

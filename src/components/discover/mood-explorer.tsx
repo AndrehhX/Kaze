@@ -34,9 +34,9 @@ export function MoodExplorer() {
 
   return (
     <div className="container-k pt-8">
-      <p className="k-label text-primary-ink">Discover by feeling</p>
-      <h1 className="font-display text-title mt-2">Mood Explorer</h1>
-      <p className="mt-3 max-w-2xl text-muted">Pick up to three moods. Each one maps to specific AniList genres and tags — shown on every card — so you always know why something appeared.</p>
+      <p className="k-label text-primary-ink">Descubre según tu ánimo</p>
+      <h1 className="font-display text-title mt-2">Explorar por estado de ánimo</h1>
+      <p className="mt-3 max-w-2xl text-muted">Elige hasta tres estados de ánimo. Cada uno corresponde a géneros y etiquetas concretos de AniList, que se muestran en cada tarjeta, para que siempre sepas por qué aparece algo.</p>
 
       <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Moods">
         {MOODS.map((mood, i) => {
@@ -60,7 +60,7 @@ export function MoodExplorer() {
                 </span>
                 <span className="font-display text-xl">{mood.label}</span>
                 <span className="mt-1 text-xs text-muted">{mood.blurb}</span>
-                {on && <span className="absolute left-3 top-3 rounded-[var(--k-radius-chip)] bg-fg px-2 py-0.5 text-[0.625rem] font-bold uppercase text-bg">Selected</span>}
+                {on && <span className="absolute left-3 top-3 rounded-[var(--k-radius-chip)] bg-fg px-2 py-0.5 text-[0.625rem] font-bold uppercase text-bg">Elegido</span>}
               </motion.button>
             </li>
           );
@@ -76,7 +76,7 @@ export function MoodExplorer() {
                 <strong>{moodById(id)!.label}</strong> <span className="text-muted">→ {moodById(id)!.rule}</span>
               </p>
             ))}
-            <p className="text-xs text-muted">Titles matching more of your moods rank first.</p>
+            <p className="text-xs text-muted">Los títulos que encajan con más estados de ánimo aparecen primero.</p>
           </div>
           <label className="flex items-center gap-2 text-xs">
             <input type="checkbox" checked={hideLibrary} onChange={(e) => setHideLibrary(e.target.checked)} className="accent-[var(--k-primary)]" /> Hide titles in my library
@@ -85,9 +85,9 @@ export function MoodExplorer() {
       )}
 
       <div className="mt-8" aria-live="polite">
-        {!selected.length && <EmptyState jp="気" title="How do you want to feel tonight?" body="Choose a mood above to start." />}
+        {!selected.length && <EmptyState jp="気" title="¿Cómo te quieres sentir esta noche?" body="Elige un estado de ánimo arriba para empezar." />}
         {loading && <GridSkeleton count={12} />}
-        {error && <ErrorPanel title="Couldn't load mood picks" message={error.message} />}
+        {error && <ErrorPanel title="No se pudieron cargar las sugerencias" message={error.message} />}
         {!loading && !error && selected.length > 0 && (
           merged.length ? (
             <ul className="grid grid-cols-2 gap-x-4 gap-y-8 xs:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
@@ -98,7 +98,7 @@ export function MoodExplorer() {
               ))}
             </ul>
           ) : (
-            <EmptyState title="You've seen everything here" body="Every match is already in your library. Untick “Hide titles in my library” or try another mood." />
+            <EmptyState title="Ya lo has visto todo por aquí" body="Todo lo que coincide ya está en tu biblioteca. Desmarca «Ocultar los de mi biblioteca» o prueba otro estado de ánimo." />
           )
         )}
       </div>

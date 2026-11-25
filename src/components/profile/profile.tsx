@@ -405,7 +405,7 @@ export function ProfileShell({
         </div>
       </div>
 
-      <nav aria-label="Profile" className="container-k flex gap-1 border-b border-line">
+      <nav aria-label="Perfil" className="container-k flex gap-1 border-b border-line">
         {(
           [
             ["overview", base, "Universo"],

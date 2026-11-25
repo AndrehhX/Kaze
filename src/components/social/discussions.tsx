@@ -23,8 +23,8 @@ import { useNow } from "@/lib/hooks";
 import { isSupabaseConfigured } from "@/lib/env";
 
 const schema = z.object({
-  title: z.string().trim().min(4, "Title needs at least 4 characters").max(140),
-  body: z.string().trim().min(1, "Say something to start the thread").max(8000),
+  title: z.string().trim().min(4, "El título necesita al menos 4 caracteres").max(140),
+  body: z.string().trim().min(1, "Escribe algo para empezar el debate").max(8000),
   has_spoilers: z.boolean(),
 });
 
@@ -65,7 +65,7 @@ export function DiscussionComposer({ mediaId, snapshot, onDone }: { mediaId?: nu
     },
     onSuccess: (id) => {
       qc.invalidateQueries({ queryKey: ["discussions"] });
-      toast.success("Discussion started");
+      toast.success("Debate creado");
       onDone?.();
       router.push(`/community/discussions/${id}`);
     },
@@ -83,14 +83,14 @@ export function DiscussionComposer({ mediaId, snapshot, onDone }: { mediaId?: nu
       {snapshot?.title && <p className="k-label text-primary-ink">About {snapshot.title}</p>}
       <div>
         <label htmlFor="d-title" className="mb-1.5 block text-sm font-semibold">
-          Title
+          Título
         </label>
         <input id="d-title" className="k-input" maxLength={140} value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} aria-invalid={Boolean(errors.title)} />
         {errors.title && <p className="mt-1 text-xs text-danger">{errors.title}</p>}
       </div>
       <div>
         <label htmlFor="d-body" className="mb-1.5 block text-sm font-semibold">
-          Opening post
+          Mensaje inicial
         </label>
         <textarea id="d-body" className="k-input !min-h-32" maxLength={8000} value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} aria-invalid={Boolean(errors.body)} />
         {errors.body && <p className="mt-1 text-xs text-danger">{errors.body}</p>}
@@ -101,11 +101,11 @@ export function DiscussionComposer({ mediaId, snapshot, onDone }: { mediaId?: nu
       <div className="flex justify-end gap-2">
         {onDone && (
           <button type="button" className="k-btn k-btn-ghost k-btn-sm" onClick={onDone}>
-            Cancel
+            Cancelar
           </button>
         )}
         <button className="k-btn k-btn-primary k-btn-sm" disabled={m.isPending}>
-          {m.isPending ? "Posting…" : "Start discussion"}
+          {m.isPending ? "Publicando…" : "Crear debate"}
         </button>
       </div>
     </form>
@@ -117,7 +117,7 @@ export function DiscussionList({ mediaId, snapshot, limit }: { mediaId?: number;
   const status = useAuth((s) => s.status);
   const [composing, setComposing] = useState(false);
   const now = useNow();
-  if (!isSupabaseConfigured) return <BackendMissing feature="Community discussions" />;
+  if (!isSupabaseConfigured) return <BackendMissing feature="Debates de la comunidad" />;
   return (
     <div className="space-y-4">
       {status === "signed-in" &&
@@ -129,8 +129,8 @@ export function DiscussionList({ mediaId, snapshot, limit }: { mediaId?: number;
           </button>
         ))}
       {isLoading && <Skeleton className="h-32" />}
-      {error && <ErrorPanel title="Couldn't load discussions" message={(error as Error).message} />}
-      {data && !data.length && <EmptyState icon={<MessagesSquare className="size-6" />} jp="話" title="Aún no hay debates" body="Start the first thread — theories, favourite moments, episode reactions." />}
+      {error && <ErrorPanel title="No se pudieron cargar los debates" message={(error as Error).message} />}
+      {data && !data.length && <EmptyState icon={<MessagesSquare className="size-6" />} jp="話" title="Aún no hay debates" body="Abre el primero: teorías, momentos favoritos, reacciones a episodios." />}
       {data && data.length > 0 && (
         <ul className="k-card divide-y divide-line">
           {data.map((d) => (
@@ -179,10 +179,10 @@ export function DiscussionThread({ id }: { id: string }) {
       return data as unknown as Discussion | null;
     },
   });
-  if (!isSupabaseConfigured) return <BackendMissing feature="Community discussions" />;
+  if (!isSupabaseConfigured) return <BackendMissing feature="Debates de la comunidad" />;
   if (isLoading) return <Skeleton className="h-64" />;
-  if (error) return <ErrorPanel title="Couldn't load this discussion" message={(error as Error).message} />;
-  if (!data) return <EmptyState title="Debate no encontrado" body="It may have been removed, or you may not have access." action={<Link href="/community/discussions" className="k-btn k-btn-outline k-btn-sm">All discussions</Link>} />;
+  if (error) return <ErrorPanel title="No se pudo cargar este debate" message={(error as Error).message} />;
+  if (!data) return <EmptyState title="Debate no encontrado" body="Puede que se haya eliminado o que no tengas acceso." action={<Link href="/community/discussions" className="k-btn k-btn-outline k-btn-sm">Todos los debates</Link>} />;
   const name = data.author?.display_name || data.author?.username || "Member";
   const remove = async () => {
     const { error } = await getSupabaseBrowser()!.from("discussions").delete().eq("id", id);
@@ -215,16 +215,16 @@ export function DiscussionThread({ id }: { id: string }) {
         <div className="mt-4 flex justify-end">
           {me === data.user_id ? (
             <button className="k-btn k-btn-ghost k-btn-sm text-xs text-muted" onClick={remove}>
-              <Trash2 className="size-3.5" aria-hidden /> Delete
+              <Trash2 className="size-3.5" aria-hidden /> Borrar
             </button>
           ) : (
             <ReportButton targetType="discussion" targetId={data.id} />
           )}
         </div>
       </header>
-      <section aria-label="Replies" className="k-card p-5">
+      <section aria-label="Respuestas" className="k-card p-5">
         <h2 className="font-display text-lg">Replies · {data.comment_count}</h2>
-        {data.status === "locked" ? <p className="mt-2 text-sm text-muted">This thread is locked by a moderator.</p> : <CommentThread targetType="discussion" targetId={data.id} />}
+        {data.status === "locked" ? <p className="mt-2 text-sm text-muted">Un moderador ha cerrado este debate.</p> : <CommentThread targetType="discussion" targetId={data.id} />}
       </section>
     </article>
   );

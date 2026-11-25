@@ -53,9 +53,9 @@ export function DetailHero({ media }: { media: MediaDetail }) {
         return;
       }
       await navigator.clipboard.writeText(url);
-      toast.success("Link copied", { description: url });
+      toast.success("Enlace copiado", { description: url });
     } catch (err) {
-      if ((err as Error).name !== "AbortError") toast.error("Couldn't share this link");
+      if ((err as Error).name !== "AbortError") toast.error("No se pudo compartir el enlace");
     }
   };
 
@@ -101,14 +101,14 @@ export function DetailHero({ media }: { media: MediaDetail }) {
 
           <dl className="mt-6 grid max-w-2xl grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
             <div>
-              <dt className="k-label text-muted">Score</dt>
+              <dt className="k-label text-muted">Puntuación</dt>
               <dd className="mt-1 flex items-center gap-1.5 text-xl font-bold">
                 <Star className="size-4 fill-accent text-accent" aria-hidden />
                 {media.averageScore ? `${media.averageScore}%` : "—"}
               </dd>
             </div>
             <div>
-              <dt className="k-label text-muted">Members</dt>
+              <dt className="k-label text-muted">Miembros</dt>
               <dd className="mt-1 text-xl font-bold">{formatNumber(media.popularity)}</dd>
             </div>
             <div>
@@ -190,7 +190,7 @@ export function DetailHero({ media }: { media: MediaDetail }) {
               <p className={cn("whitespace-pre-line text-[0.9375rem] leading-relaxed text-fg/85", !expanded && "clamp-3")}>{desc}</p>
               {desc.length > 280 && (
                 <button className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-primary-ink" onClick={() => setExpanded((e) => !e)} aria-expanded={expanded}>
-                  {expanded ? "Show less" : "Read more"} <ChevronDown className={cn("size-4 transition-transform", expanded && "rotate-180")} aria-hidden />
+                  {expanded ? "Ver menos" : "Leer más"} <ChevronDown className={cn("size-4 transition-transform", expanded && "rotate-180")} aria-hidden />
                 </button>
               )}
             </div>
@@ -310,7 +310,7 @@ export function YourEntry({ media }: { media: MediaDetail }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label htmlFor="entry-status" className="text-xs text-muted">
-            Status
+            Estado
           </label>
           <select id="entry-status" className="k-input mt-1.5 !min-h-9 text-sm" value={entry.status} onChange={(e) => upsert(media, { status: e.target.value as typeof entry.status })}>
             {LIBRARY_STATUSES.map((s) => (
@@ -393,10 +393,10 @@ export function TagCloud({ media }: { media: MediaDetail }) {
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-display text-lg">Tags</h3>
+        <h3 className="font-display text-lg">Etiquetas</h3>
         {spoilers > 0 && (
           <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => setReveal((r) => !r)} aria-pressed={reveal}>
-            <ShieldAlert className="size-4" aria-hidden /> {reveal ? "Hide" : "Show"} {spoilers} spoiler tag{spoilers > 1 ? "s" : ""}
+            <ShieldAlert className="size-4" aria-hidden /> {reveal ? "Ocultar" : "Mostrar"} {spoilers} etiqueta{spoilers > 1 ? "s" : ""} con spoiler
           </button>
         )}
       </div>
@@ -432,8 +432,8 @@ export function ScoreDistribution({ media }: { media: MediaDetail }) {
   };
   return (
     <div className="k-card p-5">
-      <h3 className="font-display text-lg">Community scores</h3>
-      <p className="text-xs text-muted">AniList member ratings</p>
+      <h3 className="font-display text-lg">Puntuaciones de la comunidad</h3>
+      <p className="text-xs text-muted">Valoraciones de miembros de AniList</p>
       <div className="mt-4 flex h-32 items-end gap-1.5" role="img" aria-label={`Score distribution: ${dist.map((d) => `${d.score}: ${d.amount}`).join(", ")}`}>
         {dist.map((d) => (
           <div key={d.score} className="flex flex-1 flex-col items-center gap-1">
@@ -447,7 +447,7 @@ export function ScoreDistribution({ media }: { media: MediaDetail }) {
       </div>
       {statuses.length > 0 && (
         <>
-          <div className="mt-5 flex h-2.5 overflow-hidden rounded-full" role="img" aria-label="Status distribution">
+          <div className="mt-5 flex h-2.5 overflow-hidden rounded-full" role="img" aria-label="Distribución por estado">
             {statuses.map((s) => (
               <div key={s.status} style={{ width: `${(s.amount / totalStatus) * 100}%`, background: statusColor[s.status] }} />
             ))}
@@ -647,24 +647,24 @@ function CharacterDialog({ edge, onClose }: { edge: CharacterEdge; onClose: () =
         <div className="min-w-0 text-sm">
           <dl className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <dt className="text-muted">Role</dt>
+              <dt className="text-muted">Rol</dt>
               <dd className="font-semibold">{titleCase(edge.role)}</dd>
             </div>
             {c?.gender && (
               <div>
-                <dt className="text-muted">Gender</dt>
+                <dt className="text-muted">Género</dt>
                 <dd className="font-semibold">{c.gender}</dd>
               </div>
             )}
             {c?.age && (
               <div>
-                <dt className="text-muted">Age</dt>
+                <dt className="text-muted">Edad</dt>
                 <dd className="font-semibold">{c.age}</dd>
               </div>
             )}
             {c?.favourites != null && (
               <div>
-                <dt className="text-muted">Favourites</dt>
+                <dt className="text-muted">Favoritos</dt>
                 <dd className="font-semibold">{formatNumber(c.favourites)}</dd>
               </div>
             )}
@@ -678,11 +678,11 @@ function CharacterDialog({ edge, onClose }: { edge: CharacterEdge; onClose: () =
           <div className="mt-4 max-h-64 overflow-y-auto whitespace-pre-line leading-relaxed text-fg/85">
             {isLoading && <Skeleton className="h-24" />}
             {isError && <p className="text-muted">Couldn&apos;t load character details.</p>}
-            {c && (text || "No description on AniList.")}
+            {c && (text || "AniList no tiene descripción.")}
           </div>
           {hasSpoiler && (
             <button className="k-btn k-btn-ghost k-btn-sm mt-3" onClick={() => setSpoil((s) => !s)} aria-pressed={spoil}>
-              <ShieldAlert className="size-4" aria-hidden /> {spoil ? "Hide spoilers" : "Reveal spoilers"}
+              <ShieldAlert className="size-4" aria-hidden /> {spoil ? "Ocultar spoilers" : "Mostrar spoilers"}
             </button>
           )}
           {c && (
@@ -717,9 +717,9 @@ export function StaffList({ media }: { media: MediaDetail }) {
 
 export function RelatedRail({ media }: { media: MediaDetail }) {
   const rel = media.relations.edges.filter((e) => e.node.type === "ANIME" && !e.node.isAdult);
-  if (!rel.length) return <p className="text-sm text-muted">No related anime.</p>;
+  if (!rel.length) return <p className="text-sm text-muted">No hay anime relacionado.</p>;
   return (
-    <Rail label="Related anime">
+    <Rail label="Anime relacionado">
       {rel.map((e) => (
         <AnimeCard key={e.node.id} media={e.node} caption={titleCase(e.relationType)} layoutScope="related" />
       ))}
@@ -729,7 +729,7 @@ export function RelatedRail({ media }: { media: MediaDetail }) {
 
 export function RecommendationRail({ media }: { media: MediaDetail }) {
   const recs = media.recommendations.nodes.filter((n) => n.mediaRecommendation && !n.mediaRecommendation.isAdult && n.rating > 0);
-  if (!recs.length) return <p className="text-sm text-muted">No fan recommendations yet.</p>;
+  if (!recs.length) return <p className="text-sm text-muted">Todavía no hay recomendaciones de fans.</p>;
   return (
     <Rail label="Recommendations">
       {recs.map((n) => (
@@ -742,7 +742,7 @@ export function RecommendationRail({ media }: { media: MediaDetail }) {
 export function TrailerBlock({ media }: { media: MediaDetail }) {
   const [play, setPlay] = useState(false);
   const t = media.trailer;
-  if (!t || t.site !== "youtube") return <p className="text-sm text-muted">No trailer listed on AniList.</p>;
+  if (!t || t.site !== "youtube") return <p className="text-sm text-muted">AniList no tiene tráiler para este anime.</p>;
   return (
     <div className="k-card relative aspect-video max-w-4xl overflow-hidden bg-black">
       {play ? (
@@ -754,7 +754,7 @@ export function TrailerBlock({ media }: { media: MediaDetail }) {
           allowFullScreen
         />
       ) : (
-        <button className="group absolute inset-0" onClick={() => setPlay(true)} aria-label={`Play trailer for ${displayTitle(media)}`}>
+        <button className="group absolute inset-0" onClick={() => setPlay(true)} aria-label={`Reproducir el tráiler de ${displayTitle(media)}`}>
           {t.thumbnail && <SafeImage src={t.thumbnail.replace("hqdefault", "maxresdefault")} alt="" fill sizes="900px" className="object-cover opacity-80" />}
           <span className="k-btn-primary absolute left-1/2 top-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full transition-transform group-hover:scale-110">
             <Play className="size-6 fill-current" aria-hidden />
@@ -762,7 +762,7 @@ export function TrailerBlock({ media }: { media: MediaDetail }) {
         </button>
       )}
       {!play && (
-        <span className="pointer-events-none absolute bottom-3 left-3 text-xs text-white/80">Plays from YouTube (privacy-enhanced mode) when clicked</span>
+        <span className="pointer-events-none absolute bottom-3 left-3 text-xs text-white/80">Se reproduce desde YouTube (modo de privacidad mejorada) al hacer clic</span>
       )}
     </div>
   );
@@ -773,7 +773,7 @@ export function AniListReviews({ media }: { media: MediaDetail }) {
   if (!reviews.length) return null;
   return (
     <div className="mt-8">
-      <h3 className="font-display text-lg">From AniList reviewers</h3>
+      <h3 className="font-display text-lg">Reseñas de AniList</h3>
       <p className="text-xs text-muted">Resúmenes de reseñas públicas de AniList.</p>
       <ul className="mt-3 grid gap-3 md:grid-cols-2">
         {reviews.map((r) => (
@@ -799,23 +799,23 @@ export function Availability({ media, playable }: { media: MediaDetail; playable
   return (
     <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
       <div className="k-card p-5">
-        <p className="k-label text-muted">On KAZE</p>
+        <p className="k-label text-muted">En KAZE</p>
         {playable ? (
           <>
-            <p className="font-display mt-2 text-lg">Streaming on KAZE</p>
+            <p className="font-display mt-2 text-lg">Disponible en KAZE</p>
             <Link href={`/watch/${playable.seriesId}/1`} className="k-btn k-btn-primary mt-4">
-              <Play className="size-4" aria-hidden /> Watch now
+              <Play className="size-4" aria-hidden /> Ver ahora
             </Link>
           </>
         ) : (
           <>
-            <p className="font-display mt-2 text-lg">Not licensed for streaming here</p>
+            <p className="font-display mt-2 text-lg">Sin licencia de streaming aquí</p>
             <p className="mt-2 text-sm text-muted">
-              AniList lists this title&apos;s metadata, but that doesn&apos;t give KAZE the right to stream it. You can still track it, review it and plan watch nights with friends. To try the
-              player, use the open-licensed demo.
+              AniList muestra los datos de este título, pero eso no le da a KAZE derecho a emitirlo. Aun así puedes seguirlo, reseñarlo y organizar noches de anime con amigos. Para probar el
+              reproductor, usa la demo con licencia libre.
             </p>
             <Link href="/watch/open-cinema/1" className="k-btn k-btn-outline k-btn-sm mt-4">
-              Open the demo player
+              Abrir el reproductor de demostración
             </Link>
           </>
         )}

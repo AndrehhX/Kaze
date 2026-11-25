@@ -36,7 +36,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     id: "midnight",
     name: "Midnight Neon",
     jp: "真夜中",
-    tagline: "A metropolis that never sleeps.",
+    tagline: "Una metrópolis que nunca duerme.",
     scheme: "dark",
     swatches: ["#080810", "#A855F7", "#6D5EF8", "#FF4FD8"],
     motion: {
@@ -53,7 +53,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     id: "sakura",
     name: "Sakura Dream",
     jp: "桜の夢",
-    tagline: "Spring light on a quiet afternoon.",
+    tagline: "Luz de primavera en una tarde tranquila.",
     scheme: "light",
     swatches: ["#FFF9FB", "#E86A9A", "#B89AF7", "#F7B7D2"],
     motion: {
@@ -70,7 +70,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     id: "cyber",
     name: "Cyber Pulse",
     jp: "電脳",
-    tagline: "Signal acquired. Jack in.",
+    tagline: "Señal captada. Conéctate.",
     scheme: "dark",
     swatches: ["#050D16", "#00D9FF", "#287BFF", "#B3FF39"],
     motion: {
@@ -87,7 +87,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     id: "zen",
     name: "Zen Studio",
     jp: "禅",
-    tagline: "Ink, paper, and a single brushstroke.",
+    tagline: "Tinta, papel y una sola pincelada.",
     scheme: "light",
     swatches: ["#F5F2EA", "#E96B35", "#242424", "#C8B9A4"],
     motion: {

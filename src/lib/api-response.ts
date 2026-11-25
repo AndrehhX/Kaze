@@ -26,7 +26,7 @@ export function errorResponse(err: unknown) {
 export function limitOrNull(req: Request, scope: string, limit = 60, windowMs = 60_000) {
   const r = rateLimit(clientKey(req, scope), limit, windowMs);
   if (r.ok) return null;
-  return NextResponse.json({ error: "Too many requests. Slow down a little." }, { status: 429, headers: { "Retry-After": String(r.retryAfter) } });
+  return NextResponse.json({ error: "Demasiadas peticiones. Ve un poco más despacio." }, { status: 429, headers: { "Retry-After": String(r.retryAfter) } });
 }
 
 export function parseId(raw: string): number | null {

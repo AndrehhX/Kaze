@@ -67,13 +67,13 @@ export function CompletionCelebration() {
               <span className="k-jp mr-1.5 text-base" lang="ja">
                 完
               </span>
-              Series completed
+              Serie completada
             </p>
             <p className="font-display mt-1 truncate text-lg leading-tight">{entry.media.title}</p>
             <p className="mt-1 text-xs text-muted">
               That&apos;s {completedCount} completed in your library.{" "}
               <Link href={`/community/reviews?write=${entry.mediaId}`} className="font-semibold text-primary-ink underline-offset-2 hover:underline">
-                Write a review
+                Escribir una reseña
               </Link>
             </p>
           </div>

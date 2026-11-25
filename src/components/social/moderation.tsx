@@ -42,7 +42,7 @@ export function useIsModerator() {
 
 export function ModerationConsole() {
   return (
-    <AuthGate feature="moderation">
+    <AuthGate feature="la moderación">
       <Gate />
     </AuthGate>
   );
@@ -52,7 +52,7 @@ function Gate() {
   const mod = useIsModerator();
   if (mod.isLoading) return <Skeleton className="mt-8 h-48" />;
   if (!mod.data)
-    return <EmptyState className="mt-8" icon={<ShieldCheck className="size-6" />} jp="守" title="Moderators only" body="Moderator access is granted by an administrator (a row in the moderators table)." />;
+    return <EmptyState className="mt-8" icon={<ShieldCheck className="size-6" />} jp="守" title="Solo para moderadores" body="El acceso de moderador lo concede un administrador (una fila en la tabla moderators)." />;
   return <Queue />;
 }
 
@@ -70,16 +70,16 @@ function Target({ r }: { r: Report }) {
   if (r.target_type === "profile") return <p className="text-sm text-muted">Profile id {r.target_id}</p>;
   if (r.target_type === "watch_party_message") return <p className="text-sm text-muted">Watch-party message {r.target_id} (messages are visible to room members only)</p>;
   if (isLoading) return <Skeleton className="h-12" />;
-  if (!data) return <p className="text-sm text-muted">The content no longer exists.</p>;
+  if (!data) return <p className="text-sm text-muted">El contenido ya no existe.</p>;
   const href = r.target_type === "discussion" ? `/community/discussions/${r.target_id}` : r.target_type === "review" ? `/community/reviews#${r.target_id}` : data.target_type === "discussion" ? `/community/discussions/${data.target_id}` : `/community/reviews#${data.target_id}`;
   return (
     <div className="rounded-[min(var(--k-radius-card),12px)] bg-[var(--k-btn-ghost)] p-3 text-sm">
       {data.title && <p className="font-semibold">{data.title}</p>}
       <p className="clamp-3 whitespace-pre-line break-words text-fg/85">{data.body}</p>
       <p className="mt-2 text-xs text-muted">
-        Status: <span className={cn(data.status !== "published" && "font-semibold text-danger")}>{data.status}</span> ·{" "}
+        Estado: <span className={cn(data.status !== "published" && "font-semibold text-danger")}>{data.status}</span> ·{" "}
         <Link href={href} className="underline">
-          open in context
+          abrir en contexto
         </Link>
       </p>
     </div>
@@ -116,7 +116,7 @@ function Queue() {
       if (error) throw error;
     },
     onSuccess: (_d, v) => {
-      toast.success(v.action === "hide" ? "Content hidden and report closed" : v.action === "restore" ? "Content restored" : "Report dismissed");
+      toast.success(v.action === "hide" ? "Contenido oculto y reporte cerrado" : v.action === "restore" ? "Contenido restaurado" : "Reporte descartado");
       qc.invalidateQueries({ queryKey: ["reports"] });
       qc.invalidateQueries({ queryKey: ["mod-target"] });
       qc.invalidateQueries({ queryKey: ["reviews"] });
@@ -127,13 +127,13 @@ function Queue() {
 
   return (
     <div className="mt-8 max-w-4xl">
-      <div className="mb-4 flex gap-1.5" role="group" aria-label="Report status">
-        <button className="k-chip" aria-pressed={filter === "open"} onClick={() => setFilter("open")}>Open</button>
-        <button className="k-chip" aria-pressed={filter === "closed"} onClick={() => setFilter("closed")}>Resolved</button>
+      <div className="mb-4 flex gap-1.5" role="group" aria-label="Estado del reporte">
+        <button className="k-chip" aria-pressed={filter === "open"} onClick={() => setFilter("open")}>Abiertos</button>
+        <button className="k-chip" aria-pressed={filter === "closed"} onClick={() => setFilter("closed")}>Resueltos</button>
       </div>
       {reports.isLoading && <Skeleton className="h-48" />}
       {reports.error && <ErrorPanel message={(reports.error as Error).message} />}
-      {reports.data?.length === 0 && <EmptyState jp="静" title={filter === "open" ? "No open reports" : "Nothing resolved yet"} body="The queue is clear." />}
+      {reports.data?.length === 0 && <EmptyState jp="静" title={filter === "open" ? "No hay reportes abiertos" : "Aún no hay nada resuelto"} body="La cola está vacía." />}
       <ul className="space-y-4">
         {reports.data?.map((r) => (
           <li key={r.id} className="k-card p-5">

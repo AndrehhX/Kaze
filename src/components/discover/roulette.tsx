@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { BrowseParams, MediaCard } from "@/lib/anilist/types";
 import { api } from "@/lib/api-client";
-import { FALLBACK_GENRES, FORMATS } from "@/lib/anilist/browse-params";
+import { FALLBACK_GENRES, FORMATS, genreLabel } from "@/lib/anilist/browse-params";
 import { useLibrary } from "@/stores/library";
 import { useKazeMotion } from "@/lib/motion";
 import { SafeImage } from "@/components/ui/primitives";
@@ -80,9 +80,9 @@ export function Roulette() {
 
   return (
     <div className="container-k pt-8">
-      <p className="k-label text-primary-ink">Leave it to fate</p>
-      <h1 className="font-display text-title mt-2">Anime Roulette</h1>
-      <p className="mt-3 max-w-2xl text-muted">Set a few limits, then spin. The pick is genuinely random across every AniList title that matches — no hidden promotion.</p>
+      <p className="k-label text-primary-ink">Deja que decida el destino</p>
+      <h1 className="font-display text-title mt-2">Ruleta de anime</h1>
+      <p className="mt-3 max-w-2xl text-muted">Pon unos límites y gira. La elección es realmente aleatoria entre todos los títulos de AniList que coincidan, sin promociones ocultas.</p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[320px_1fr]">
         <form
@@ -93,33 +93,33 @@ export function Roulette() {
           }}
         >
           <div>
-            <label htmlFor="r-genre" className="text-sm font-semibold">Genre</label>
+            <label htmlFor="r-genre" className="text-sm font-semibold">Género</label>
             <select id="r-genre" className="k-input mt-1.5" value={genre} onChange={(e) => setGenre(e.target.value)}>
-              <option value="">Any genre</option>
+              <option value="">Cualquier género</option>
               {FALLBACK_GENRES.filter((g) => g !== "Ecchi").map((g) => (
-                <option key={g}>{g}</option>
+                <option key={g} value={g}>{genreLabel(g)}</option>
               ))}
             </select>
           </div>
           <div>
-            <label htmlFor="r-format" className="text-sm font-semibold">Format</label>
+            <label htmlFor="r-format" className="text-sm font-semibold">Formato</label>
             <select id="r-format" className="k-input mt-1.5" value={format} onChange={(e) => setFormat(e.target.value)}>
-              <option value="">Any format</option>
+              <option value="">Cualquier formato</option>
               {FORMATS.map((f) => (
                 <option key={f.value} value={f.value}>{f.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label htmlFor="r-score" className="text-sm font-semibold">Minimum score · {minScore}%</label>
+            <label htmlFor="r-score" className="text-sm font-semibold">Puntuación mínima · {minScore}%</label>
             <input id="r-score" type="range" min={0} max={90} step={5} value={minScore} onChange={(e) => setMinScore(Number(e.target.value))} className="mt-2 w-full accent-[var(--k-primary)]" />
           </div>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={skipLibrary} onChange={(e) => setSkipLibrary(e.target.checked)} className="accent-[var(--k-primary)]" /> Skip titles already in my library
+            <input type="checkbox" checked={skipLibrary} onChange={(e) => setSkipLibrary(e.target.checked)} className="accent-[var(--k-primary)]" /> Omitir los que ya están en mi biblioteca
           </label>
           <button className="k-btn k-btn-primary w-full !min-h-12 text-base" disabled={state === "loading" || state === "spinning"}>
             {state === "loading" ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Dices className="size-5" aria-hidden />}
-            {state === "done" ? "Spin again" : "Spin"}
+            {state === "done" ? "Girar otra vez" : "Girar"}
           </button>
           {total > 0 && <p className="text-center text-xs text-muted">{total.toLocaleString()} eligible titles</p>}
         </form>
@@ -141,13 +141,13 @@ export function Roulette() {
           </div>
 
           <div aria-live="polite" className="min-h-48">
-            {state === "idle" && <p className="text-muted">Your next obsession is one spin away.</p>}
-            {state === "empty" && <p className="text-muted">Nothing matches those limits. Loosen them and spin again.</p>}
+            {state === "idle" && <p className="text-muted">Tu próxima obsesión está a un giro de distancia.</p>}
+            {state === "empty" && <p className="text-muted">Nada coincide con esos límites. Aflójalos y vuelve a girar.</p>}
             {state === "error" && <p className="text-danger">The catalog didn&apos;t answer. Try again in a moment.</p>}
             {state === "spinning" && <p className="k-label animate-pulse text-primary-ink">Spinning…</p>}
             {state === "done" && winner && (
               <motion.div initial={reduced ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-                <p className="k-label text-primary-ink">Fate chose</p>
+                <p className="k-label text-primary-ink">El destino eligió</p>
                 <h2 className="font-display text-title mt-2">{displayTitle(winner)}</h2>
                 <p className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted">
                   <ScorePill score={winner.averageScore} className="text-fg" />
@@ -158,10 +158,10 @@ export function Roulette() {
                 </p>
                 <RouletteBlurb id={winner.id} />
                 <div className="mt-5 flex flex-wrap gap-2">
-                  <Link href={`/anime/${winner.id}`} className="k-btn k-btn-primary">Open title</Link>
+                  <Link href={`/anime/${winner.id}`} className="k-btn k-btn-primary">Ver ficha</Link>
                   <ListMenu media={winner} />
                   <button className="k-btn k-btn-ghost" onClick={spin}>
-                    <RotateCw className="size-4" aria-hidden /> Spin again
+                    <RotateCw className="size-4" aria-hidden /> Girar otra vez
                   </button>
                 </div>
               </motion.div>

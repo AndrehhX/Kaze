@@ -58,17 +58,17 @@ export function SimilarityGraph() {
 
   return (
     <div className="container-k pt-8">
-      <p className="k-label text-primary-ink">AniList fan recommendations & relations</p>
-      <h1 className="font-display text-title mt-2">Similarity Explorer</h1>
+      <p className="k-label text-primary-ink">Recomendaciones de fans y relaciones de AniList</p>
+      <h1 className="font-display text-title mt-2">Explorador de similitud</h1>
       <p className="mt-3 max-w-2xl text-muted">
-        Every link is real: outer nodes are titles AniList members recommend to fans of the centre (closer and thicker = more votes); inner nodes are sequels, prequels and other relations. Select a
-        node to travel there.
+        Cada conexión es real: los nodos exteriores son títulos que los miembros de AniList recomiendan a los fans del central (más cerca y más grueso = más votos); los interiores son secuelas, precuelas y otras relaciones. Elige un
+        nodo para viajar a él.
       </p>
 
       <div className="relative mt-6 max-w-md">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
-        <label htmlFor="sim-q" className="sr-only">Choose a starting anime</label>
-        <input id="sim-q" className="k-input !pl-9" placeholder="Start from any anime…" value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" />
+        <label htmlFor="sim-q" className="sr-only">Elige un anime de partida</label>
+        <input id="sim-q" className="k-input !pl-9" placeholder="Empieza desde cualquier anime…" value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" />
         {suggest.data && dq.length >= 2 && q && (
           <ul className="k-panel absolute inset-x-0 top-full z-20 mt-2 max-h-72 overflow-y-auto !bg-surface p-1.5">
             {suggest.data.results.map((r) => (
@@ -83,7 +83,7 @@ export function SimilarityGraph() {
         )}
       </div>
 
-      <div className="k-card relative mt-6 aspect-[4/5] w-full overflow-hidden sm:aspect-[16/10]" role="group" aria-label={center ? `Similarity graph for ${displayTitle(center)}` : "Similarity graph"}>
+      <div className="k-card relative mt-6 aspect-[4/5] w-full overflow-hidden sm:aspect-[16/10]" role="group" aria-label={center ? `Grafo de similitud de ${displayTitle(center)}` : "Grafo de similitud"}>
         {isLoading && <div className="absolute inset-0 grid place-items-center text-muted">Mapping connections…</div>}
         {isError && <div className="absolute inset-0 grid place-items-center text-danger">Couldn&apos;t load connections for this title.</div>}
         <svg className="absolute inset-0 size-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
@@ -150,8 +150,8 @@ export function SimilarityGraph() {
         )}
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted">
-        <span className="inline-flex items-center gap-2"><span className="h-0.5 w-6 bg-primary" /> Fan recommendation</span>
-        <span className="inline-flex items-center gap-2"><span className="h-0 w-6 border-t border-dashed border-accent" /> Franchise relation</span>
+        <span className="inline-flex items-center gap-2"><span className="h-0.5 w-6 bg-primary" /> Recomendación de fans</span>
+        <span className="inline-flex items-center gap-2"><span className="h-0 w-6 border-t border-dashed border-accent" /> Relación de franquicia</span>
         {center && (
           <Link href={`/anime/${center.id}`} className="ml-auto inline-flex items-center gap-1 font-semibold text-primary-ink">
             Open {displayTitle(center)} <ArrowUpRight className="size-3.5" aria-hidden />

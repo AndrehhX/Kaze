@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: PageProps<"/anime/[id]/episod
   const id = Number((await params).id);
   const media = Number.isInteger(id) && id > 0 ? await getMediaDetail(id) : null;
   return {
-    title: media ? `Episodes · ${media.title.english || media.title.romaji}` : "Episodes",
+    title: media ? `Episodios · ${media.title.english || media.title.romaji}` : "Episodios",
     ...(media ? { alternates: { canonical: `/anime/${media.id}/episodes` } } : {}),
   };
 }
@@ -45,21 +45,21 @@ async function CachedEpisodesBody({ id }: { id: number }) {
           </li>
           <li aria-hidden>/</li>
           <li aria-current="page" className="text-fg">
-            Episodes
+            Episodios
           </li>
         </ol>
       </nav>
       <header className="mt-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="k-label text-primary-ink">Episode guide</p>
+          <p className="k-label text-primary-ink">Guía de episodios</p>
           <h1 className="font-display text-title mt-2">{title}</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted">
-            Episode titles and thumbnails appear only where AniList provides official streaming metadata; air dates come from AniList&apos;s schedule. KAZE doesn&apos;t stream this title —
-            links open the official service.
+            Los títulos y miniaturas de episodios solo aparecen cuando AniList tiene datos oficiales de streaming; las fechas de emisión vienen del calendario de AniList. KAZE no emite este título:
+            los enlaces abren el servicio oficial.
           </p>
         </div>
         <Link href={`/anime/${media.id}`} className="k-btn k-btn-ghost k-btn-sm">
-          <ArrowLeft className="size-4" aria-hidden /> Back to title
+          <ArrowLeft className="size-4" aria-hidden /> Volver a la ficha
         </Link>
       </header>
       <EpisodeBrowser media={media} />

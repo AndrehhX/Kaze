@@ -109,7 +109,7 @@ export function ThemePreviewCard({ id, active }: { id: ThemeId; active: boolean 
         {t.swatches.map((c) => (
           <span key={c} className="size-4 rounded-full ring-1 ring-black/10" style={{ background: c }} />
         ))}
-        <span className="k-btn k-btn-primary ml-auto !min-h-6 !px-2 !text-[0.625rem]">Play</span>
+        <span className="k-btn k-btn-primary ml-auto !min-h-6 !px-2 !text-[0.625rem]">Ver</span>
       </div>
       {active && (
         <span className="absolute bottom-2 left-3 inline-flex items-center gap-1 text-[0.625rem] font-semibold text-primary-ink">
@@ -140,13 +140,13 @@ export function ThemeSwitcher({ className }: { className?: string }) {
     <>
       <DM.Root onOpenChange={(o) => !o && preview(null)}>
         <DM.Trigger asChild>
-          <button type="button" className={cn("k-btn k-btn-ghost k-btn-icon k-btn-sm", className)} aria-label={`Theme: ${THEMES[theme].name}. Change theme`}>
+          <button type="button" className={cn("k-btn k-btn-ghost k-btn-icon k-btn-sm", className)} aria-label={`Tema: ${THEMES[theme].name}. Cambiar tema`}>
             <Palette className="size-[18px]" aria-hidden />
           </button>
         </DM.Trigger>
         <DM.Portal>
           <DM.Content align="end" sideOffset={10} className="k-panel z-[90] w-[300px] !bg-surface p-3" onPointerLeave={() => preview(null)}>
-            <DM.Label className="k-label px-1 pb-2 text-muted">Atmosphere · hover to preview</DM.Label>
+            <DM.Label className="k-label px-1 pb-2 text-muted">Atmósfera · pasa el ratón para previsualizar</DM.Label>
             <div className="grid gap-2">
               {THEME_IDS.map((id) => (
                 <DM.Item

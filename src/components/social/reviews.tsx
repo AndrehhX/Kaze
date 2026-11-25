@@ -22,9 +22,9 @@ import { useNow } from "@/lib/hooks";
 import { isSupabaseConfigured } from "@/lib/env";
 
 export const reviewSchema = z.object({
-  rating: z.number().int().min(1, "Pick a rating").max(10),
-  title: z.string().trim().min(3, "Title needs at least 3 characters").max(120),
-  body: z.string().trim().min(40, "Write at least 40 characters").max(10000),
+  rating: z.number().int().min(1, "Elige una nota").max(10),
+  title: z.string().trim().min(3, "El título necesita al menos 3 caracteres").max(120),
+  body: z.string().trim().min(40, "Escribe al menos 40 caracteres").max(10000),
   has_spoilers: z.boolean(),
 });
 
@@ -57,14 +57,14 @@ function useMyLikes(ids: string[]) {
 
 export function RatingInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
-    <div role="radiogroup" aria-label="Rating out of 10" className="flex flex-wrap gap-1">
+    <div role="radiogroup" aria-label="Nota sobre 10" className="flex flex-wrap gap-1">
       {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
         <button
           key={n}
           type="button"
           role="radio"
           aria-checked={value === n}
-          aria-label={`${n} out of 10`}
+          aria-label={`${n} sobre 10`}
           onClick={() => onChange(n)}
           className={cn("grid size-9 place-items-center rounded-[min(var(--k-radius-btn),8px)] text-sm font-bold tabular-nums transition-colors", n <= value ? "k-btn-primary" : "bg-[var(--k-btn-ghost)] text-muted")}
         >
@@ -95,7 +95,7 @@ export function ReviewComposer({ mediaId, snapshot, onDone, existing }: { mediaI
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(existing ? "Review updated" : "Review published");
+      toast.success(existing ? "Reseña actualizada" : "Reseña publicada");
       qc.invalidateQueries({ queryKey: ["reviews"] });
       onDone?.();
     },
@@ -111,7 +111,7 @@ export function ReviewComposer({ mediaId, snapshot, onDone, existing }: { mediaI
       noValidate
     >
       <div>
-        <p className="mb-2 text-sm font-semibold">Your rating</p>
+        <p className="mb-2 text-sm font-semibold">Tu nota</p>
         <RatingInput value={form.rating} onChange={(rating) => setForm((f) => ({ ...f, rating }))} />
         {errors.rating && <p className="mt-1 text-xs text-danger">{errors.rating}</p>}
       </div>
@@ -124,7 +124,7 @@ export function ReviewComposer({ mediaId, snapshot, onDone, existing }: { mediaI
       </div>
       <div>
         <label htmlFor="rv-body" className="mb-1.5 block text-sm font-semibold">
-          Review
+          Reseña
         </label>
         <textarea id="rv-body" className="k-input !min-h-40" maxLength={10000} value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} aria-invalid={Boolean(errors.body)} />
         <div className="mt-1 flex justify-between text-xs">
@@ -134,16 +134,16 @@ export function ReviewComposer({ mediaId, snapshot, onDone, existing }: { mediaI
       </div>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={form.has_spoilers} onChange={(e) => setForm((f) => ({ ...f, has_spoilers: e.target.checked }))} className="accent-[var(--k-primary)]" />
-        This review contains spoilers (readers must reveal it)
+        Esta reseña tiene spoilers (cada lector decide si mostrarlos)
       </label>
       <div className="flex justify-end gap-2">
         {onDone && (
           <button type="button" className="k-btn k-btn-ghost k-btn-sm" onClick={onDone}>
-            Cancel
+            Cancelar
           </button>
         )}
         <button className="k-btn k-btn-primary k-btn-sm" disabled={m.isPending}>
-          {m.isPending ? "Publishing…" : existing ? "Save changes" : "Publish review"}
+          {m.isPending ? "Publicando…" : existing ? "Guardar cambios" : "Publicar reseña"}
         </button>
       </div>
     </form>
@@ -159,7 +159,7 @@ export function ReviewCard({ r, liked, showMedia }: { r: Review; liked: boolean;
   const name = r.author?.display_name || r.author?.username || "Member";
 
   const toggleLike = async () => {
-    if (!me) return toast("Sign in to like reviews");
+    if (!me) return toast("Inicia sesión para dar me gusta a las reseñas");
     const db = getSupabaseBrowser()!;
     const { error } = liked ? await db.from("review_reactions").delete().eq("review_id", r.id).eq("user_id", me) : await db.from("review_reactions").insert({ review_id: r.id, user_id: me });
     if (error) toast.error(friendlyDbError(error));
@@ -170,7 +170,7 @@ export function ReviewCard({ r, liked, showMedia }: { r: Review; liked: boolean;
     const { error } = await getSupabaseBrowser()!.from("reviews").delete().eq("id", r.id);
     if (error) toast.error(friendlyDbError(error));
     else {
-      toast("Review deleted");
+      toast("Reseña borrada");
       qc.invalidateQueries({ queryKey: ["reviews"] });
     }
   };
@@ -204,7 +204,7 @@ export function ReviewCard({ r, liked, showMedia }: { r: Review; liked: boolean;
             <span>· {now ? relativeTime(new Date(r.created_at).getTime(), now) : ""}</span>
           </p>
         </div>
-        <span className="k-score shrink-0 text-lg" aria-label={`Rated ${r.rating} out of 10`}>
+        <span className="k-score shrink-0 text-lg" aria-label={`Nota: ${r.rating} sobre 10`}>
           <Star className="size-4 fill-accent text-accent" aria-hidden />
           {r.rating}
           <span className="text-xs font-normal text-muted">/10</span>
@@ -214,7 +214,7 @@ export function ReviewCard({ r, liked, showMedia }: { r: Review; liked: boolean;
         <p className="whitespace-pre-line break-words text-sm leading-relaxed text-fg/90">{r.body}</p>
       </Spoiler>
       <footer className="mt-4 flex flex-wrap items-center gap-1 border-t border-line pt-3">
-        <button className={cn("k-btn k-btn-ghost k-btn-sm", liked && "text-accent")} onClick={toggleLike} aria-pressed={liked} aria-label={liked ? "Unlike review" : "Like review"}>
+        <button className={cn("k-btn k-btn-ghost k-btn-sm", liked && "text-accent")} onClick={toggleLike} aria-pressed={liked} aria-label={liked ? "Quitar me gusta" : "Me gusta"}>
           <Heart className={cn("size-4", liked && "fill-current")} aria-hidden /> {r.like_count}
         </button>
         <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => setComments((c) => !c)} aria-expanded={comments}>
@@ -227,7 +227,7 @@ export function ReviewCard({ r, liked, showMedia }: { r: Review; liked: boolean;
               <PenLine className="size-3.5" aria-hidden /> Edit
             </button>
             <button className="k-btn k-btn-ghost k-btn-sm text-xs text-muted" onClick={remove}>
-              <Trash2 className="size-3.5" aria-hidden /> Delete
+              <Trash2 className="size-3.5" aria-hidden /> Borrar
             </button>
           </>
         ) : (
@@ -246,9 +246,9 @@ export function ReviewCard({ r, liked, showMedia }: { r: Review; liked: boolean;
 export function ReviewList({ mediaId, sort = "recent", showMedia, limit }: { mediaId?: number; sort?: "recent" | "top"; showMedia?: boolean; limit?: number }) {
   const { data, isLoading, error } = useReviews({ mediaId, sort, limit });
   const likes = useMyLikes((data ?? []).map((r) => r.id));
-  if (!isSupabaseConfigured) return <BackendMissing feature="Community reviews" />;
+  if (!isSupabaseConfigured) return <BackendMissing feature="Reseñas de la comunidad" />;
   if (isLoading) return <Skeleton className="h-40" />;
-  if (error) return <ErrorPanel title="Couldn't load reviews" message={(error as Error).message} />;
+  if (error) return <ErrorPanel title="No se pudieron cargar las reseñas" message={(error as Error).message} />;
   if (!data?.length) return <EmptyState icon={<PenLine className="size-6" />} jp="評" title="Aún no hay reseñas en KAZE" body="Sé el primero en escribir una reseña — aquí solo verás opiniones de miembros de la comunidad." />;
   return (
     <div className="grid gap-4">
@@ -275,9 +275,9 @@ export function MediaReviews({ mediaId, snapshot }: { mediaId: number; snapshot:
       {status === "signed-out" && (
         <p className="text-sm text-muted">
           <Link href="/login" className="font-semibold text-primary-ink">
-            Sign in
+            Iniciar sesión
           </Link>{" "}
-          to write a review.
+          para escribir una reseña.
         </p>
       )}
       {writing && <ReviewComposer mediaId={mediaId} snapshot={snapshot} onDone={() => setWriting(false)} />}

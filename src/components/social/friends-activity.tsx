@@ -32,7 +32,7 @@ export function useUserActivity(userId: string | undefined, limit = 30) {
 }
 
 export function ActivityItem({ e, now }: { e: ActivityEvent; now: number | null }) {
-  const name = e.user?.display_name || e.user?.username || "Friend";
+  const name = e.user?.display_name || e.user?.username || "Amigo";
   return (
     <li className="flex gap-3 border-b border-line py-3 last:border-0">
       <Link href={e.user ? `/profile/${e.user.username}` : "#"} className="shrink-0">
@@ -100,7 +100,7 @@ export function FriendsActivityRail() {
         body="Cuando tus amigos comiencen, terminen o califiquen un anime, aparecerá aquí."
         action={
           <Link href="/friends" className="k-btn k-btn-primary k-btn-sm">
-            Find friends
+            Buscar amigos
           </Link>
         }
       />
@@ -108,7 +108,7 @@ export function FriendsActivityRail() {
   return (
     <Rail label="Actividad de amigos" itemClassName="w-[78vw] xs:w-[56vw] sm:w-[40vw] md:w-[30vw] lg:w-[23vw] xl:w-[19vw]">
       {watching.map((e) => {
-        const name = e.user?.display_name || e.user?.username || "Friend";
+        const name = e.user?.display_name || e.user?.username || "Amigo";
         return (
           <Link key={e.id} href={mediaHref(e.media_id, e.media_snapshot)} className="k-card flex h-full gap-3 p-2.5">
             <div className="k-poster relative aspect-[2/3] w-16 shrink-0">

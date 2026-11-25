@@ -78,7 +78,7 @@ export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryK
           video.addEventListener("error", onNativeErr, { once: true });
           removeListeners = () => video.removeEventListener("error", onNativeErr);
         } else {
-          setState((s) => ({ ...s, fatal: "This browser can't play HLS streams." }));
+          setState((s) => ({ ...s, fatal: "Este navegador no puede reproducir flujos HLS." }));
         }
         return;
       }
@@ -145,14 +145,14 @@ export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryK
           return;
         }
         if (data.type === HlsCtor.ErrorTypes.NETWORK_ERROR) {
-          setState((s) => ({ ...s, fatal: navigator.onLine ? "The stream couldn't be reached. The demo host may be down." : "You're offline. Reconnect to keep watching." }));
+          setState((s) => ({ ...s, fatal: navigator.onLine ? "No se pudo conectar con el video. Puede que el servidor no esté disponible." : "No tienes conexión. Vuelve a conectarte para seguir viendo." }));
         } else {
-          setState((s) => ({ ...s, fatal: "Playback failed to decode this stream." }));
+          setState((s) => ({ ...s, fatal: "No se pudo decodificar este video." }));
         }
         hls.destroy();
         hlsRef.current = null;
       });
-    })().catch(() => setState((s) => ({ ...s, fatal: "The player failed to load." })));
+    })().catch(() => setState((s) => ({ ...s, fatal: "No se pudo cargar el reproductor." })));
 
     return () => {
       destroyed = true;

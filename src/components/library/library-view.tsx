@@ -15,6 +15,7 @@ import { ConfirmDialog } from "@/components/ui/dialog";
 import { cn, formatNumber } from "@/lib/utils";
 import { useKazeMotion } from "@/lib/motion";
 import { LibraryKindSwitch } from "@/components/manga/library/kind-switch";
+import { genreLabel } from "@/lib/anilist/browse-params";
 
 type Tab = LibraryStatus | "FAVORITES";
 type Sort = "updated" | "title" | "score" | "progress" | "added";
@@ -109,10 +110,10 @@ export function LibraryView() {
     a.download = `kaze-library-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
-    toast.success(`Exported ${all.length} entries`);
+    toast.success(`Exportadas ${all.length} entradas`);
   };
   const importJson = async (file: File) => {
-    if (file.size > 5_000_000) return toast.error("That file is too large (5 MB max)");
+    if (file.size > 5_000_000) return toast.error("El archivo es demasiado grande (máx. 5 MB)");
     try {
       const parsed = exportSchema.safeParse(JSON.parse(await file.text()));
       if (!parsed.success) return toast.error("El archivo no es una exportación válida de KAZE", { description: parsed.error.issues[0]?.message });
@@ -185,7 +186,7 @@ export function LibraryView() {
               if (!id) return;
               if (t.value === "FAVORITES") update(id, { favorite: true });
               else update(id, { status: t.value });
-              toast.success(`Moved to ${t.label}`, { description: entries[id]?.media.title });
+              toast.success(`Movido a ${t.label}`, { description: entries[id]?.media.title });
             }}
             className={cn(
               "k-card flex min-w-36 shrink-0 flex-col items-start gap-0.5 px-4 py-3 text-left transition-all",
@@ -214,17 +215,17 @@ export function LibraryView() {
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <div className="relative min-w-48 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
-          <label htmlFor="lib-q" className="sr-only">Filter by title</label>
+          <label htmlFor="lib-q" className="sr-only">Filtrar por título</label>
           <input id="lib-q" className="k-input !min-h-10 !pl-9 text-sm" placeholder="Filtrar por título…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
-        <label htmlFor="lib-genre" className="sr-only">Genre</label>
+        <label htmlFor="lib-genre" className="sr-only">Género</label>
         <select id="lib-genre" className="k-input !min-h-10 w-auto text-sm" value={genre} onChange={(e) => setGenre(e.target.value)}>
           <option value="">Todos los géneros</option>
           {genres.map((g) => (
-            <option key={g}>{g}</option>
+            <option key={g} value={g}>{genreLabel(g)}</option>
           ))}
         </select>
-        <label htmlFor="lib-sort" className="sr-only">Sort</label>
+        <label htmlFor="lib-sort" className="sr-only">Ordenar</label>
         <select id="lib-sort" className="k-input !min-h-10 w-auto text-sm" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
           <option value="updated">Actualizado recientemente</option>
           <option value="added">Añadido recientemente</option>
@@ -258,11 +259,11 @@ export function LibraryView() {
         {selecting && selected.size > 0 && (
           <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }} className="k-panel fixed inset-x-3 bottom-20 z-40 mx-auto flex max-w-3xl flex-wrap items-center gap-2 !bg-surface p-3 lg:bottom-6">
             <span className="px-2 text-sm font-semibold">{selected.size} seleccionados</span>
-            <label htmlFor="bulk-status" className="sr-only">Move to</label>
+            <label htmlFor="bulk-status" className="sr-only">Mover a</label>
             <select id="bulk-status" className="k-input !min-h-9 w-auto text-sm" defaultValue="" onChange={(e) => {
               if (!e.target.value) return;
               bulkUpdate([...selected], { status: e.target.value as LibraryStatus });
-              toast.success(`Moved ${selected.size} to ${statusMeta(e.target.value as LibraryStatus).label}`);
+              toast.success(`${selected.size} movidos a ${statusMeta(e.target.value as LibraryStatus).label}`);
               setSelected(new Set());
               e.target.value = "";
             }}>
@@ -272,12 +273,12 @@ export function LibraryView() {
               ))}
             </select>
             {Object.values(collections).length > 0 && (
-              <select className="k-input !min-h-9 w-auto text-sm" aria-label="Add to collection" defaultValue="" onChange={(e) => {
+              <select className="k-input !min-h-9 w-auto text-sm" aria-label="Añadir a una colección" defaultValue="" onChange={(e) => {
                 const cid = e.target.value;
                 if (!cid) return;
                 const c = collections[cid];
                 [...selected].filter((id) => !c.mediaIds.includes(id)).forEach((id) => toggleInCollection(cid, id));
-                toast.success(`Added to ${c.name}`);
+                toast.success(`Añadido a ${c.name}`);
                 e.target.value = "";
               }}>
                 <option value="">Añadir a colección…</option>
@@ -307,7 +308,7 @@ export function LibraryView() {
         destructive
         onConfirm={() => {
           bulkRemove([...selected]);
-          toast(`Removed ${selected.size} titles`);
+          toast(`${selected.size} títulos quitados`);
           setSelected(new Set());
           setConfirm(false);
         }}
@@ -374,7 +375,7 @@ function ShelfCard({ e, selecting, selected, onToggle }: { e: LibraryEntry; sele
             <span className="absolute text-[0.5625rem] font-bold text-white">{e.progress}</span>
           </div>
         )}
-        {e.favorite && <Heart className="absolute left-2 top-2 z-[3] size-4 fill-accent text-accent drop-shadow" aria-label="Favorite" />}
+        {e.favorite && <Heart className="absolute left-2 top-2 z-[3] size-4 fill-accent text-accent drop-shadow" aria-label="Favorito" />}
         {e.score != null && <span className="absolute right-2 top-2 z-[3] rounded bg-black/70 px-1.5 py-0.5 text-[0.6875rem] font-bold text-white">{e.score}</span>}
         {selecting && <span className="absolute inset-0 z-[4] grid place-items-center bg-black/20">{selected ? <CheckSquare className="size-8 text-white" /> : <Square className="size-8 text-white/80" />}</span>}
       </div>
@@ -404,10 +405,10 @@ function ShelfCard({ e, selecting, selected, onToggle }: { e: LibraryEntry; sele
       )}
       {!selecting && (e.status === "CURRENT" || e.status === "REPEATING") && (
         <div className="absolute inset-x-2 top-[calc(66%-1rem)] z-[5] flex justify-between opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-          <button className="k-btn k-btn-icon k-btn-sm bg-black/70 text-white" aria-label={`One episode back for ${e.media.title}`} onClick={() => update(e.mediaId, { progress: e.progress - 1 })}>
+          <button className="k-btn k-btn-icon k-btn-sm bg-black/70 text-white" aria-label={`Un episodio menos en ${e.media.title}`} onClick={() => update(e.mediaId, { progress: e.progress - 1 })}>
             <Minus className="size-4" />
           </button>
-          <button className="k-btn k-btn-icon k-btn-sm bg-black/70 text-white" aria-label={`Mark next episode of ${e.media.title} watched`} onClick={() => update(e.mediaId, { progress: e.progress + 1 })}>
+          <button className="k-btn k-btn-icon k-btn-sm bg-black/70 text-white" aria-label={`Marcar como visto el siguiente episodio de ${e.media.title}`} onClick={() => update(e.mediaId, { progress: e.progress + 1 })}>
             <Plus className="size-4" />
           </button>
         </div>
@@ -443,13 +444,13 @@ function ShelfRow({ e, selecting, selected, onToggle }: { e: LibraryEntry; selec
         ) : null}
       </div>
       <div className="flex items-center gap-1">
-        <button className="k-btn k-btn-ghost k-btn-icon k-btn-sm" aria-label="One episode back" onClick={() => update(e.mediaId, { progress: e.progress - 1 })} disabled={e.progress <= 0}>
+        <button className="k-btn k-btn-ghost k-btn-icon k-btn-sm" aria-label="Un episodio menos" onClick={() => update(e.mediaId, { progress: e.progress - 1 })} disabled={e.progress <= 0}>
           <Minus className="size-4" />
         </button>
         <span className="w-16 text-center text-sm tabular-nums">
           {e.progress}/{e.media.episodes ?? "?"}
         </span>
-        <button className="k-btn k-btn-ghost k-btn-icon k-btn-sm" aria-label="Next episode watched" onClick={() => update(e.mediaId, { progress: e.progress + 1 })}>
+        <button className="k-btn k-btn-ghost k-btn-icon k-btn-sm" aria-label="Marcar el siguiente episodio como visto" onClick={() => update(e.mediaId, { progress: e.progress + 1 })}>
           <Plus className="size-4" />
         </button>
       </div>

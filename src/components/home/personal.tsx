@@ -411,7 +411,7 @@ export function FavoriteGenres() {
   const genres = personal.length >= 3 ? personal : FALLBACK_GENRES.slice(0, 12);
   return (
     <section aria-labelledby="genres-h" className="container-k mt-20">
-      <SectionHeader id="genres-h" title={personal.length >= 3 ? "Tus géneros favoritos" : "Explorar por género"} jp="ジャンル" kicker={personal.length >= 3 ? "From your library" : undefined} />
+      <SectionHeader id="genres-h" title={personal.length >= 3 ? "Tus géneros favoritos" : "Explorar por género"} jp="ジャンル" kicker={personal.length >= 3 ? "Según tu biblioteca" : undefined} />
       <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
         {genres.map((g, i) => (
           <li key={g}>
@@ -421,7 +421,7 @@ export function FavoriteGenres() {
               style={{ background: `linear-gradient(135deg, var(--k-chart-${(i % 5) + 1}) -40%, var(--k-surface) 70%)` }}
             >
               <span className="font-display text-lg leading-none">{g}</span>
-              {counts[g] ? <span className="mt-1 text-xs text-muted">{counts[g]} en tu biblioteca</span> : <span className="mt-1 text-xs text-muted">Explore</span>}
+              {counts[g] ? <span className="mt-1 text-xs text-muted">{counts[g]} en tu biblioteca</span> : <span className="mt-1 text-xs text-muted">Explorar</span>}
               <ArrowUpRight className="absolute right-3 top-3 size-4 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
             </Link>
           </li>
@@ -471,7 +471,7 @@ export function FriendsAreWatching() {
           title={status === "unconfigured" ? "Las funciones sociales requieren una cuenta" : "El anime se disfruta mejor juntos"}
           body={
             status === "unconfigured"
-              ? "This deployment has no Supabase project configured, so there are no accounts or friends yet. See the README to enable them."
+              ? "Este entorno no tiene Supabase configurado, así que todavía no hay cuentas ni amigos. Consulta el README para activarlos."
               : "Inicia sesión y añade amigos para ver lo que empiezan, terminan y califican en tiempo real."
           }
           action={

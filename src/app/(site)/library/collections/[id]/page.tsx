@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CollectionDetail } from "@/components/library/collections";
 
-export const metadata: Metadata = { title: "Collection" };
+export const metadata: Metadata = { title: "Colección" };
 
 export function generateStaticParams() {
   return [{ id: "demo" }];
