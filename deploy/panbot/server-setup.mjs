@@ -238,6 +238,22 @@ for (const r of AUTOMOD) {
   await step(`AutoMod: ${r.name}`, () => api("POST", `/guilds/${G}/auto-moderation/rules`, { ...r, enabled: true, exempt_roles: [ROLE.admin] }));
 }
 
+// 9b) Roles de Orunei (orunei-link.mjs los busca por nombre): cuenta vinculada y rangos por episodios vistos
+const ORUNEI_ROLES = [
+  { name: "🏆 Leyenda · 500+ eps", color: 0xf59e0b },
+  { name: "🍿 Otaku · 100+ eps", color: 0xf43f5e },
+  { name: "📺 Espectador · 10+ eps", color: 0x8b5cf6 },
+  { name: "🔗 Orunei", color: 0xa855f7 },
+];
+for (const r of ORUNEI_ROLES) {
+  if (roles.some((x) => x.name === r.name)) continue;
+  await step(`Crear rol "${r.name}"`, async () => {
+    const made = await api("POST", `/guilds/${G}/roles`, { name: r.name, color: r.color, hoist: false, mentionable: false, permissions: "0" });
+    const sep = roles.find((x) => x.id === ROLE.pingsSep); // justo encima de la sección de pings
+    await api("PATCH", `/guilds/${G}/roles`, [{ id: made.id, position: sep.position + 1 }]);
+  });
+}
+
 // 10) Rol "Panita Verificado" para quien ya aceptó las reglas
 const members = await api("GET", `/guilds/${G}/members?limit=1000`);
 const toVerify = members.filter((m) => !m.user.bot && !m.pending && !m.roles.includes(ROLE.verificado));

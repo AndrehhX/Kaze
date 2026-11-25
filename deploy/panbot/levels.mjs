@@ -93,6 +93,22 @@ function rollWeek(u) {
   if (u.wk) Object.assign(u, { prevWk: u.wk, prevWkXp: u.wkXp ?? 0, prevWkVoice: u.wkVoice ?? 0 });
   Object.assign(u, { wk, wkXp: 0, wkVoice: 0 });
 }
+/** Lo mismo por mes ("2026-11"): mensajes, minutos de voz y XP, para /wrapped. */
+export const monthKey = (date = new Date()) => local(date).day.slice(0, 7);
+function rollMonth(u) {
+  const mo = monthKey();
+  if (u.mo === mo) return;
+  if (u.mo) Object.assign(u, { prevMo: u.mo, prevMoXp: u.moXp ?? 0, prevMoMsgs: u.moMsgs ?? 0, prevMoVoice: u.moVoice ?? 0 });
+  Object.assign(u, { mo, moXp: 0, moMsgs: 0, moVoice: 0 });
+}
+export function monthStats(id, mo = monthKey()) {
+  const u = data.users[id];
+  if (!u) return { xp: 0, msgs: 0, voice: 0 };
+  if (u.mo === mo) return { xp: u.moXp ?? 0, msgs: u.moMsgs ?? 0, voice: u.moVoice ?? 0 };
+  if (u.prevMo === mo) return { xp: u.prevMoXp ?? 0, msgs: u.prevMoMsgs ?? 0, voice: u.prevMoVoice ?? 0 };
+  return { xp: 0, msgs: 0, voice: 0 };
+}
+
 /** XP y minutos de voz de un usuario en la semana indicada. */
 function weekStats(u, wk) {
   if (u.wk === wk) return { xp: u.wkXp ?? 0, voice: u.wkVoice ?? 0 };
@@ -150,10 +166,15 @@ async function syncTier(member, level) {
 async function addXp(member, amount, cfg, { voice = false } = {}) {
   const u = userOf(member.id);
   rollWeek(u);
+  rollMonth(u);
   const before = levelFromXp(u.xp).level;
   u.xp += amount;
   u.wkXp += amount;
-  if (voice) u.wkVoice += 1;
+  u.moXp += amount;
+  if (voice) {
+    u.wkVoice += 1;
+    u.moVoice += 1;
+  }
   dirty = true;
   const after = levelFromXp(u.xp).level;
   if (after <= before) return;
@@ -209,7 +230,9 @@ function onMessage(cfg) {
   return async (message) => {
     if (message.author.bot || !message.guild || message.guild.id !== cfg.guildId || message.system) return;
     const u = userOf(message.author.id);
+    rollMonth(u);
     u.msgs++;
+    u.moMsgs++;
     dirty = true;
     const now = Date.now();
     if (now - (u.lastMsg || 0) < MSG_COOLDOWN_MS) return;

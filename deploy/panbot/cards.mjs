@@ -22,7 +22,7 @@ export const PURPLE = "#a855f7";
 const INK = "#f7f5ff";
 const MUTED = "#c9c5e4";
 
-const fmt = (n) => String(Math.round(n)).replace(/B(?=(d{3})+(?!d))/g, ".");
+const fmt = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 /** Deja solo lo que las fuentes pueden dibujar: letras "decoradas" (𝗕𝗼𝗹𝗱, ｆｕｌｌ) → normales; fuera emojis, japonés, etc. */
 const plain = (t) =>
   String(t || "")
@@ -344,5 +344,144 @@ export async function rankCard(o) {
   ctx.fillText(`${fmt(o.totalXp)} XP en total`, right, by + bh + 36);
   ctx.textAlign = "left";
 
+  return c.encode("png");
+}
+
+/**
+ * Tarjeta Wrapped del mes (1000×640): anime visto en Orunei + actividad en el server.
+ * @param {{ name: string, avatarUrl: string, monthLabel: string, episodes: number, hours: number, series: number,
+ *   days: number, top: { title: string, cover?: string, eps: number }[], msgs: number, voiceMin: number, xp: number }} o
+ */
+export async function wrappedCard(o) {
+  const W = 1000, H = 640;
+  const c = createCanvas(W, H);
+  const ctx = c.getContext("2d");
+  roundRect(ctx, 0, 0, W, H, 32);
+  ctx.clip();
+  const bgImg = await safeImage(WELCOME_BG);
+  if (bgImg) {
+    cover(ctx, bgImg, 0, 0, W, H);
+    ctx.fillStyle = "rgba(8,8,16,0.88)";
+    ctx.fillRect(0, 0, W, H);
+  } else {
+    ctx.fillStyle = "#0d0b18";
+    ctx.fillRect(0, 0, W, H);
+  }
+  for (const [x, y, r, col] of [[120, 80, 320, "rgba(168,85,247,0.32)"], [880, 560, 360, "rgba(255,79,216,0.22)"], [900, 60, 240, "rgba(57,198,255,0.18)"]]) {
+    const g = ctx.createRadialGradient(x, y, 10, x, y, r);
+    g.addColorStop(0, col);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Cabecera
+  ctx.fillStyle = BUTTER;
+  ctx.font = `600 20px ${BODY}`;
+  spaced(ctx, "WRAPPED DEL MES", 56, 70, 4);
+  ctx.fillStyle = INK;
+  ctx.font = `700 52px ${DISPLAY}`;
+  ctx.fillText(plain(o.monthLabel), 56, 128);
+  avatar(ctx, await safeImage(o.avatarUrl), W - 110, 96, 54, PURPLE);
+  ctx.textAlign = "right";
+  ctx.fillStyle = MUTED;
+  const name = plain(o.name) || "Panita";
+  sizeToFit(ctx, name, BODY, 600, 26, 16, 300);
+  ctx.fillText(fit(ctx, name, 300), W - 186, 104);
+  ctx.textAlign = "left";
+
+  // Cifras de anime
+  const tiles = [
+    [fmt(o.episodes), "EPISODIOS"],
+    [o.hours >= 10 ? fmt(o.hours) : (Math.round(o.hours * 10) / 10).toString().replace(".", ","), "HORAS DE ANIME"],
+    [fmt(o.series), "SERIES"],
+    [fmt(o.days), "DÍAS VIENDO"],
+  ];
+  const tw = (W - 56 * 2 - 18 * 3) / 4;
+  tiles.forEach(([v, label], i) => {
+    const x = 56 + i * (tw + 18), y = 160;
+    ctx.fillStyle = "rgba(255,255,255,0.07)";
+    roundRect(ctx, x, y, tw, 112, 20);
+    ctx.fill();
+    ctx.fillStyle = i === 0 ? "#c89bff" : INK;
+    ctx.font = `700 46px ${DISPLAY}`;
+    ctx.fillText(v, x + 22, y + 62);
+    ctx.fillStyle = MUTED;
+    ctx.font = `600 15px ${BODY}`;
+    spaced(ctx, label, x + 22, y + 92, 2);
+  });
+
+  // Lo más visto
+  ctx.fillStyle = BUTTER;
+  ctx.font = `600 18px ${BODY}`;
+  spaced(ctx, "LO QUE MÁS VISTE", 56, 318, 3);
+  const top = o.top.slice(0, 3);
+  if (!top.length) {
+    ctx.fillStyle = MUTED;
+    ctx.font = `400 22px ${BODY}`;
+    ctx.fillText("Este mes no viste nada en Orunei… ¡todavía! 🍿".replace(/[^ -ɏ¡-ÿ…]/gu, ""), 56, 372);
+  }
+  const cw = (W - 56 * 2 - 24 * 2) / 3;
+  for (let i = 0; i < top.length; i++) {
+    const t = top[i], x = 56 + i * (cw + 24), y = 336;
+    ctx.fillStyle = "rgba(255,255,255,0.06)";
+    roundRect(ctx, x, y, cw, 140, 18);
+    ctx.fill();
+    const img = t.cover ? await safeImage(t.cover) : null;
+    ctx.save();
+    roundRect(ctx, x + 12, y + 12, 82, 116, 12);
+    ctx.clip();
+    if (img) cover(ctx, img, x + 12, y + 12, 82, 116);
+    else {
+      ctx.fillStyle = "#2a2440";
+      ctx.fillRect(x + 12, y + 12, 82, 116);
+    }
+    ctx.restore();
+    ctx.fillStyle = BUTTER;
+    ctx.font = `700 28px ${DISPLAY}`;
+    ctx.fillText(`#${i + 1}`, x + 108, y + 46);
+    ctx.fillStyle = INK;
+    const title = plain(t.title) || "Anime";
+    ctx.font = `600 19px ${BODY}`;
+    const words = title.split(" ");
+    let line = "", lines = [];
+    for (const w of words) {
+      const test = line ? `${line} ${w}` : w;
+      if (ctx.measureText(test).width > cw - 124 && line) {
+        lines.push(line);
+        line = w;
+      } else line = test;
+    }
+    lines.push(line);
+    if (lines.length > 2) lines = [lines[0], `${lines[1]}…`];
+    lines.forEach((l, k) => ctx.fillText(fit(ctx, l, cw - 124), x + 108, y + 76 + k * 24));
+    ctx.fillStyle = MUTED;
+    ctx.font = `400 17px ${BODY}`;
+    ctx.fillText(`${t.eps} ${t.eps === 1 ? "episodio" : "episodios"}`, x + 108, y + 126);
+  }
+
+  // Server
+  const sy = 506;
+  ctx.fillStyle = "rgba(255,255,255,0.07)";
+  roundRect(ctx, 56, sy, W - 112, 86, 20);
+  ctx.fill();
+  const vh = o.voiceMin >= 60 ? `${Math.floor(o.voiceMin / 60)} h ${o.voiceMin % 60} min` : `${o.voiceMin} min`;
+  const srv = [[fmt(o.msgs), "mensajes"], [vh, "en llamada"], [`+${fmt(o.xp)}`, "XP"]];
+  const sw = (W - 112) / 3;
+  srv.forEach(([v, l], i) => {
+    const x = 56 + i * sw + 28;
+    ctx.fillStyle = INK;
+    ctx.font = `700 30px ${DISPLAY}`;
+    ctx.fillText(v, x, sy + 50);
+    const vw = ctx.measureText(v).width;
+    ctx.fillStyle = MUTED;
+    ctx.font = `400 19px ${BODY}`;
+    ctx.fillText(l, x + vw + 10, sy + 50);
+  });
+  ctx.fillStyle = "rgba(201,197,228,0.6)";
+  ctx.font = `400 15px ${BODY}`;
+  ctx.textAlign = "right";
+  ctx.fillText("orunei.sbs  ·  Pan con mantequilla", W - 56, H - 18);
+  ctx.textAlign = "left";
   return c.encode("png");
 }
