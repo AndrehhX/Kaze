@@ -83,6 +83,7 @@ powershell -ExecutionPolicy Bypass -File deploy\publish-apk.ps1 -Build -Notes "�
 - **App Android**: nunca cambies la llave de firma; sube `versionCode` en cada publicación; compila con memoria limitada y sin el emulador abierto (el PC tiene 7 GB). Detalles en `mobile/README.md`.
 - **Textos**: toda la interfaz está en español. No añadas textos en inglés; los géneros se muestran con `genreLabel()` (`src/lib/anilist/browse-params.ts`). Si cambias un texto, revisa `tests/unit/components.test.tsx` y `tests/e2e/`, que buscan botones por su nombre.
 - **Avisos push**: suscripciones en el Redis de la VPS (`src/lib/push/`), claves VAPID en `shared/.env`. `public/sw.js` se registra como `/sw.js?v=2`: si cambias el service worker, sube ese número (Cloudflare cachea `sw.js` 4 h).
+- **PanBot (Discord)**: código en `deploy/panbot/` (en la VPS: `/opt/panbot`, PM2 `panbot`). Secretos en `/opt/panbot/.env`, nunca en el código. Ver `deploy/panbot/README.md`.
 - **Vigilancia y copias**: `deploy/ops/` (copia diaria de Supabase y vigilante en la VPS) y `deploy/monitor-worker/` (monitor externo en Cloudflare). Detalle en `docs/DEPLOY_VPS.md` §4.
 - **Manga**: muchas obras con licencia no tienen capítulos en MangaDex. No es un bug; la ficha muestra los enlaces oficiales.
 
