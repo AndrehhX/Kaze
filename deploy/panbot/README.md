@@ -16,6 +16,8 @@ Corre en la VPS con PM2 (`pm2 status` → `panbot`), en `/opt/panbot`.
 | `status.mjs` | Revisa la web y el resolver cada 2 min y avisa en #caidas cuando se caen y cuando vuelven (no cubre la caída de toda la VPS: eso es del monitor externo). Estado en `status.json`. |
 | `tempvoice.mjs` | "➕ Crear sala": crea una sala de voz propia y la borra al quedar vacía; desde Plata el dueño la puede renombrar. Datos en `tempvoice.json`. |
 | `starboard.mjs` | #Destacados: con 3 ⭐ (las de Oro valen doble) se reenvía el mensaje. Solo canales públicos. Datos en `starboard.json`. |
+| `ai.mjs` | PanBot con IA (Gemini): contesta cuando la mencionan o le responden, con fichas de AniList y botón a KAZE; `/resumen [horas]` resume el canal (solo lo ve quien lo pide). Modelos en orden con respaldo (`GEMINI_TEXT_MODELS`) y tope de uso. Requiere el intent Message Content (activado en la app). |
+| `orunei-link.mjs` | `/orunei vincular|confirmar|desvincular|perfil|viendo` y `/wrapped`: vincula la cuenta de Orunei comprobando un código en la bio, roles por episodios vistos (🔗 Orunei, 📺 10+, 🍿 100+, 🏆 500+), aviso opcional en #watch-party de lo que alguien empieza a ver (respeta el historial oculto) y Wrapped del mes por DM el día 1. Solo lee Supabase. Datos en `orunei-links.json`. |
 | `server-setup.mjs` | Orden del servidor (repetible): rol Ofertas Gratis, categoría Archivo, #Destacados, ➕ Crear sala, canal del sistema, pantalla de bienvenida, onboarding, permisos de Jockie, AutoMod y rol de verificado. `node server-setup.mjs` simula, `--apply` aplica. |
 | `channel-names.mjs` | Nombres de canales y categorías con un solo estilo (emoji + ・ + negrita Unicode, en español). `node channel-names.mjs` simula, `--apply` aplica. |
 | `server-permissions.mjs` | Permisos de canales: solo lectura en reglas, bienvenida, despedida, anuncios, niveles, roles, updates, caidas y el panel de tickets; el staff escribe en anuncios/updates y ve #Staff y #Logs. `node server-permissions.mjs` simula, `--apply` aplica. |
@@ -30,7 +32,7 @@ Corre en la VPS con PM2 (`pm2 status` → `panbot`), en `/opt/panbot`.
 
 ```powershell
 cd deploy\panbot
-scp panbot-service.mjs kaze-features.mjs levels.mjs logs.mjs tickets.mjs cards.mjs pixel.mjs pixel-font.mjs pixel-welcome.mjs panels.mjs post-apk-update.mjs server-setup.mjs follows.mjs birthdays.mjs status.mjs tempvoice.mjs starboard.mjs vps:/opt/panbot/
+scp panbot-service.mjs kaze-features.mjs levels.mjs logs.mjs tickets.mjs cards.mjs pixel.mjs pixel-font.mjs pixel-welcome.mjs panels.mjs post-apk-update.mjs server-setup.mjs follows.mjs birthdays.mjs status.mjs tempvoice.mjs starboard.mjs ai.mjs orunei-link.mjs channel-names.mjs vps:/opt/panbot/
 ssh vps "cd /opt/panbot && node --check panbot-service.mjs && pm2 restart panbot && pm2 logs panbot --lines 20 --nostream"
 ```
 
