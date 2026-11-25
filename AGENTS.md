@@ -60,7 +60,7 @@ Comprobado el 24/11/2026 con el OpenAPI de PostgREST. **Antes de usar una tabla,
 - **Perfiles**: `profiles` (muchas columnas de personalización), `profile_privacy`, `profile_lists`, `profile_comments`, `profile_anime`, `profile_activity`.
 - **Salas**: `watch_party_rooms(id text, code, host_id, series_id, episode_id, is_playing, position_seconds…)`, `watch_party_participants`, `watch_party_messages`, `watch_party_invites`; control solo con la RPC `watch_party_control`.
 - **RPC**: `are_friends`, `can_view`, `can_join_room`, `is_room_member`, `is_blocked_between`, `delete_my_data`, `server_time`, `touch_last_seen`, `watch_party_control`, `admin_*`.
-- ⚠️ **Las tablas de manga (`manga_library_entries`, `manga_reading_progress`…) NO existen** en la base real: la migración `20261120000000_kaze_manga.sql` no está aplicada. La biblioteca de manga solo se guarda en el navegador.
+- **Manga** (aplicado el 24/11/2026 con `supabase/apply/2026-11-24_manga_produccion.sql` = `20261120000000_kaze_manga.sql` + `20261124000000_manga_apply_safety.sql`): `manga_library_entries`, `manga_reading_progress`, `manga_bookmarks`, `manga_reading_sessions`, `manga_collections`, `manga_collection_items`, `manga_chapter_catalog`, `manga_content_availability`, `anime_manga_adaptation_mappings` (+ sources, revisions, submissions) y `user_settings.reader`. La biblioteca de manga se sincroniza con la cuenta; al conectarse, la web sube lo que el usuario tenía solo en el navegador.
 
 ## Comandos
 
