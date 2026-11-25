@@ -10,6 +10,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { AttachmentBuilder, EmbedBuilder, Events, SlashCommandBuilder } from "discord.js";
 import { rankCard } from "./cards.mjs";
+import { levelUpGif } from "./pixel.mjs";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const FILE = path.join(DIR, "levels.json");
@@ -113,13 +114,30 @@ async function addXp(member, amount, channelForLevelUp, cfg) {
   const ch = channelForLevelUp ?? (await member.client.channels.fetch(cfg.levelUpChannelId).catch(() => null));
   if (!ch?.isTextBased()) return;
   const e = new EmbedBuilder()
-    .setColor(BUTTER)
+    .setColor(0xf3a9c0)
     .setDescription(
       gained
         ? `🎉 <@${member.id}> subió a **nivel ${after}** y desbloqueó el rango **${gained.name}**. ¡Qué nivel, panita! 🧈`
         : `🎉 <@${member.id}> subió a **nivel ${after}**. ¡Sigue así! 🧈`,
     );
-  await ch.send({ embeds: [e], allowedMentions: { users: [member.id] } }).catch((err) => log("aviso de nivel:", err.message));
+  let files = [];
+  try {
+    const lv = levelFromXp(u.xp);
+    const gif = await levelUpGif({
+      name: member.displayName || member.user.username,
+      username: member.user.username,
+      avatarUrl: member.displayAvatarURL({ extension: "png", size: 128 }),
+      level: after,
+      into: lv.into,
+      need: lv.need,
+      tier: gained ? tierName(gained) : null,
+    });
+    files = [new AttachmentBuilder(gif, { name: "nivel.gif" })];
+    e.setImage("attachment://nivel.gif");
+  } catch (err) {
+    log("animación de nivel:", err.message);
+  }
+  await ch.send({ embeds: [e], files, allowedMentions: { users: [member.id] } }).catch((err) => log("aviso de nivel:", err.message));
 }
 
 function onMessage(cfg) {

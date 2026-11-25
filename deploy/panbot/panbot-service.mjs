@@ -30,7 +30,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 try { process.loadEnvFile(path.join(__dirname, ".env")); } catch { /* sin .env: se usan las variables del entorno */ }
 const { registerKazeFeatures, KAZE_COMMANDS } = await import("./kaze-features.mjs");
 const { registerLevels, LEVEL_COMMANDS } = await import("./levels.mjs");
-const { welcomeGif } = await import("./pixel-welcome.mjs");
+const { welcomeGif, leaveGif } = await import("./pixel.mjs");
+const { registerLogs } = await import("./logs.mjs");
 
 const TOKEN = process.env.DISCORD_TOKEN;
 if (!TOKEN) throw new Error("Falta DISCORD_TOKEN en /opt/panbot/.env");
@@ -382,7 +383,8 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildVoiceStates,
-    GatewayIntentBits.GuildMessages
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildModeration // baneos para el registro de #Logs
   ]
 });
 
@@ -447,24 +449,30 @@ async function sendLeave(member) {
   try {
     const chan = member.guild.channels.cache.get(chanDespedidaId);
     if (!chan) return;
-
-    const avatarUrl = member.user ? member.user.displayAvatarURL({ size: 256, extension: 'png' }) : 'https://cdn.discordapp.com/embed/avatars/0.png';
-    const username = member.user ? member.user.username : 'Usuario';
-
-    await chan.send({
-      embeds: [
-        {
-          title: "💢 UN MIEMBRO HA DEJADO EL SERVIDOR 💢",
-          description: `**@${username}** ha salido del servidor o fue expulsado.\n\n*Esperamos que encuentres tu camino... o que el pan con mantequilla te vuelva a llamar algún día.*`,
-          color: 0x9b59b6,
-          thumbnail: { url: avatarUrl },
-          image: { url: "attachment://tired_banner.jpg" },
-          footer: { text: "Registro de Salidas • Pan con mantequilla" }
-        }
-      ],
-      files: [{ attachment: despedidaBannerPath, name: "tired_banner.jpg" }]
-    });
-
+    const user = member.user;
+    const username = user ? user.username : "usuario";
+    const days = member.joinedTimestamp ? Math.floor((Date.now() - member.joinedTimestamp) / 86400000) : null;
+    const embed = {
+      description: `**${member.displayName || username}** se desconectó del servidor. *Que el pan con mantequilla te vuelva a llamar algún día.* 🧈`,
+      color: 0xbe96f0,
+      footer: { text: "Pan con mantequilla × Orunei" }
+    };
+    let files;
+    try {
+      const gif = await leaveGif({
+        name: member.displayName || user?.globalName || username,
+        username,
+        avatarUrl: user ? user.displayAvatarURL({ size: 128, extension: "png" }) : "https://cdn.discordapp.com/embed/avatars/0.png",
+        days
+      });
+      files = [{ attachment: gif, name: "despedida.gif" }];
+      embed.image = { url: "attachment://despedida.gif" };
+    } catch (err) {
+      console.error("Despedida pixel falló, uso el banner:", err.message);
+      files = [{ attachment: despedidaBannerPath, name: "despedida_banner.jpg" }];
+      embed.image = { url: "attachment://despedida_banner.jpg" };
+    }
+    await chan.send({ embeds: [embed], files });
     console.log(`✅ Despedida enviada para @${username}`);
   } catch (err) {
     console.error("Error al enviar despedida:", err.message);
@@ -735,6 +743,7 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 registerKazeFeatures(client);
+registerLogs(client, { guildId: GUILD_ID, channelId: process.env.CHANNEL_LOGS_ID || "1556527794018848838" });
 registerLevels(client, { guildId: GUILD_ID, levelUpChannelId: process.env.CHANNEL_LEVELUP_ID || chanNewGeneralId, afkChannelId: chanAfkVoiceId });
 // Todos los comandos se registran juntos: registrar por partes borraría los del otro módulo.
 client.once(Events.ClientReady, async () => {
