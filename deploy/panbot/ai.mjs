@@ -7,7 +7,7 @@ import { ActionRowBuilder, EmbedBuilder, Events, MessageFlags, SlashCommandBuild
 import { searchAnime, titleOf, kazeButton, colorOf, kazeUrl } from "./kaze-features.mjs";
 
 const KEY = process.env.GEMINI_API_KEY || "";
-const MODELS = (process.env.GEMINI_TEXT_MODELS || "gemini-3.5-flash,gemini-flash-latest,gemini-2.5-flash").split(",").map((s) => s.trim()).filter(Boolean);
+const MODELS = (process.env.GEMINI_TEXT_MODELS || "gemini-3.8-flash,gemini-3.5-flash-lite,gemini-3.5-flash,gemini-flash-latest").split(",").map((s) => s.trim()).filter(Boolean);
 const USER_COOLDOWN_MS = 8_000;
 const RESUMEN_COOLDOWN_MS = 60_000;
 const WINDOW_MS = 10 * 60_000, WINDOW_MAX = 40; // tope global para no quemar la cuota de Gemini
@@ -50,7 +50,7 @@ async function gemini({ system, contents, json, maxTokens = 1200, temperature = 
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${KEY}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        signal: AbortSignal.timeout(40_000),
+        signal: AbortSignal.timeout(30_000),
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: system }] },
           contents,

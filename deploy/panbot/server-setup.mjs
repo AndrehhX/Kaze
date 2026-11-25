@@ -180,7 +180,8 @@ const wanted = [
   { title: "Watch Party", description: "Aviso cuando abrimos salas de cine", emoji: "🎉", role: ROLE.watchParty },
   { title: "Juegos gratis", description: "Ofertas de Steam y Epic", emoji: "🎁", role: ofertasRole?.id },
 ];
-const missing = prompt ? wanted.filter((w) => w.role && !prompt.options.some((o) => o.role_ids.includes(w.role))) : [];
+// Se busca en todas las preguntas (los avisos viven en la segunda): solo se añade lo que no esté en ninguna.
+const missing = prompt ? wanted.filter((w) => w.role && !(ob.prompts ?? []).some((q) => q.options.some((o) => o.role_ids.includes(w.role)))) : [];
 const defaultsOk = DEFAULTS.every((id) => ob.default_channel_ids.includes(id)) && !ob.default_channel_ids.includes(CH.og);
 if (!defaultsOk || missing.length) {
   await step(`Onboarding: canales por defecto públicos${missing.length ? ` y opciones nuevas (${missing.map((m) => m.title).join(", ")})` : ""}`, () =>
