@@ -41,6 +41,8 @@ const { registerBirthdays, BIRTHDAY_COMMANDS } = await import("./birthdays.mjs")
 const { registerStatus } = await import("./status.mjs");
 const { registerTempVoice } = await import("./tempvoice.mjs");
 const { registerStarboard } = await import("./starboard.mjs");
+const { registerAi, AI_COMMANDS } = await import("./ai.mjs");
+const { registerOrunei, ORUNEI_COMMANDS } = await import("./orunei-link.mjs");
 
 const TOKEN = process.env.DISCORD_TOKEN;
 if (!TOKEN) throw new Error("Falta DISCORD_TOKEN en /opt/panbot/.env");
@@ -400,6 +402,7 @@ const client = new Client({
     GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMessageReactions, // ⭐ de #Destacados
+    GatewayIntentBits.MessageContent, // /resumen y charlas con la IA (activado en la app del bot)
     GatewayIntentBits.GuildModeration // baneos para el registro de #Logs
   ],
   partials: [Partials.Message, Partials.Reaction, Partials.User] // reacciones en mensajes antiguos
@@ -638,19 +641,7 @@ client.on('messageCreate', async (message) => {
   }
   if (message.author.bot) return;
 
-  // Solo una mención directa (no @everyone ni respuestas a sus mensajes).
-  if (message.mentions.users.has(client.user.id)) {
-    await message.reply({
-      content: [
-        "¡Qué onda, panita! 🧈 Esto es lo que hago:",
-        "• `/anime` busca un anime · `/hoy` estrenos de hoy · `/ruleta` uno al azar",
-        "• `/seguir` te aviso por DM cuando sale el capítulo nuevo de tu anime",
-        "• `/nivel` y `/top` niveles del server · `/cumple` tu cumpleaños",
-        `• ¿Problemas con Orunei o con el server? Abre un ticket en <#1573415030857404446>`,
-      ].join("\n"),
-      allowedMentions: { repliedUser: false },
-    }).catch(() => {});
-  }
+  // Las menciones a PanBot las contesta la IA (ai.mjs).
 });
 
 // ------------------------------------------
@@ -740,9 +731,11 @@ registerBirthdays(client, { guildId: GUILD_ID, channelId: chanNewGeneralId });
 registerStatus(client);
 registerTempVoice(client, { guildId: GUILD_ID });
 registerStarboard(client);
+registerAi(client);
+registerOrunei(client, { guildId: GUILD_ID });
 // Todos los comandos se registran juntos: registrar por partes borraría los del otro módulo.
 client.once(Events.ClientReady, async () => {
-  const all = [...KAZE_COMMANDS, ...LEVEL_COMMANDS, ...FOLLOW_COMMANDS, ...BIRTHDAY_COMMANDS];
+  const all = [...KAZE_COMMANDS, ...LEVEL_COMMANDS, ...FOLLOW_COMMANDS, ...BIRTHDAY_COMMANDS, ...AI_COMMANDS, ...ORUNEI_COMMANDS];
   try {
     await client.application.commands.set(all, GUILD_ID);
     console.log("[comandos] registrados:", all.map((c) => "/" + c.name).join(" "));
