@@ -485,3 +485,134 @@ export async function wrappedCard(o) {
   ctx.textAlign = "left";
   return c.encode("png");
 }
+
+/**
+ * Póster de estrenos del día (1200 × alto variable): fondo con la portada del más popular desenfocada,
+ * cuadrícula de portadas con la hora y el episodio, al estilo de la web de KAZE.
+ * @param {{ dateLabel: string, total: number, tzLabel: string, items: { title: string, cover?: string, color?: string, episode: number, time: string, last?: boolean }[] }} o
+ */
+export async function estrenosPoster(o) {
+  const items = o.items.slice(0, 12);
+  const COLS = 4, PAD = 56, GAP = 22;
+  const W = 1200;
+  const cw = (W - PAD * 2 - GAP * (COLS - 1)) / COLS; // ≈ 255
+  const ch = Math.round(cw * 1.42);
+  const rows = Math.max(1, Math.ceil(items.length / COLS));
+  const HEAD = 190, CARD_H = ch + 78, FOOT = 64;
+  const H = HEAD + rows * CARD_H + (rows - 1) * GAP + FOOT;
+  const c = createCanvas(W, H);
+  const ctx = c.getContext("2d");
+  roundRect(ctx, 0, 0, W, H, 32);
+  ctx.clip();
+  ctx.fillStyle = "#0b0a14";
+  ctx.fillRect(0, 0, W, H);
+
+  const imgs = await Promise.all(items.map((it) => (it.cover ? safeImage(it.cover) : null)));
+  // Fondo: portada del primero, muy desenfocada y oscura
+  const hero = imgs.find(Boolean);
+  if (hero) {
+    ctx.save();
+    ctx.filter = "blur(48px)";
+    ctx.globalAlpha = 0.55;
+    cover(ctx, hero, -80, -80, W + 160, H + 160);
+    ctx.restore();
+    ctx.fillStyle = "rgba(9,8,18,0.72)";
+    ctx.fillRect(0, 0, W, H);
+  }
+  for (const [x, y, r, col] of [[160, 60, 380, "rgba(168,85,247,0.30)"], [W - 120, H - 80, 420, "rgba(255,79,216,0.18)"], [W - 200, 40, 260, "rgba(57,198,255,0.14)"]]) {
+    const g = ctx.createRadialGradient(x, y, 10, x, y, r);
+    g.addColorStop(0, col);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Cabecera
+  ctx.fillStyle = BUTTER;
+  ctx.font = `600 21px ${BODY}`;
+  spaced(ctx, "ESTRENOS DE HOY", PAD, 78, 5);
+  ctx.fillStyle = INK;
+  sizeToFit(ctx, plain(o.dateLabel), DISPLAY, 700, 62, 36, W - PAD * 2 - 280);
+  ctx.fillText(plain(o.dateLabel), PAD, 146);
+  // Chip con el total
+  const chip = `${o.total} episodios`;
+  ctx.font = `600 24px ${BODY}`;
+  const chipW = ctx.measureText(chip).width + 44;
+  ctx.fillStyle = "rgba(168,85,247,0.22)";
+  roundRect(ctx, W - PAD - chipW, 104, chipW, 50, 25);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(200,155,255,0.55)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = "#e9d5ff";
+  ctx.fillText(chip, W - PAD - chipW + 22, 138);
+
+  // Tarjetas
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i], img = imgs[i];
+    const col = i % COLS, row = Math.floor(i / COLS);
+    // La última fila, si está incompleta, va centrada.
+    const inRow = Math.min(COLS, items.length - row * COLS);
+    const offset = ((COLS - inRow) * (cw + GAP)) / 2;
+    const x = PAD + offset + col * (cw + GAP), y = HEAD + row * (CARD_H + GAP);
+    // sombra + portada
+    ctx.save();
+    ctx.shadowColor = it.color || "rgba(168,85,247,0.6)";
+    ctx.shadowBlur = 28;
+    roundRect(ctx, x, y, cw, ch, 20);
+    ctx.fillStyle = "#1c1830";
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    roundRect(ctx, x, y, cw, ch, 20);
+    ctx.clip();
+    if (img) cover(ctx, img, x, y, cw, ch);
+    // degradado inferior para leer las etiquetas
+    const g = ctx.createLinearGradient(0, y + ch * 0.55, 0, y + ch);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(5,4,12,0.85)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, cw, ch);
+    ctx.restore();
+    // hora (arriba a la izquierda)
+    ctx.font = `700 24px ${DISPLAY}`;
+    const tW = ctx.measureText(it.time).width + 28;
+    ctx.fillStyle = "rgba(10,8,20,0.78)";
+    roundRect(ctx, x + 12, y + 12, tW, 40, 14);
+    ctx.fill();
+    ctx.fillStyle = INK;
+    ctx.fillText(it.time, x + 26, y + 41);
+    // episodio (abajo)
+    const ep = it.last ? `EP ${it.episode} · FINAL` : `EP ${it.episode}`;
+    ctx.font = `700 22px ${DISPLAY}`;
+    const eW = ctx.measureText(ep).width + 26;
+    ctx.fillStyle = it.last ? "#f43f5e" : BUTTER;
+    roundRect(ctx, x + 12, y + ch - 52, eW, 38, 13);
+    ctx.fill();
+    ctx.fillStyle = "#14101f";
+    ctx.fillText(ep, x + 25, y + ch - 25);
+    // título (2 líneas)
+    ctx.fillStyle = INK;
+    ctx.font = `600 20px ${BODY}`;
+    const words = plain(it.title).split(" ");
+    let line = "", lines = [];
+    for (const w of words) {
+      const test = line ? `${line} ${w}` : w;
+      if (ctx.measureText(test).width > cw - 6 && line) {
+        lines.push(line);
+        line = w;
+      } else line = test;
+    }
+    lines.push(line);
+    if (lines.length > 2) lines = [lines[0], `${lines[1]}…`];
+    lines.forEach((l, k) => ctx.fillText(fit(ctx, l, cw - 6), x + 3, y + ch + 30 + k * 25));
+  }
+
+  ctx.fillStyle = "rgba(201,197,228,0.7)";
+  ctx.font = `400 17px ${BODY}`;
+  ctx.fillText(plain(o.tzLabel), PAD, H - 26);
+  ctx.textAlign = "right";
+  ctx.fillText("orunei.sbs/calendario  ·  Pan con mantequilla", W - PAD, H - 26);
+  ctx.textAlign = "left";
+  return c.encode("png");
+}

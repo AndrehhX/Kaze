@@ -9,7 +9,11 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Events, MessageFlags, SlashCommandBuilder } from "discord.js";
+import {
+  ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, EmbedBuilder, Events, MediaGalleryBuilder,
+  MessageFlags, SeparatorBuilder, SeparatorSpacingSize, SlashCommandBuilder, TextDisplayBuilder,
+} from "discord.js";
+import { estrenosPoster } from "./cards.mjs";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const STATE_FILE = path.join(DIR, "state.json");
@@ -167,7 +171,7 @@ async function airingToday(minPopularity = 0) {
     const out = [];
     for (let page = 1; page <= 4; page++) {
       const d = await anilist(
-        `query($f:Int,$t:Int,$p:Int){ Page(page:$p, perPage:50){ pageInfo{ hasNextPage } airingSchedules(airingAt_greater:$f, airingAt_lesser:$t, sort:TIME){ episode airingAt media{ id title{ romaji english } isAdult popularity countryOfOrigin coverImage{ large color } } } } }`,
+        `query($f:Int,$t:Int,$p:Int){ Page(page:$p, perPage:50){ pageInfo{ hasNextPage } airingSchedules(airingAt_greater:$f, airingAt_lesser:$t, sort:TIME){ episode airingAt media{ id title{ romaji english } isAdult popularity countryOfOrigin episodes coverImage{ extraLarge large color } } } } }`,
         { f: from - 1, t: to, p: page },
       );
       out.push(...d.Page.airingSchedules.filter((a) => a.media && !a.media.isAdult && (a.media.popularity ?? 0) >= minPopularity));
@@ -189,6 +193,60 @@ function estrenosEmbed(list, title) {
     .setDescription(`${lines.join("\n")}${extra}`.slice(0, 4000))
     .setThumbnail(top[0]?.media.coverImage?.large || null)
     .setFooter({ text: "Horas en tu zona horaria · KAZE · orunei.sbs" });
+}
+
+/** "Martes 25 de noviembre" en la zona del server. */
+function dateLabel(date = new Date()) {
+  const t = new Intl.DateTimeFormat("es-MX", { timeZone: TZ, weekday: "long", day: "numeric", month: "long" }).format(date).replace(",", "");
+  return t[0].toUpperCase() + t.slice(1);
+}
+const hhmm = (unix) => new Intl.DateTimeFormat("es-MX", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(unix * 1000));
+const TZ_NAMES = { "America/Mexico_City": "Ciudad de México", "America/Lima": "Lima", "America/Bogota": "Bogotá", "America/Caracas": "Caracas", "Europe/Madrid": "Madrid" };
+
+/**
+ * Mensaje de estrenos con Components V2: póster con las portadas (los 12 más populares) y debajo la lista
+ * con la hora de cada uno en la zona horaria de quien lo lee.
+ */
+async function estrenosMessage(list, title) {
+  const popular = [...list].sort((a, b) => (b.media.popularity ?? 0) - (a.media.popularity ?? 0));
+  const top = popular.slice(0, 12).sort((a, b) => a.airingAt - b.airingAt);
+  const rest = popular.slice(12, 24).sort((a, b) => a.airingAt - b.airingAt);
+  const png = await estrenosPoster({
+    dateLabel: dateLabel(),
+    total: list.length,
+    tzLabel: `Horas de ${TZ_NAMES[TZ] ?? TZ} · en la lista de abajo salen en tu hora`,
+    items: top.map((a) => ({
+      title: titleOf(a.media),
+      cover: a.media.coverImage?.extraLarge || a.media.coverImage?.large,
+      color: a.media.coverImage?.color,
+      episode: a.episode,
+      time: hhmm(a.airingAt),
+      last: !!(a.media.episodes && a.episode >= a.media.episodes),
+    })),
+  });
+  const line = (a) => `<t:${a.airingAt}:t> · [${titleOf(a.media).replace(/[[\]]/g, "")}](${kazeUrl(a.media)}) · ep. ${a.episode}${a.media.episodes && a.episode >= a.media.episodes ? " 🏁" : ""}`;
+  let listText = top.map(line).join("\n");
+  if (rest.length) listText += `\n\n**También hoy**\n${rest.map(line).join("\n")}`;
+  const more = list.length - top.length - rest.length;
+  if (more > 0) listText += `\n-# …y ${more} más en el calendario.`;
+  const container = new ContainerBuilder()
+    .setAccentColor(COLOR)
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(`## ${title}\n-# ${dateLabel()} · ${list.length} episodios · toca un título para verlo en KAZE`))
+    .addMediaGalleryComponents(new MediaGalleryBuilder().addItems((i) => i.setURL("attachment://estrenos.png").setDescription(`Estrenos de hoy: ${top.map((a) => titleOf(a.media)).join(", ")}`.slice(0, 1000))))
+    .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small))
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(listText.slice(0, 3800)))
+    .addActionRowComponents(
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Calendario completo").setEmoji("📅").setURL(`${SITE}/calendario`),
+        new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Abrir KAZE").setEmoji("▶️").setURL(SITE),
+      ),
+    );
+  return {
+    components: [container],
+    files: [new AttachmentBuilder(png, { name: "estrenos.png" })],
+    flags: MessageFlags.IsComponentsV2,
+    allowedMentions: { parse: [] },
+  };
 }
 
 // ── Ruleta ──────────────────────────────────────────────────────────
@@ -259,7 +317,12 @@ async function handleInteraction(interaction) {
         await interaction.deferReply();
         const list = await airingToday(0);
         if (!list.length) return interaction.editReply("Hoy no hay estrenos registrados en AniList.");
-        return interaction.editReply({ embeds: [estrenosEmbed(list, `📺 Estrenos de hoy · ${list.length} episodios`)] });
+        try {
+          return await interaction.editReply(await estrenosMessage(list, "📺 Estrenos de hoy"));
+        } catch (e) {
+          log("póster de /hoy:", e.message); // respaldo: el embed de siempre
+          return interaction.editReply({ embeds: [estrenosEmbed(list, `📺 Estrenos de hoy · ${list.length} episodios`)] });
+        }
       }
       if (interaction.commandName === "ruleta") {
         await interaction.deferReply();
@@ -295,7 +358,12 @@ async function dailyEstrenos(client) {
   saveState(state);
   const list = await airingToday(5000); // solo series con algo de público
   if (!list.length) return;
-  await send(client, CH_ESTRENOS, { embeds: [estrenosEmbed(list, `☀️ Estrenos de hoy · ${list.length} episodios`)] });
+  try {
+    await send(client, CH_ESTRENOS, await estrenosMessage(list, "☀️ ¡Buenos días! Esto se estrena hoy"));
+  } catch (e) {
+    log("póster de estrenos:", e.message); // respaldo: el embed de siempre
+    await send(client, CH_ESTRENOS, { embeds: [estrenosEmbed(list, `☀️ Estrenos de hoy · ${list.length} episodios`)] });
+  }
   log("estrenos del día publicados", day);
 }
 
@@ -373,5 +441,5 @@ export function registerKazeFeatures(client) {
 }
 
 // Para otros módulos (follows.mjs) y pruebas locales sin Discord.
-export { anilist, searchAnime, animeById, titleOf, kazeUrl, colorOf, kazeButton, SITE };
+export { estrenosMessage, airingToday, anilist, searchAnime, animeById, titleOf, kazeUrl, colorOf, kazeButton, SITE };
 export const _test = { animeEmbed, estrenosEmbed, searchAnime, animeById, airingToday, randomAnime, todayRange, localParts, cleanDescription };
