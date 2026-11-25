@@ -12,6 +12,7 @@ import { ErrorPanel } from "@/components/ui/primitives";
 export const metadata: Metadata = {
   title: "Manga — La historia continúa",
   description: "Descubre manga, manhwa y manhua, encuentra dónde continuar la historia después del anime y lee en el lector de KAZE.",
+  alternates: { canonical: "/manga" },
 };
 
 export default function MangaHomePage() {

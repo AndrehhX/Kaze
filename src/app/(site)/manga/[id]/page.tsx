@@ -32,6 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${title} — manga`,
     description: cleanDescription(r.media.description).slice(0, 160) || `${title} en KAZE: capítulos, volúmenes, adaptaciones al anime y más.`,
+    alternates: { canonical: `/manga/${r.media.id}` },
     openGraph: { title: `${title} · KAZE Manga`, images: r.media.coverImage.extraLarge ? [r.media.coverImage.extraLarge] : [] },
   };
 }

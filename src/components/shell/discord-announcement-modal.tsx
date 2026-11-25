@@ -35,17 +35,19 @@ export function DiscordAnnouncementModal() {
       return;
     }
 
-    if (typeof window !== "undefined") {
-      const p = window.location.pathname;
-      if (p.startsWith("/watch/") || p.startsWith("/manga/read/")) {
-        return;
-      }
-    }
+    // Solo en la portada, nunca al llegar a una ficha o un episodio (p. ej. desde Google),
+    // como mucho un aviso por visita y tras unos segundos para no tapar la carga.
+    if (window.location.pathname !== "/") return;
+    try {
+      if (sessionStorage.getItem("kaze_modal_shown")) return;
+    } catch {}
 
-    // Un pequeño retardo para no interferir con la carga inicial
     const timer = setTimeout(() => {
+      try {
+        sessionStorage.setItem("kaze_modal_shown", "discord");
+      } catch {}
       setIsOpen(true);
-    }, 1200);
+    }, 8000);
 
     return () => clearTimeout(timer);
   }, []);

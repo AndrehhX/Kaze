@@ -12,6 +12,7 @@ import { useKazeMotion } from "@/lib/motion";
 import { useSettings } from "@/stores/settings";
 import { EmptyState } from "@/components/ui/primitives";
 import { titleCase } from "@/lib/utils";
+import { genreLabel } from "@/lib/anilist/browse-params";
 import { Badge, type ProfileData } from "./profile";
 
 const C = (i: number) => `var(--k-chart-${(i % 5) + 1})`;
@@ -239,7 +240,7 @@ export function ProfileLists({ d }: { d: ProfileData }) {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{e.media.title}</span>
-                  <span className="block text-xs text-muted">{e.media.genres.slice(0, 3).join(", ")}</span>
+                  <span className="block text-xs text-muted">{e.media.genres.slice(0, 3).map(genreLabel).join(", ")}</span>
                 </span>
                 <span className="text-sm tabular-nums text-muted">
                   {e.progress}/{e.media.episodes ?? "?"}

@@ -25,7 +25,6 @@ import {
 import { MediaReviews } from "@/components/social/reviews";
 import { DiscussionList } from "@/components/social/discussions";
 import { FriendsWithTitle } from "@/components/social/friends-with-title";
-import { AdBanner } from "@/components/ads/ad-banner";
 import { AnimeMangaBridge } from "@/components/manga/anime-bridge";
 
 export function generateStaticParams() {
@@ -42,7 +41,7 @@ async function load(idParam: string) {
 
 export async function generateMetadata({ params }: PageProps<"/anime/[id]">): Promise<Metadata> {
   const media = await load((await params).id);
-  if (!media) return { title: "Anime no encontrado · KAZE" };
+  if (!media) return { title: "Anime no encontrado" };
   const title = media.title.english || media.title.romaji || "Anime";
   const titleJp = media.title.native ? ` (${media.title.native})` : "";
   const cleanDesc = cleanDescription(media.description);
@@ -51,7 +50,7 @@ export async function generateMetadata({ params }: PageProps<"/anime/[id]">): Pr
     : `Ver ${title} online gratis en audio Latino y Sub Español en HD 1080p en KAZE (Orunei).`;
 
   return {
-    title: `Ver ${title}${titleJp} Online Gratis HD · KAZE`,
+    title: `Ver ${title}${titleJp} Online Gratis HD`,
     description: snippet,
     alternates: { canonical: `/anime/${media.id}` },
     keywords: [
@@ -108,7 +107,6 @@ async function CachedAnimeArticle({ id }: { id: number }) {
       </section>
 
       <div className="container-k my-8">
-        <AdBanner placement="anime-detail" />
       </div>
 
       <DetailSection id="episodes" title="Episodios" jp="エピソード">

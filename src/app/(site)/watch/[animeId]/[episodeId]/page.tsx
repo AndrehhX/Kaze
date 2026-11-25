@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: PageProps<"/watch/[animeId]/[
   const epText = ep ? `Episodio ${ep.number} - ${ep.title}` : `Episodio ${episodeId}`;
 
   return {
-    title: `Ver ${seriesTitle} ${epText} Online Gratis HD · KAZE`,
+    title: `Ver ${seriesTitle} ${epText} Online Gratis HD`,
     description: `Disfruta de ${seriesTitle} ${epText} online gratis en audio Latino y Sub Español en 1080p HD. Streaming rápido y sin publicidad invasiva en KAZE (Orunei).`,
     keywords: [
       `ver ${seriesTitle} capitulo ${episodeId}`,

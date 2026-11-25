@@ -5,7 +5,7 @@ import { browseManga } from "@/lib/anilist/manga-service";
 import { MangaRanking } from "@/components/manga/ranking";
 import { ErrorPanel } from "@/components/ui/primitives";
 
-export const metadata: Metadata = { title: "Novedades de manga", description: "Manga que empezaron a publicarse este año, ordenados por popularidad en AniList." };
+export const metadata: Metadata = { title: "Novedades de manga", description: "Manga que empezaron a publicarse este año, ordenados por popularidad en AniList.", alternates: { canonical: "/manga/seasonal" } };
 
 /** The clock is read inside the cached scope so the page still prerenders under Cache Components. */
 async function loadSeason() {

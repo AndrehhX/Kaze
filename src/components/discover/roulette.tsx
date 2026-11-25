@@ -154,7 +154,7 @@ export function Roulette() {
                   <span>{formatLabel(winner.format)}</span>
                   {winner.episodes && <span>{winner.episodes} episodes</span>}
                   {winner.seasonYear && <span>{winner.seasonYear}</span>}
-                  <span>{winner.genres.slice(0, 3).join(", ")}</span>
+                  <span>{winner.genres.slice(0, 3).map(genreLabel).join(", ")}</span>
                 </p>
                 <RouletteBlurb id={winner.id} />
                 <div className="mt-5 flex flex-wrap gap-2">

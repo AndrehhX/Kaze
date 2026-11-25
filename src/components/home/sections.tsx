@@ -10,7 +10,7 @@ import { Reveal, RevealItem, SafeImage, SectionHeader } from "@/components/ui/pr
 import { cleanDescription, cn, formatLabel, formatNumber, relativeTime } from "@/lib/utils";
 import { useNow } from "@/lib/hooks";
 import { useKazeMotion } from "@/lib/motion";
-import { SEASONS } from "@/lib/anilist/browse-params";
+import { SEASONS, genreLabel } from "@/lib/anilist/browse-params";
 
 export function RailSection({
   title,
@@ -42,7 +42,7 @@ export function RailSection({
         action={
           href && (
             <Link href={href} className="k-btn k-btn-ghost k-btn-sm">
-              See all <ArrowUpRight className="size-3.5" aria-hidden />
+              Ver todo <ArrowUpRight className="size-3.5" aria-hidden />
             </Link>
           )
         }
@@ -90,7 +90,7 @@ export function SeasonBento({ media, season, year }: { media: MediaHero[]; seaso
             <p className="clamp-2 mt-3 max-w-lg text-sm text-white/80">{cleanDescription(lead.description)}</p>
             <div className="mt-3 flex items-center gap-3 text-xs text-white/80">
               <ScorePill score={lead.averageScore} className="text-white" />
-              <span>{lead.genres.slice(0, 3).join(" · ")}</span>
+              <span>{lead.genres.slice(0, 3).map(genreLabel).join(" · ")}</span>
             </div>
           </div>
         </motion.div>

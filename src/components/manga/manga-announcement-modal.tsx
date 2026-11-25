@@ -21,22 +21,20 @@ export function MangaAnnouncementModal() {
       return;
     }
 
-    if (typeof window !== "undefined") {
-      const p = window.location.pathname;
-      if (p.startsWith("/watch/") || p.startsWith("/manga/read/")) {
-        return;
-      }
-      // Si el modal de Discord está pendiente y no estamos en la sección de manga,
-      // priorizamos Discord en la página principal para evitar colisión de modales.
-      const discordSeen = localStorage.getItem("kaze_discord_community_modal_v1");
-      if (!discordSeen && !p.startsWith("/manga")) {
-        return;
-      }
-    }
+    // Solo dentro de la sección de manga (es un aviso sobre el manga), nunca en el lector,
+    // y como mucho un aviso por visita.
+    const p = window.location.pathname;
+    if (!p.startsWith("/manga") || p.startsWith("/manga/read/")) return;
+    try {
+      if (sessionStorage.getItem("kaze_modal_shown")) return;
+    } catch {}
 
     const timer = setTimeout(() => {
+      try {
+        sessionStorage.setItem("kaze_modal_shown", "manga");
+      } catch {}
       setIsOpen(true);
-    }, 900);
+    }, 4000);
 
     return () => clearTimeout(timer);
   }, []);

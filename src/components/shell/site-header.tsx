@@ -33,7 +33,7 @@ export function SiteHeader() {
     <header className={cn("sticky top-0 z-50 transition-colors duration-300", scrolled ? "k-nav" : "border-b border-transparent bg-gradient-to-b from-bg/85 via-bg/40 to-transparent")}>
       <div className="container-k flex h-[var(--k-nav-h)] items-center gap-3">
         <Logo className="mr-2 shrink-0" />
-        <nav aria-label="Primary" className="hidden flex-1 items-center gap-0.5 lg:flex">
+        <nav aria-label="Principal" className="hidden min-w-0 flex-1 items-center gap-0.5 lg:flex">
           {main.map((item) => {
             const active = isActive(item, path);
             return (
@@ -75,21 +75,21 @@ export function SiteHeader() {
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="k-btn k-btn-ghost k-btn-sm hidden w-56 justify-start !px-3 text-muted md:inline-flex xl:w-64"
+            className="k-btn k-btn-ghost k-btn-sm hidden w-52 justify-start !px-3 text-muted xl:inline-flex 2xl:w-64"
             aria-keyshortcuts="Control+K /"
           >
             <Search className="size-4" aria-hidden />
             <span className="flex-1 text-left font-normal normal-case tracking-normal">Buscar anime…</span>
             <kbd aria-hidden className="rounded border border-line px-1.5 font-mono text-[0.625rem]">Ctrl K</kbd>
           </button>
-          <button type="button" onClick={() => setOpen(true)} className="k-btn k-btn-ghost k-btn-icon k-btn-sm md:hidden" aria-label="Buscar">
+          <button type="button" onClick={() => setOpen(true)} className="k-btn k-btn-ghost k-btn-icon k-btn-sm xl:hidden" aria-label="Buscar">
             <Search className="size-[18px]" aria-hidden />
           </button>
           <a
             href={APK_DOWNLOAD_URL}
             rel="noopener noreferrer"
             download="kaze.apk"
-            className="k-btn k-btn-ghost k-btn-sm hidden items-center gap-1.5 !px-2.5 text-xs text-muted hover:text-fg sm:inline-flex"
+            className="k-btn k-btn-ghost k-btn-sm hidden items-center gap-1.5 !px-2.5 text-xs text-muted hover:text-fg 2xl:inline-flex"
             title="Descargar app para Android (APK)"
           >
             <Smartphone className="size-4 text-primary" aria-hidden />
@@ -99,8 +99,8 @@ export function SiteHeader() {
             href={APK_DOWNLOAD_URL}
             rel="noopener noreferrer"
             download="kaze.apk"
-            // En móvil va en el menú inferior (mobile-nav): aquí hacía que la barra se saliera de la pantalla.
-            className="k-btn k-btn-ghost k-btn-icon k-btn-sm hidden"
+            // En móvil va en el menú inferior (mobile-nav). Con texto solo en pantallas muy anchas: si no, la barra se sale.
+            className="k-btn k-btn-ghost k-btn-icon k-btn-sm hidden sm:inline-flex 2xl:hidden"
             aria-label="Descargar App Android"
             title="Descargar Kaze APK"
           >
@@ -110,7 +110,7 @@ export function SiteHeader() {
             href="https://ko-fi.com/andrehwallet/goal?g=0"
             target="_blank"
             rel="noopener noreferrer"
-            className="k-btn k-btn-ghost k-btn-sm hidden items-center gap-1.5 !px-2.5 text-xs text-muted hover:text-fg sm:inline-flex border border-line/50 hover:border-line"
+            className="k-btn k-btn-ghost k-btn-sm hidden items-center gap-1.5 !px-2.5 text-xs text-muted hover:text-fg 2xl:inline-flex border border-line/50 hover:border-line"
             title="Apoyar el proyecto en Ko-fi"
           >
             <Coffee className="size-3.5 text-[#FF5E5B]" aria-hidden />
@@ -120,7 +120,7 @@ export function SiteHeader() {
             href="https://ko-fi.com/andrehwallet/goal?g=0"
             target="_blank"
             rel="noopener noreferrer"
-            className="k-btn k-btn-ghost k-btn-icon k-btn-sm sm:hidden"
+            className="k-btn k-btn-ghost k-btn-icon k-btn-sm 2xl:hidden"
             aria-label="Apoyar en Ko-fi"
             title="Apoyar en Ko-fi"
           >
@@ -130,7 +130,7 @@ export function SiteHeader() {
             href={DISCORD_INVITE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="k-btn k-btn-ghost k-btn-sm hidden items-center gap-1.5 !px-2.5 text-xs text-[#5865F2] hover:text-[#5865F2] sm:inline-flex border border-[#5865F2]/30 hover:border-[#5865F2] bg-[#5865F2]/5 hover:bg-[#5865F2]/10 transition-colors"
+            className="k-btn k-btn-ghost k-btn-sm hidden items-center gap-1.5 !px-2.5 text-xs text-[#5865F2] hover:text-[#5865F2] 2xl:inline-flex border border-[#5865F2]/30 hover:border-[#5865F2] bg-[#5865F2]/5 hover:bg-[#5865F2]/10 transition-colors"
             title="Únete a nuestro Discord oficial (Pan con mantequilla × Orunei)"
           >
             <DiscordIcon className="size-3.5 fill-[#5865F2]" aria-hidden />
@@ -141,7 +141,7 @@ export function SiteHeader() {
             target="_blank"
             rel="noopener noreferrer"
             // En móvil Discord ya está en el menú inferior (mobile-nav).
-            className="k-btn k-btn-ghost k-btn-icon k-btn-sm hidden text-[#5865F2] border border-[#5865F2]/25"
+            className="k-btn k-btn-ghost k-btn-icon k-btn-sm hidden sm:inline-flex 2xl:hidden text-[#5865F2] border border-[#5865F2]/25"
             aria-label="Discord Oficial"
             title="Discord Oficial"
           >

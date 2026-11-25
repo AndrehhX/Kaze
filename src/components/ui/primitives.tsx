@@ -86,7 +86,7 @@ export function SectionHeader({
       <div className="min-w-0">
         {kicker && <p className="k-label mb-2 text-primary-ink">{kicker}</p>}
         <h2 id={id} className="font-display text-section flex items-baseline gap-3">
-          <span className="truncate">{title}</span>
+          <span className="min-w-0 [overflow-wrap:anywhere] [text-wrap:balance]">{title}</span>
           {jp && (
             <span className="k-jp hidden text-sm font-normal tracking-normal normal-case text-muted sm:inline" lang="ja">
               {jp}

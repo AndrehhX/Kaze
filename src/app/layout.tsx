@@ -59,10 +59,10 @@ export const metadata: Metadata = {
     alternateLocale: ["es_ES", "en_US"],
     images: [
       {
-        url: "/icon.svg",
-        width: 512,
-        height: 512,
-        alt: "KAZE Anime Logo",
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "KAZE · anime y manga en español",
       },
     ],
   },
@@ -70,7 +70,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "KAZE — Ver Anime Online Gratis en HD 1080p · Orunei",
     description: "Kaze (Orunei): Disfruta de anime online gratis en HD 1080p sin molestos popups.",
-    images: ["/icon.svg"],
+    images: ["/og.png"],
   },
   manifest: "/manifest.json",
   appleWebApp: {

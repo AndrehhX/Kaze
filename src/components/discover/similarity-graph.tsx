@@ -14,6 +14,7 @@ import { useKazeMotion } from "@/lib/motion";
 import { SafeImage } from "@/components/ui/primitives";
 import { displayTitle } from "@/components/anime/anime-card";
 import type { MediaCard } from "@/lib/anilist/types";
+import { genreLabel } from "@/lib/anilist/browse-params";
 import { titleCase } from "@/lib/utils";
 
 const DEFAULT_SEED = 1535; // Death Note — a well-connected starting point when the library is empty.
@@ -144,7 +145,7 @@ export function SimilarityGraph() {
           <div className="k-panel pointer-events-none absolute bottom-3 left-3 right-3 z-[5] !bg-surface p-3 sm:right-auto sm:max-w-sm">
             <p className="text-sm font-semibold">{displayTitle(hover.media)}</p>
             <p className="text-xs text-muted">
-              {hover.kind === "rec" ? "Recommended" : "Related"} · {hover.label} · {hover.media.genres.slice(0, 3).join(", ")}
+              {hover.kind === "rec" ? "Recomendado" : "Relacionado"} · {hover.label} · {hover.media.genres.slice(0, 3).map(genreLabel).join(", ")}
             </p>
           </div>
         )}

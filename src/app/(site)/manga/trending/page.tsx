@@ -5,7 +5,7 @@ import { browseManga } from "@/lib/anilist/manga-service";
 import { MangaRanking } from "@/components/manga/ranking";
 import { ErrorPanel } from "@/components/ui/primitives";
 
-export const metadata: Metadata = { title: "Manga en tendencia", description: "Los manga con más actividad reciente en AniList." };
+export const metadata: Metadata = { title: "Manga en tendencia", description: "Los manga con más actividad reciente en AniList.", alternates: { canonical: "/manga/trending" } };
 
 async function loadTrending() {
   "use cache";

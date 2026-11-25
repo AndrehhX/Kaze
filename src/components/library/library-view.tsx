@@ -434,7 +434,7 @@ function ShelfRow({ e, selecting, selected, onToggle }: { e: LibraryEntry; selec
           {e.media.title}
         </Link>
         <p className="truncate text-xs text-muted">
-          {statusMeta(e.status).label} · {e.media.genres.slice(0, 3).join(", ")}
+          {statusMeta(e.status).label} · {e.media.genres.slice(0, 3).map(genreLabel).join(", ")}
           {e.notes ? " · has notes" : ""}
         </p>
         {e.media.episodes ? (

@@ -83,7 +83,7 @@ export function HeroCarousel({ items, kickerPrefix, trendingIds }: { items: Medi
       aria-label="Anime destacado"
       translate="no"
       suppressHydrationWarning
-      className="relative -mt-[var(--k-nav-h)] h-[min(90svh,800px)] min-h-[640px] max-h-[820px] overflow-hidden notranslate flex flex-col justify-between"
+      className="relative -mt-[var(--k-nav-h)] h-[min(78svh,800px)] min-h-[540px] max-h-[820px] md:h-[min(90svh,800px)] md:min-h-[640px] overflow-hidden notranslate flex flex-col justify-between"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -242,7 +242,7 @@ export function HeroCarousel({ items, kickerPrefix, trendingIds }: { items: Medi
               key={it.id}
               role="tab"
               aria-selected={i === index}
-              aria-label={`Show ${displayTitle(it)}`}
+              aria-label={`Ver ${displayTitle(it)}`}
               onClick={() => go(i)}
               className="group relative h-8 flex-1 max-w-24"
             >

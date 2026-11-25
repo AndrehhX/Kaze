@@ -18,7 +18,6 @@ import {
 import { BecauseYouLoved, ContinueWatching, FavoriteGenres, FriendsAreWatching, LibraryNudge, RecommendedForYou } from "@/components/home/personal";
 import { RailSkeleton } from "@/components/anime/skeletons";
 import { SEASONS } from "@/lib/anilist/browse-params";
-import { AdBanner } from "@/components/ads/ad-banner";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
@@ -55,7 +54,6 @@ async function HomeContent() {
       <RailSection id="trending-h" title="Tendencias del momento" jp="急上昇" kicker="Ahora mismo en AniList" media={d.trending} ranked href="/discover?sort=TRENDING_DESC" />
       <SeasonBento media={d.season} season={d.seasonInfo.season} year={d.seasonInfo.year} />
       <div className="container-k my-8">
-        <AdBanner placement="home-mid" />
       </div>
       <RecommendedForYou pool={pool} />
       <RecentlyReleased items={d.recent} />

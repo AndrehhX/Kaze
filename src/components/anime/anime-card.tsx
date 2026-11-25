@@ -40,7 +40,7 @@ export function AvailabilityDot({ media }: { media: MediaCard }) {
   let text = statusLabel(s);
   if (s === "RELEASING" && media.nextAiringEpisode) {
     const d = Math.round(media.nextAiringEpisode.timeUntilAiring / 86400);
-    text = `Ep ${media.nextAiringEpisode.episode} ${d <= 0 ? "today" : `in ${d}d`}`;
+    text = `Ep. ${media.nextAiringEpisode.episode} ${d <= 0 ? "hoy" : d === 1 ? "mañana" : `en ${d} días`}`;
   }
   if (!text) return null;
   return (
@@ -123,7 +123,7 @@ export function AnimeCard({ media, rank, priority, sizes = "(max-width: 640px) 4
             </span>
           ) : null}
           <div aria-hidden className="absolute inset-x-0 bottom-0 z-[2] translate-y-2 p-2.5 text-white opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
-            <p className="clamp-2 text-[0.6875rem] leading-snug text-white/85">{media.genres.slice(0, 3).join(" · ")}</p>
+            <p className="clamp-2 text-[0.6875rem] leading-snug text-white/85">{media.genres.slice(0, 3).map(genreLabel).join(" · ")}</p>
             <p className="mt-1 text-[0.6875rem] font-semibold text-white">
               {[formatLabel(media.format), media.episodes ? `${media.episodes} ep` : null].filter(Boolean).join(" · ")}
             </p>

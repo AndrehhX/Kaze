@@ -6,7 +6,7 @@ import { seasonOf } from "@/lib/utils";
 import { SeasonalView } from "@/components/discover/seasonal-view";
 import { GridSkeleton, PageHeaderSkeleton } from "@/components/anime/skeletons";
 
-export const metadata: Metadata = { title: "Temporada de Anime" };
+export const metadata: Metadata = { title: "Temporada de Anime", description: "Todos los animes de la temporada, ordenados por popularidad, nota o día de emisión.", alternates: { canonical: "/seasonal" } };
 
 async function getDefaultSeasonalData() {
   "use cache";

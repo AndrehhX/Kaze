@@ -69,7 +69,7 @@ html, body, button, a, input, select, textarea, [role="button"], [role="tab"] {
   --k-text: #f7f5ff;
   --k-muted: #a9a6c4;
   --k-line: rgb(168 85 247 / 0.16);
-  --k-glass: rgb(18 18 31 / 0.66);
+  --k-glass: rgb(18 18 31 / 0.9);
   --k-scrim: 8 8 16;
 
   --k-btn-bg: linear-gradient(135deg, #9333ea 0%, #6d5ef8 100%);
@@ -116,7 +116,7 @@ html, body, button, a, input, select, textarea, [role="button"], [role="tab"] {
   --k-text: #342a39;
   --k-muted: #7a6880;
   --k-line: rgb(232 106 154 / 0.18);
-  --k-glass: rgb(255 255 255 / 0.74);
+  --k-glass: rgb(255 255 255 / 0.92);
   --k-scrim: 255 249 251;
   --k-danger: #c8334a;
   --k-success: #17845a;
@@ -165,7 +165,7 @@ html, body, button, a, input, select, textarea, [role="button"], [role="tab"] {
   --k-text: #eafbff;
   --k-muted: #8fb3c4;
   --k-line: rgb(0 217 255 / 0.2);
-  --k-glass: rgb(5 13 22 / 0.78);
+  --k-glass: rgb(5 13 22 / 0.92);
   --k-scrim: 5 13 22;
 
   --k-btn-bg: linear-gradient(90deg, #00d9ff 0%, #4fe6ff 100%);
@@ -583,6 +583,14 @@ html, body, button, a, input, select, textarea, [role="button"], [role="tab"] {
     backdrop-filter: blur(16px) saturate(1.4);
     -webkit-backdrop-filter: blur(16px) saturate(1.4);
     border-bottom: 1px solid var(--k-line);
+  }
+  /* Temas claros: el rosa/naranja de marca no llega al contraste mínimo como texto (≈2,9:1);
+     como texto se usa su versión oscura (primary-ink, ≥4,8:1). Los botones mantienen el color de marca. */
+  [data-theme="sakura"] .text-primary,
+  [data-theme="zen"] .text-primary,
+  [data-theme="sakura"] .text-accent,
+  [data-theme="zen"] .text-accent {
+    color: var(--k-primary-ink);
   }
   [data-theme="midnight"] .k-nav {
     border-bottom-color: transparent;
