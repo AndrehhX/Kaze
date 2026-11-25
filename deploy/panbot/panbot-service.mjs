@@ -32,6 +32,7 @@ const { registerKazeFeatures, KAZE_COMMANDS } = await import("./kaze-features.mj
 const { registerLevels, LEVEL_COMMANDS } = await import("./levels.mjs");
 const { welcomeGif, leaveGif } = await import("./pixel.mjs");
 const { registerLogs } = await import("./logs.mjs");
+const { handleTicketButton } = await import("./tickets.mjs");
 
 const TOKEN = process.env.DISCORD_TOKEN;
 if (!TOKEN) throw new Error("Falta DISCORD_TOKEN en /opt/panbot/.env");
@@ -660,86 +661,8 @@ client.on('interactionCreate', async (interaction) => {
     return;
   }
 
-  // TICKETS
-  if (customId.startsWith("ticket_")) {
-    const ticketType = customId === "ticket_bug" 
-      ? "🐛 Reporte de Bug Orunei" 
-      : customId === "ticket_suggestion" 
-      ? "💡 Sugerencia" 
-      : "📩 Soporte General";
-
-    // Crear el canal tarda más de 3 s: se responde "pensando…" para que Discord no caduque la interacción.
-    await interaction.deferReply({ ephemeral: true }).catch(() => {});
-    try {
-      const staffCat = interaction.guild.channels.cache.find(
-        c => c.type === ChannelType.GuildCategory && (c.name.includes("𝗦𝗧𝗔𝗙𝗙") || c.name.includes("STAFF"))
-      );
-
-      const ticketName = `ticket-${user.username.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
-      const newChannel = await interaction.guild.channels.create({
-        name: ticketName,
-        type: ChannelType.GuildText,
-        parent: staffCat ? staffCat.id : null,
-        permissionOverwrites: [
-          {
-            id: interaction.guild.id,
-            deny: [PermissionFlagsBits.ViewChannel]
-          },
-          {
-            id: user.id,
-            allow: [
-              PermissionFlagsBits.ViewChannel,
-              PermissionFlagsBits.SendMessages,
-              PermissionFlagsBits.ReadMessageHistory,
-              PermissionFlagsBits.AttachFiles
-            ]
-          }
-        ]
-      });
-
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId("close_ticket")
-          .setLabel("Cerrar Ticket")
-          .setStyle(ButtonStyle.Danger)
-          .setEmoji("🔒")
-      );
-
-      await newChannel.send({
-        content: `👋 ¡Hola <@${user.id}>! Tu ticket ha sido abierto para: **${ticketType}**.`,
-        embeds: [
-          new EmbedBuilder()
-            .setTitle(`🎫 Ticket: ${ticketType}`)
-            .setDescription(`Bienvenido a tu canal privado de atención.\n\nPor favor, describe tu duda o problema detalladamente.\n\nUn miembro del equipo te responderá aquí en breve.`)
-            .setColor(0x3498db)
-            .setFooter({ text: "Pulsa el botón de abajo cuando quieras finalizar y cerrar este ticket." })
-        ],
-        components: [row]
-      });
-
-      await interaction.editReply({
-        content: `✅ ¡Tu ticket ha sido creado con éxito! Puedes verlo aquí: <#${newChannel.id}>`
-      });
-
-    } catch (err) {
-      console.error("Error creando ticket:", err.message);
-      await interaction.editReply({
-        content: `❌ Ocurrió un error al crear tu ticket: ${err.message}`
-      }).catch(() => {});
-    }
-    return;
-  }
-
-  // CERRAR TICKET
-  if (customId === "close_ticket") {
-    try {
-      await interaction.reply({ content: "🔒 Cerrando y eliminando este ticket en 5 segundos..." });
-      await sleep(5000);
-      await interaction.channel.delete();
-    } catch (err) {
-      console.error("Error cerrando ticket:", err.message);
-    }
-  }
+  // TICKETS (abrir, confirmar y cerrar): ver tickets.mjs
+  if (await handleTicketButton(interaction)) return;
 });
 
 registerKazeFeatures(client);
