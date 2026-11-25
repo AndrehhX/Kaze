@@ -62,3 +62,6 @@ docs/CLAVES_Y_APIS_PRODUCCION.md
 
 # Generador de imágenes del README (dependencias propias)
 /scripts/readme-assets/node_modules
+
+# Caché local de wrangler
+.wrangler/

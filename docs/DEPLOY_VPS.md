@@ -88,8 +88,19 @@ Haz lo mismo con el registro raíz `orunei.sbs` si apunta a Vercel (tu regla `ap
 - La **Cache Rule** de `OPTIMIZACION_VERCEL.md` (§3.2) sigue siendo recomendable: le quita trabajo a la VPS. Y el **bypass** para `panel` y `resolver`.
 - Supabase no cambia (mismo dominio).
 
-## 4. Monitor externo (opcional, 3 min)
-[UptimeRobot](https://uptimerobot.com) gratis → *New monitor* → HTTP(s) → `https://www.orunei.sbs/robots.txt` → cada 5 min → aviso a tu correo. Así te enteras si la VPS se cae.
+## 4. Vigilancia y copias de seguridad (montado el 24/11/2026)
+
+| Pieza | Dónde | Qué hace |
+| --- | --- | --- |
+| **Monitor externo** | Worker de Cloudflare `orunei-monitor` (`deploy/monitor-worker/`) | Cada 5 min comprueba la web, la portada y el resolver **desde fuera**. Si fallan 2 veces seguidas avisa a Discord, y vuelve a avisar cuando se recuperan. Sigue funcionando aunque la VPS esté apagada. Estado en KV `orunei-monitor-state`. |
+| **Vigilante local** | VPS, `/etc/cron.d/orunei-watchdog` → `/opt/orunei-ops/vps-watchdog.sh` | Cada 5 min revisa `orunei-web`, el resolver, Redis, Caddy, disco (≥85 %), memoria (<150 MB libres) y que haya copia de Supabase de las últimas 30 h. Solo avisa cuando algo cambia. |
+| **Copia de Supabase** | VPS, `/etc/cron.d/orunei-backup` (04:20) → `/opt/orunei-ops/backup-supabase.mjs` | Exporta todas las tablas (PostgREST), las cuentas de Auth y una copia espejo de Storage en `/var/backups/orunei/` (`db/AAAA-MM-DD.json.gz`, ~7 MB/día). No borra copias antiguas. Registro: `/var/log/orunei-backup.log`; resumen: `last-backup.json`. |
+| **Copia en el PC** | `deploy\ops\pull-backups.ps1` | Baja a `Documentos\KAZE-copias` las copias que falten. Hazlo de vez en cuando (y antes de mudarte de VPS). |
+
+- **Webhook de Discord para los avisos** (uno solo para los dos vigilantes): créalo en un canal privado (Editar canal → Integraciones → Webhooks) y ejecuta `powershell -ExecutionPolicy Bypass -File deploy\ops\set-alert-webhook.ps1`. Lo pide oculto, lo guarda en `/etc/orunei-ops/alerts.env` (VPS) y como secreto del Worker, y manda un mensaje de prueba. **Sin webhook los vigilantes funcionan pero solo escriben en el log.**
+- Reinstalar/actualizar los scripts de la VPS: `powershell -ExecutionPolicy Bypass -File deploy\ops\install-ops.ps1`.
+- Publicar cambios del monitor: `cd deploy\monitor-worker; npx wrangler deploy`.
+- **Restaurar** una tabla: el `.json.gz` tiene `{ tables: { nombre: [filas…] }, authUsers: […] }`; se puede reinsertar por tabla con la clave de servicio (`upsert`). Las contraseñas de Auth no se exportan (Supabase no las da): tras una pérdida total los usuarios tendrían que restablecerla.
 
 ## 5. Mudarse a la siguiente VPS (~30–60 min)
 
@@ -107,6 +118,7 @@ Sigue la guía completa y actualizada: **[GUIA_MUDANZA_VPS.md](GUIA_MUDANZA_VPS.
 - Firewall: SSH (22) abierto; **80/443 solo desde los rangos de Cloudflare** (`/opt/orunei-web/bin/ufw-cloudflare.sh`, se actualiza cada lunes por `/etc/cron.d/orunei-ufw-cloudflare`). Entrar por la IP directa da timeout: así nadie puede saltarse Cloudflare.
 - **Avisos de episodios nuevos:** `/etc/cron.d/orunei-episodes` llama cada 30 min a `POST /api/cron/episodes` (por 127.0.0.1, con `CRON_SECRET` del `.env`, generado por el bootstrap). Prueba sin enviar nada: `?dryRun=1&window=1440`.
   - **Discord (opcional):** en tu servidor de Discord → ajustes del canal → Integraciones → Webhooks → *Nuevo webhook* → copiar URL. Añádela a `/opt/orunei-web/shared/.env` como `DISCORD_EPISODES_WEBHOOK_URL=...` y reinicia (`systemctl restart orunei-web`). Publicará los estrenos populares con su portada.
+  - **Avisos push en el navegador (web):** cada usuario los activa desde la campana de notificaciones. Las suscripciones se guardan en el **Redis de la VPS** (`kaze:push:u:<userId>`), no en Supabase; el navegador las reenvía en cada visita, así que si Redis se vacía se recuperan solas. Necesita en `shared/.env`: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT=https://www.orunei.sbs` (sin ellas el botón no aparece). El cron de episodios envía el push junto con la notificación. Código: `src/lib/push/`, `src/app/api/push/route.ts`, `public/sw.js`.
 - Logros: la migración `supabase/migrations/20261122000000_more_achievements.sql` ya está aplicada en producción (20 logros).
 - No se tocaron `kaze-resolver`, `panbot`, Redis, CasaOS, Docker ni Samba.
 - **Reparto de trozos de video (23/11/2026):** el Worker `orunei-stream` manda 1 de cada 2 segmentos de cada playlist a la VPS (`https://resolver.orunei.sbs/api/stream/seg`), para no gastar su límite gratis de 100.000 peticiones al día. Los enlaces van firmados (HMAC del host + caducidad de 6 h) con la clave `/opt/kaze-resolver/.segment-key`, que es la misma que el secreto `SEGMENT_SIGNING_KEY` del Worker (el otro secreto es `VPS_SEGMENT_BASE`). Si el resolver no responde a `/health`, el Worker deja de repartir solo. Código: `deploy/resolver/segment-proxy.js` (en la VPS, `/opt/kaze-resolver/segment-proxy.js`) y `deploy/cloudflare-worker/orunei-stream-worker.js`. Publicar el Worker: `npx wrangler deploy orunei-stream-worker.js --name orunei-stream --compatibility-date 2024-01-01 --keep-vars`.

@@ -1,0 +1,13 @@
+# Vigilante externo de KAZE (ver worker.js). El webhook va como secreto, nunca aquí:
+#   npx wrangler secret put DISCORD_ALERT_WEBHOOK_URL
+name = "orunei-monitor"
+main = "worker.js"
+compatibility_date = "2026-10-15"
+workers_dev = true
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[kv_namespaces]]
+binding = "STATE"
+id = "91803f958b6047c281f8804cdfbfce17"
