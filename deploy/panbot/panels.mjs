@@ -16,7 +16,7 @@ try {
 const TOKEN = process.env.DISCORD_TOKEN;
 const API = "https://discord.com/api/v10";
 const PINK = 0xf3a9c0;
-const CH = { comandos: "1556526366864707604", media: "1573427196515717191", anime: "1573415250626089011", general: "1573861292119298209" };
+const CH = { comandos: "1556526366864707604", media: "1573427196515717191", anime: "1573415250626089011", general: "1573861292119298209", destacados: "1575032739063795743", crearSala: "1575032739755720806" };
 
 const btn = (custom_id, label, emoji, style) => ({ type: 2, custom_id, label, emoji: { name: emoji }, style });
 
@@ -50,24 +50,27 @@ export const PANELS = {
       footer: { text: "Un clic para ponértelo, otro para quitártelo" },
     },
     components: [
-      { type: 1, components: [btn("role_1573416800014704661", "Orunei Updates", "🚀", 1), btn("role_1573416802812428378", "Watch Party", "🎉", 1), btn("role_1556541196677939274", "Ofertas Gratis", "🎁", 1), btn("role_1556896713501974579", "Avisos", "📢", 1)] },
+      { type: 1, components: [btn("role_1573416800014704661", "Orunei Updates", "🚀", 1), btn("role_1573416802812428378", "Watch Party", "🎉", 1), btn("role_1575032731623231658", "Ofertas Gratis", "🎁", 1), btn("role_1556896713501974579", "Avisos", "📢", 1)] },
       { type: 1, components: [btn("role_1556896537806643281", "Anime", "📺", 2), btn("role_1556896650901848115", "Juegos", "🎮", 2), btn("role_1573416770864418817", "Beta Tester KAZE", "🌟", 3)] },
     ],
   },
   levels: {
     channel: "1573415019801223350",
+    pin: true, // aquí también salen las subidas de nivel: fijado para que no se pierda
     header: { title: "Niveles", subtitle: "Chatea, sube, desbloquea", tab: "Rangos" },
     embed: {
       title: "🔰 Sistema de niveles",
-      description: `Ganas **XP al escribir** (una vez por minuto: el spam no cuenta) y **al estar en llamada** con más gente. Cuando subes de nivel, PanBot lo anuncia en <#${CH.general}>.`,
+      description: `Ganas **XP al escribir** (una vez por minuto: el spam no cuenta) y **en llamada** con al menos otra persona y el micro abierto (hasta 45 min al día).
+
+Cada subida aparece aquí. Cuando ganas un **rango nuevo**, PanBot lo celebra en <#${CH.general}>.`,
       fields: [
-        { name: "🥉 Nivel 5+ · Bronce", value: "Permisos para enviar imágenes y enlaces.", inline: true },
-        { name: "🥈 Nivel 15+ · Plata", value: "Color plateado y emojis externos.", inline: true },
+        { name: "🥉 Nivel 5+ · Bronce", value: "Color naranja y tu propio apartado en la lista de miembros.", inline: true },
+        { name: "🥈 Nivel 15+ · Plata", value: `Puedes renombrar y poner límite a tus salas de <#${CH.crearSala}>.`, inline: true },
         { name: "​", value: "​", inline: true },
-        { name: "🥇 Nivel 30+ · Oro", value: "Veterano destacado en la lista de miembros.", inline: true },
-        { name: "💎 Nivel 50+ · Diamante", value: "El rango máximo del server.", inline: true },
+        { name: "🥇 Nivel 30+ · Oro", value: `Tus ⭐ cuentan doble para <#${CH.destacados}>.`, inline: true },
+        { name: "💎 Nivel 50+ · Diamante", value: "Rol personalizado con el nombre y color que quieras (pídelo por ticket).", inline: true },
         { name: "​", value: "​", inline: true },
-        { name: "📊 Tu nivel", value: `Usa \`/nivel\` para ver tu tarjeta y \`/top\` para el ranking, en <#${CH.comandos}>.` },
+        { name: "📊 Tu nivel", value: `\`/nivel\` para tu tarjeta y \`/top\` para el ranking, en <#${CH.comandos}>. Los lunes sale el resumen de la semana en <#${CH.general}>.` },
       ],
       footer: { text: "Los rangos se dan solos al llegar al nivel" },
     },
@@ -107,7 +110,7 @@ async function publish(key) {
   const me = await api("GET", "/users/@me");
   // Solo los paneles anteriores (mensajes de PanBot con la cabecera panel.gif), nunca los avisos de nivel ni otros mensajes.
   const before = (await api("GET", `/channels/${p.channel}/messages?limit=100`)).filter(
-    (m) => m.author.id === me.id && m.attachments?.some((a) => a.filename === "panel.gif"),
+    (m) => m.author.id === me.id && (m.embeds?.some((e) => /\/panel\.gif/.test(e.image?.url ?? "")) || m.attachments?.some((a) => a.filename === "panel.gif")),
   );
   const gif = await headerGif(p.header);
   const form = new FormData();

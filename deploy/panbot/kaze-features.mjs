@@ -372,5 +372,6 @@ export function registerKazeFeatures(client) {
   });
 }
 
-// Para pruebas locales sin Discord.
+// Para otros módulos (follows.mjs) y pruebas locales sin Discord.
+export { anilist, searchAnime, animeById, titleOf, kazeUrl, colorOf, kazeButton, SITE };
 export const _test = { animeEmbed, estrenosEmbed, searchAnime, animeById, airingToday, randomAnime, todayRange, localParts, cleanDescription };

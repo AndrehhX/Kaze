@@ -2,3 +2,11 @@ node_modules/
 .env
 state.json
 state.json.tmp
+levels.json
+panels.json
+follows.json
+birthdays.json
+status.json
+tempvoice.json
+starboard.json
+*.json.tmp

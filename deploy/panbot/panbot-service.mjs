@@ -36,6 +36,11 @@ const { registerLevels, LEVEL_COMMANDS } = await import("./levels.mjs");
 const { welcomeGif, leaveGif } = await import("./pixel.mjs");
 const { registerLogs } = await import("./logs.mjs");
 const { handleTicketButton } = await import("./tickets.mjs");
+const { registerFollows, FOLLOW_COMMANDS } = await import("./follows.mjs");
+const { registerBirthdays, BIRTHDAY_COMMANDS } = await import("./birthdays.mjs");
+const { registerStatus } = await import("./status.mjs");
+const { registerTempVoice } = await import("./tempvoice.mjs");
+const { registerStarboard } = await import("./starboard.mjs");
 
 const TOKEN = process.env.DISCORD_TOKEN;
 if (!TOKEN) throw new Error("Falta DISCORD_TOKEN en /opt/panbot/.env");
@@ -730,9 +735,14 @@ registerLevels(client, {
   rankUpChannelId: process.env.CHANNEL_RANKUP_ID || chanNewGeneralId, // solo rangos nuevos y resumen semanal
   afkChannelId: chanAfkVoiceId,
 });
+registerFollows(client);
+registerBirthdays(client, { guildId: GUILD_ID, channelId: chanNewGeneralId });
+registerStatus(client);
+registerTempVoice(client, { guildId: GUILD_ID });
+registerStarboard(client);
 // Todos los comandos se registran juntos: registrar por partes borraría los del otro módulo.
 client.once(Events.ClientReady, async () => {
-  const all = [...KAZE_COMMANDS, ...LEVEL_COMMANDS];
+  const all = [...KAZE_COMMANDS, ...LEVEL_COMMANDS, ...FOLLOW_COMMANDS, ...BIRTHDAY_COMMANDS];
   try {
     await client.application.commands.set(all, GUILD_ID);
     console.log("[comandos] registrados:", all.map((c) => "/" + c.name).join(" "));
