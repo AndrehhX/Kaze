@@ -123,8 +123,8 @@ class DownloadRepository @Inject constructor(
         .setUpstreamDataSourceFactory(DefaultDataSource.Factory(context, httpFactory))
         .setCacheWriteDataSinkFactory(null)
 
-    val manager: DownloadManager = DownloadManager(context, databaseProvider, cache, httpFactory, Executors.newFixedThreadPool(3)).apply {
-        maxParallelDownloads = 2
+    val manager: DownloadManager = DownloadManager(context, databaseProvider, cache, httpFactory, Executors.newFixedThreadPool(2)).apply {
+        maxParallelDownloads = 1 // de uno en uno: la mitad de los trozos pasan por la VPS (1 núcleo)
         minRetryCount = 5
     }
 
