@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
@@ -132,6 +133,7 @@ fun SettingsScreen(
 
         SettingsGroup("Más", Icons.Filled.Tune) {
             SwitchItem("Logros", "Metas opcionales según lo que ves. Sin rachas ni presión.", prefs.gamificationEnabled, vm::setGamification, icon = Icons.Filled.EmojiEvents)
+            SwitchItem("Estadísticas anónimas", "Nos ayuda a saber qué se ve más para mejorar KAZE. Sin datos personales.", prefs.analyticsEnabled, vm::setAnalytics, icon = Icons.Filled.Insights)
             Row(
                 Modifier.fillMaxWidth().clickable(enabled = !cacheCleared, role = Role.Button) { vm.clearCache { cacheCleared = true } }.padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,

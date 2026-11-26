@@ -73,8 +73,18 @@ fun KazeAppShell(
     widthClass: WindowWidthSizeClass,
     startOnboarding: Boolean,
     social: SocialShell,
+    analytics: com.kaze.mobile.core.analytics.KazeAnalytics? = null,
 ) {
     val backStack by nav.currentBackStackEntryAsState()
+    // Estadísticas: cada pantalla cuenta como una visita en Umami ("/anime/154587", "/mis-listas"…).
+    androidx.compose.runtime.LaunchedEffect(backStack) {
+        val e = backStack ?: return@LaunchedEffect
+        val name = e.destination.route?.substringBefore('/')?.substringBefore('?')?.substringAfterLast('.')?.removeSuffix("Route") ?: return@LaunchedEffect
+        val slug = SCREEN_SLUGS[name] ?: name.replace(Regex("([a-z])([A-Z])"), "$1-$2").lowercase()
+        val id = runCatching { e.arguments?.get("id")?.toString() }.getOrNull()
+        val tab = runCatching { e.arguments?.getString("tab") }.getOrNull()
+        analytics?.screen("/" + slug + (id?.let { "/$it" } ?: "") + (tab?.let { "/$it" } ?: ""), name)
+    }
     val dest = backStack?.destination
     val selected = TopLevel.entries.indexOfFirst { t -> dest?.hierarchy?.any { it.hasRoute(t.route::class) } == true }
     val isTopLevel = selected >= 0
@@ -214,6 +224,11 @@ fun KazeAppShell(
         }
     }
 }
+
+private val SCREEN_SLUGS = mapOf(
+    "Home" to "inicio", "Discover" to "explorar", "Library" to "mis-listas", "Community" to "comunidad", "Profile" to "perfil",
+    "Anime" to "anime", "Episodes" to "episodios", "Search" to "buscar", "Seasonal" to "temporada", "Settings" to "ajustes",
+)
 
 /** Similarity Explorer opened from Discover starts from Frieren (AniList id 154587) unless a title is chosen. */
 const val LIBRARY_SEED_FALLBACK = 154587

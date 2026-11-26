@@ -105,6 +105,7 @@ class DownloadRepository @Inject constructor(
     private val json: Json,
     private val provider: MediaProvider,
     private val prefs: UserPreferencesRepository,
+    private val analytics: com.kaze.mobile.core.analytics.KazeAnalytics,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val baseDir = File(context.getExternalFilesDir(null) ?: context.filesDir, "kaze-offline")
@@ -267,6 +268,7 @@ class DownloadRepository @Inject constructor(
                     helper.release()
                 }
                 DownloadService.sendAddDownload(context, KazeDownloadService::class.java, request, false)
+                analytics.event("descarga_iniciada", mapOf("anime" to animeTitle, "animeId" to animeId, "episodio" to episode, "calidad" to quality))
             } catch (e: Exception) {
                 Log.w("KazeDownloads", "No se pudo preparar $id: ${e.message}")
                 failedPrepare.value = failedPrepare.value + (id to placeholder.copy(status = DownloadStatus.FAILED, error = e.message ?: "No se pudo descargar."))

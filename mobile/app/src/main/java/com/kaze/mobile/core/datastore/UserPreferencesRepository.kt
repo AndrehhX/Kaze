@@ -46,6 +46,7 @@ data class UserPrefs(
     val downloadWifiOnly: Boolean = true,
     val downloadQuality: Int = 720,
     val smartDownloads: Boolean = false,
+    val analyticsEnabled: Boolean = true,
     // Notifications
     val notifySocial: Boolean = true,
     val notifyParties: Boolean = true,
@@ -87,6 +88,7 @@ class UserPreferencesRepository @Inject constructor(
         val downloadWifiOnly = booleanPreferencesKey("download_wifi_only")
         val downloadQuality = androidx.datastore.preferences.core.intPreferencesKey("download_quality")
         val smartDownloads = booleanPreferencesKey("smart_downloads")
+        val analytics = booleanPreferencesKey("analytics_enabled")
         val notifySocial = booleanPreferencesKey("notify_social")
         val notifyParties = booleanPreferencesKey("notify_parties")
         val notifyEpisodes = booleanPreferencesKey("notify_episodes")
@@ -122,6 +124,7 @@ class UserPreferencesRepository @Inject constructor(
                 downloadWifiOnly = p[K.downloadWifiOnly] ?: true,
                 downloadQuality = p[K.downloadQuality] ?: 720,
                 smartDownloads = p[K.smartDownloads] ?: false,
+                analyticsEnabled = p[K.analytics] ?: true,
                 notifySocial = p[K.notifySocial] ?: true,
                 notifyParties = p[K.notifyParties] ?: true,
                 notifyEpisodes = p[K.notifyEpisodes] ?: true,
@@ -166,6 +169,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setSkipIntroAutomatically(v: Boolean) = context.dataStore.edit { it[K.skipIntro] = v }
     suspend fun setDownloadWifiOnly(v: Boolean) = context.dataStore.edit { it[K.downloadWifiOnly] = v }
     suspend fun setDownloadQuality(v: Int) = context.dataStore.edit { it[K.downloadQuality] = v }
+    suspend fun setAnalyticsEnabled(v: Boolean) = context.dataStore.edit { it[K.analytics] = v }
     suspend fun setSmartDownloads(v: Boolean) = context.dataStore.edit { it[K.smartDownloads] = v }
     suspend fun setNotifySocial(v: Boolean) = context.dataStore.edit { it[K.notifySocial] = v }
     suspend fun setNotifyParties(v: Boolean) = context.dataStore.edit { it[K.notifyParties] = v }

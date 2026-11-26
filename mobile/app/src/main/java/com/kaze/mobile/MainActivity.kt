@@ -47,6 +47,7 @@ class MainActivity : ComponentActivity() {
     private val appVm: AppViewModel by viewModels()
     @Inject lateinit var social: SocialShell
     @Inject lateinit var deepLinks: DeepLinkRouter
+    @Inject lateinit var analytics: com.kaze.mobile.core.analytics.KazeAnalytics
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,6 +84,7 @@ class MainActivity : ComponentActivity() {
                         widthClass = calculateWindowSizeClass(this@MainActivity).widthSizeClass,
                         startOnboarding = !p.onboardingDone,
                         social = social,
+                        analytics = analytics,
                     )
                     com.kaze.mobile.feature.update.UpdatePrompt()
                 }

@@ -113,6 +113,7 @@ class PlayerViewModel @Inject constructor(
     private val library: LibraryRepository,
     private val prefsRepo: UserPreferencesRepository,
     val downloadRepo: DownloadRepository,
+    private val umami: com.kaze.mobile.core.analytics.KazeAnalytics,
     @ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
 
@@ -187,6 +188,8 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun load(request: PlaybackRequest, audio: String = _ui.value.currentAudioOption) {
+        umami.screen("/ver/${request.animeId}/${request.episode}", "${request.title} · EP ${request.episode}")
+        umami.event("episodio_reproducido", mapOf("anime" to request.title, "animeId" to request.animeId, "episodio" to request.episode, "audio" to audio, "app" to true, "sin_conexion" to downloadRepo.isDownloaded(request.animeId, request.episode)))
         countdownJob?.cancel()
         markedEpisodeWatched = false
         skippedMarkers.clear()
@@ -327,6 +330,7 @@ class PlayerViewModel @Inject constructor(
             if (!markedEpisodeWatched && pos >= dur * 0.92) {
                 markedEpisodeWatched = true
                 library.recordEpisodeWatched(r.animeId, r.episode, r.title, r.coverUrl, r.bannerUrl, r.totalEpisodes)
+                umami.event("episodio_completado", mapOf("anime" to r.title, "animeId" to r.animeId, "episodio" to r.episode, "audio" to _ui.value.currentAudioOption, "app" to true))
                 // Descarga inteligente: termina uno descargado → baja el siguiente y borra el visto.
                 if (prefs.value?.smartDownloads == true && downloadRepo.isDownloaded(r.animeId, r.episode)) {
                     if (_ui.value.hasNext) downloadRepo.startDownload(r.animeId, r.episode + 1, r.title, r.coverUrl, _ui.value.currentAudioOption, r.bannerUrl, r.totalEpisodes)

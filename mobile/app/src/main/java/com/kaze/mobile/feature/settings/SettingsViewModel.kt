@@ -35,6 +35,7 @@ class SettingsViewModel @Inject constructor(
     fun setSubtitleBackground(v: Boolean) = viewModelScope.launch { prefs.setSubtitleBackground(v) }
     fun setDownloadWifiOnly(v: Boolean) = viewModelScope.launch { prefs.setDownloadWifiOnly(v) }
     fun setDownloadQuality(v: Int) = viewModelScope.launch { prefs.setDownloadQuality(v) }
+    fun setAnalytics(v: Boolean) = viewModelScope.launch { prefs.setAnalyticsEnabled(v) }
     fun setSmartDownloads(v: Boolean) = viewModelScope.launch { prefs.setSmartDownloads(v) }
     fun setNotifySocial(v: Boolean) = viewModelScope.launch { prefs.setNotifySocial(v) }
     fun setNotifyParties(v: Boolean) = viewModelScope.launch { prefs.setNotifyParties(v) }
