@@ -86,6 +86,7 @@ Haz lo mismo con el registro raíz `orunei.sbs` si apunta a Vercel (tu regla `ap
 ### 3.4 Después del cambio
 - **No necesitas otra cuenta de Vercel.** Sin tráfico, el proyecto `orunei-v2` no consume nada. Déjalo como respaldo (no lo borres).
 - La **Cache Rule** de `OPTIMIZACION_VERCEL.md` (§3.2) sigue siendo recomendable: le quita trabajo a la VPS. Y el **bypass** para `panel` y `resolver`.
+- **`/app-version.json` no se cachea** (Cache Rule "No cachear version de la app", la última de la lista): si Cloudflare lo guarda, la app KAZE y el aviso de PanBot tardan hasta 4 h en ver una APK nueva.
 - Supabase no cambia (mismo dominio).
 
 ## 4. Vigilancia y copias de seguridad (montado el 24/11/2026)
