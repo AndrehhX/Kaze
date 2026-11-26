@@ -129,13 +129,46 @@ data class HomeCatalog(
     val fromCache: Boolean,
 )
 
+/** Valores de AniList (formato, estado, temporada, relación, fuente) en español para mostrarlos. */
+private val ENUM_ES = mapOf(
+    "TV" to "TV", "TV_SHORT" to "TV corto", "OVA" to "OVA", "ONA" to "ONA", "MOVIE" to "Película", "SPECIAL" to "Especial", "MUSIC" to "Musical",
+    "FINISHED" to "Finalizado", "RELEASING" to "En emisión", "NOT_YET_RELEASED" to "Próximamente", "CANCELLED" to "Cancelado", "HIATUS" to "En pausa",
+    "WINTER" to "Invierno", "SPRING" to "Primavera", "SUMMER" to "Verano", "FALL" to "Otoño",
+    "PREQUEL" to "Precuela", "SEQUEL" to "Secuela", "PARENT" to "Historia principal", "SIDE_STORY" to "Historia paralela", "SPIN_OFF" to "Spin-off",
+    "ALTERNATIVE" to "Versión alternativa", "SUMMARY" to "Resumen", "ADAPTATION" to "Adaptación", "SOURCE" to "Obra original", "CHARACTER" to "Personajes",
+    "COMPILATION" to "Recopilación", "CONTAINS" to "Contiene", "OTHER" to "Otro",
+    "ORIGINAL" to "Original", "MANGA" to "Manga", "LIGHT_NOVEL" to "Novela ligera", "NOVEL" to "Novela", "WEB_NOVEL" to "Novela web",
+    "VISUAL_NOVEL" to "Novela visual", "VIDEO_GAME" to "Videojuego", "GAME" to "Juego", "DOUJINSHI" to "Doujinshi", "ANIME" to "Anime",
+    "MULTIMEDIA_PROJECT" to "Proyecto multimedia", "PICTURE_BOOK" to "Libro ilustrado", "LIVE_ACTION" to "Live action", "COMIC" to "Cómic",
+    "MAIN" to "Principal", "SUPPORTING" to "Secundario", "BACKGROUND" to "Fondo",
+)
+
 fun prettyEnum(value: String): String =
-    when (value) {
-        "TV" -> "TV"
-        "TV_SHORT" -> "TV Short"
-        "OVA", "ONA" -> value
-        else -> value.lowercase().split('_').joinToString(" ") { it.replaceFirstChar(Char::titlecase) }
+    ENUM_ES[value] ?: value.lowercase().split('_').joinToString(" ") { it.replaceFirstChar(Char::titlecase) }
+
+/** Géneros de AniList en español (igual que `genreLabel()` de la web). */
+private val GENRES_ES = mapOf(
+    "Action" to "Acción", "Adventure" to "Aventura", "Comedy" to "Comedia", "Drama" to "Drama", "Ecchi" to "Ecchi", "Fantasy" to "Fantasía",
+    "Hentai" to "Hentai", "Horror" to "Terror", "Mahou Shoujo" to "Chicas mágicas", "Mecha" to "Mecha", "Music" to "Música",
+    "Mystery" to "Misterio", "Psychological" to "Psicológico", "Romance" to "Romance", "Sci-Fi" to "Ciencia ficción",
+    "Slice of Life" to "Recuentos de la vida", "Sports" to "Deportes", "Supernatural" to "Sobrenatural", "Thriller" to "Suspenso",
+)
+
+fun genreLabel(genre: String): String = GENRES_ES[genre] ?: genre
+
+/** Puestos del equipo de producción más comunes en AniList. */
+fun staffRoleLabel(role: String): String {
+    val base = role.substringBefore(" (").trim()
+    val es = when (base) {
+        "Original Creator" -> "Autor original"; "Director" -> "Dirección"; "Series Composition" -> "Guion de la serie"
+        "Script", "Screenplay" -> "Guion"; "Character Design" -> "Diseño de personajes"; "Music" -> "Música"
+        "Animation Director", "Chief Animation Director" -> "Dirección de animación"; "Art Director" -> "Dirección de arte"
+        "Sound Director" -> "Dirección de sonido"; "Producer" -> "Producción"; "Assistant Director" -> "Ayudante de dirección"
+        "Storyboard" -> "Storyboard"; "Theme Song Performance" -> "Interpretación del tema"; "Original Character Design" -> "Diseño original de personajes"
+        else -> base
     }
+    return es
+}
 
 enum class AnimeSeason { WINTER, SPRING, SUMMER, FALL;
     companion object {

@@ -115,7 +115,13 @@ fun MediaDto.toDetail(): AnimeDetail = AnimeDetail(
         StreamingEpisode(e.title ?: "Episode", e.thumbnail?.takeIf { it.startsWith("https://") }, url, e.site ?: "Official site")
     },
     rankings = rankings.orEmpty().filter { it.allTime == true || it.year != null }.take(3).map { r ->
-        "#${r.rank} ${r.context.replaceFirstChar(Char::titlecase)}${if (r.allTime == true) "" else " ${r.season?.let(::prettyEnum)?.plus(" ") ?: ""}${r.year ?: ""}"}"
+        val what = when {
+            r.context.contains("rated", ignoreCase = true) -> "Mejor valorado"
+            r.context.contains("popular", ignoreCase = true) -> "Más popular"
+            else -> r.context.replaceFirstChar(Char::titlecase)
+        }
+        val `when` = if (r.allTime == true) "de la historia" else listOfNotNull(r.season?.let(::prettyEnum)?.lowercase(), r.year?.toString()).joinToString(" ").let { if (it.isEmpty()) "" else "en $it" }
+        "#${r.rank} $what ${`when`}".trim()
     },
     scoreDistribution = stats?.scoreDistribution.orEmpty().map { it.score to it.amount },
 )

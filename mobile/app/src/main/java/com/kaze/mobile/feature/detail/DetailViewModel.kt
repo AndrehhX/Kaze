@@ -41,6 +41,8 @@ class DetailViewModel @Inject constructor(
     private val library: LibraryRepository,
     private val collectionsRepo: CollectionsRepository,
     progressRepo: ProgressRepository,
+    private val downloadRepo: com.kaze.mobile.data.playback.DownloadRepository,
+    private val marks: EpisodeMarks,
 ) : ViewModel() {
 
     val route = savedState.toRoute<AnimeRoute>()
@@ -55,6 +57,8 @@ class DetailViewModel @Inject constructor(
     val progress: StateFlow<List<WatchProgress>> = progressRepo.forAnime(id).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val collections: StateFlow<List<AnimeCollection>> = collectionsRepo.collections.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val inCollections: StateFlow<List<Long>> = collectionsRepo.collectionsContaining(id).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val downloads = downloadRepo.downloads
 
     private val _events = Channel<DetailEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
@@ -76,6 +80,16 @@ class DetailViewModel @Inject constructor(
         if (library.setProgress(id, p)) _events.send(DetailEvent.Completed(a.displayTitle))
     }
 
+    fun downloadEpisode(ep: Int) = viewModelScope.launch {
+        val a = anime() ?: return@launch
+        downloadRepo.startDownload(animeId = id, episode = ep, animeTitle = a.displayTitle, coverUrl = a.coverUrl, audio = "sub")
+        _events.send(DetailEvent.Message("Descargando el episodio $ep"))
+    }
+
+    fun markWatched(ep: Int) = viewModelScope.launch { anime()?.let { marks.markWatched(it, ep, progress.value, entry.value) } }
+
+    fun markUnwatched(ep: Int) = viewModelScope.launch { anime()?.let { marks.markUnwatched(it, ep, entry.value) } }
+
     fun setScore(score: Int?) = viewModelScope.launch {
         val a = anime() ?: return@launch
         if (entry.value == null) library.addOrUpdate(a, LibraryStatus.COMPLETED)
@@ -86,7 +100,7 @@ class DetailViewModel @Inject constructor(
 
     fun remove() = viewModelScope.launch {
         library.remove(listOf(id))
-        _events.send(DetailEvent.Message("Removed from your library"))
+        _events.send(DetailEvent.Message("Quitado de tu biblioteca"))
     }
 
     fun toggleCollection(collectionId: Long) = viewModelScope.launch {
@@ -97,7 +111,7 @@ class DetailViewModel @Inject constructor(
     fun createCollection(name: String) = viewModelScope.launch {
         val a = anime() ?: return@launch
         runCatching { collectionsRepo.create(name, "", isPublic = false) }
-            .onSuccess { collectionsRepo.add(it, a); _events.send(DetailEvent.Message("Added to “$name”")) }
-            .onFailure { _events.send(DetailEvent.Message(it.message ?: "Couldn't create collection")) }
+            .onSuccess { collectionsRepo.add(it, a); _events.send(DetailEvent.Message("Añadido a “$name”")) }
+            .onFailure { _events.send(DetailEvent.Message(it.message ?: "No se pudo crear la colección")) }
     }
 }

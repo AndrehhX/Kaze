@@ -354,6 +354,8 @@ class PlayerViewModel @Inject constructor(
 
     fun setSubtitleScale(v: Float) = viewModelScope.launch { prefsRepo.setSubtitleScale(v) }
     fun setAmbient(v: Boolean) = viewModelScope.launch { prefsRepo.setAmbientMode(v) }
+    fun setAutoNext(v: Boolean) = viewModelScope.launch { prefsRepo.setAutoNext(v) }
+    fun setSubtitleBackground(v: Boolean) = viewModelScope.launch { prefsRepo.setSubtitleBackground(v) }
     fun setAmbientIntensity(v: Float) = viewModelScope.launch { prefsRepo.setAmbientIntensity(v) }
 
     fun toggleMute() { player.volume = if (player.volume > 0f) 0f else 1f }

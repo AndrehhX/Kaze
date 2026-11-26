@@ -88,8 +88,14 @@ fun KazeAppShell(
         launchSingleTop = true
         restoreState = true
     }
-    val openAnime: (Anime, String?) -> Unit = { a, key -> nav.navigate(AnimeRoute(a.id, key)) { launchSingleTop = true } }
-    val openId: (Int) -> Unit = { id -> nav.navigate(AnimeRoute(id)) { launchSingleTop = true } }
+    // Sin launchSingleTop: desde una ficha, abrir otro anime (relacionados, recomendaciones) tiene que apilar
+    // una ficha nueva. Con singleTop, Navigation reutilizaba la ficha actual y el anime no cambiaba.
+    // Solo se ignora el toque si ya estás en la ficha de ese mismo anime (doble toque).
+    fun isCurrentAnime(id: Int) = nav.currentBackStackEntry?.let { e ->
+        e.destination.hasRoute(AnimeRoute::class) && runCatching { e.toRoute<AnimeRoute>().id }.getOrNull() == id
+    } == true
+    val openAnime: (Anime, String?) -> Unit = { a, key -> if (!isCurrentAnime(a.id)) nav.navigate(AnimeRoute(a.id, key)) }
+    val openId: (Int) -> Unit = { id -> if (!isCurrentAnime(id)) nav.navigate(AnimeRoute(id)) }
 
     Row(Modifier.fillMaxSize()) {
         if (useRail && isTopLevel) KazeNavRail(selected, ::goTop)
