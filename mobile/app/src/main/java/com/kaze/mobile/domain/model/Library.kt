@@ -86,6 +86,7 @@ data class AnimeCollection(
     val isPublic: Boolean,
     val position: Int,
     val items: List<CollectionItem>,
+    val updatedAt: Long = 0,
 )
 
 data class CollectionItem(val animeId: Int, val title: String, val coverUrl: String?, val color: String?, val position: Int)

@@ -33,6 +33,9 @@ class SettingsViewModel @Inject constructor(
     fun setAmbientIntensity(v: Float) = viewModelScope.launch { prefs.setAmbientIntensity(v) }
     fun setSubtitleScale(v: Float) = viewModelScope.launch { prefs.setSubtitleScale(v) }
     fun setSubtitleBackground(v: Boolean) = viewModelScope.launch { prefs.setSubtitleBackground(v) }
+    fun setDownloadWifiOnly(v: Boolean) = viewModelScope.launch { prefs.setDownloadWifiOnly(v) }
+    fun setDownloadQuality(v: Int) = viewModelScope.launch { prefs.setDownloadQuality(v) }
+    fun setSmartDownloads(v: Boolean) = viewModelScope.launch { prefs.setSmartDownloads(v) }
     fun setNotifySocial(v: Boolean) = viewModelScope.launch { prefs.setNotifySocial(v) }
     fun setNotifyParties(v: Boolean) = viewModelScope.launch { prefs.setNotifyParties(v) }
     fun setNotifyEpisodes(v: Boolean) = viewModelScope.launch { prefs.setNotifyEpisodes(v) }

@@ -88,7 +88,7 @@ fun CollectionsScreen(onBack: () -> Unit, onOpen: (Long) -> Unit, vm: Collection
                             Spacer(Modifier.width(16.dp))
                             Column(Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(if (col.isPublic) Icons.Filled.Public else Icons.Filled.Lock, if (col.isPublic) "Public" else "Private", tint = c.textMuted, modifier = Modifier.size(14.dp))
+                                    Icon(if (col.isPublic) Icons.Filled.Public else Icons.Filled.Lock, if (col.isPublic) "Pública" else "Privada", tint = c.textMuted, modifier = Modifier.size(14.dp))
                                     Spacer(Modifier.width(4.dp))
                                     Text(col.name, style = Kaze.type.title, color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
@@ -134,7 +134,7 @@ private fun CoverStack(col: AnimeCollection) {
 }
 
 @Composable
-private fun CollectionEditor(title: String, name0: String, desc0: String, public0: Boolean, error: String?, onSave: (String, String, Boolean) -> Unit, onDismiss: () -> Unit) {
+internal fun CollectionEditor(title: String, name0: String, desc0: String, public0: Boolean, error: String?, onSave: (String, String, Boolean) -> Unit, onDismiss: () -> Unit) {
     var name by remember { mutableStateOf(name0) }
     var desc by remember { mutableStateOf(desc0) }
     var public by remember { mutableStateOf(public0) }
@@ -142,12 +142,12 @@ private fun CollectionEditor(title: String, name0: String, desc0: String, public
     ModalBottomSheet(onDismiss, containerColor = c.surface, shape = Kaze.style.sheetShape) {
         Column(Modifier.padding(20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(title, style = Kaze.type.headline, color = c.text)
-            Field("Name", name, { name = it.take(60) })
-            Field("Description (optional)", desc, { desc = it.take(280) }, singleLine = false)
+            Field("Nombre", name, { name = it.take(60) })
+            Field("Descripción (opcional)", desc, { desc = it.take(280) }, singleLine = false)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Colección pública", style = Kaze.type.body, color = c.text)
-                    Text("Visible on your profile when you're signed in", style = Kaze.type.bodySmall, color = c.textMuted)
+                    Text("Lista pública", style = Kaze.type.body, color = c.text)
+                    Text("Se ve en tu perfil cuando inicias sesión", style = Kaze.type.bodySmall, color = c.textMuted)
                 }
                 Switch(public, { public = it }, colors = SwitchDefaults.colors(checkedTrackColor = c.primary))
             }
@@ -180,7 +180,7 @@ fun CollectionDetailScreen(onBack: () -> Unit, onOpenAnime: (Int) -> Unit, vm: C
     val c = Kaze.colors
     val collection = col
     Column(Modifier.fillMaxSize()) {
-        KazeTopBar(collection?.name ?: "Colección", onBack, subtitle = collection?.let { "${it.items.size} anime · ${if (it.isPublic) "public" else "private"}" }, actions = {
+        KazeTopBar(collection?.name ?: "Colección", onBack, subtitle = collection?.let { "${it.items.size} anime · ${if (it.isPublic) "pública" else "privada"}" }, actions = {
             KazeIconButton(Icons.Filled.Add, "Add anime from library", { adding = true })
             KazeIconButton(Icons.Filled.Edit, "Editar colección", { editing = true })
         })

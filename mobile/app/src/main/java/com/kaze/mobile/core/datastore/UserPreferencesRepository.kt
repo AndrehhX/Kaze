@@ -42,6 +42,10 @@ data class UserPrefs(
     val subtitleBackground: Boolean = true,
     val preferredSubtitleLanguage: String? = "en",
     val skipIntroAutomatically: Boolean = false,
+    // Descargas
+    val downloadWifiOnly: Boolean = true,
+    val downloadQuality: Int = 720,
+    val smartDownloads: Boolean = false,
     // Notifications
     val notifySocial: Boolean = true,
     val notifyParties: Boolean = true,
@@ -80,6 +84,9 @@ class UserPreferencesRepository @Inject constructor(
         val subtitleBackground = booleanPreferencesKey("subtitle_background")
         val subtitleLanguage = stringPreferencesKey("subtitle_language")
         val skipIntro = booleanPreferencesKey("skip_intro_auto")
+        val downloadWifiOnly = booleanPreferencesKey("download_wifi_only")
+        val downloadQuality = androidx.datastore.preferences.core.intPreferencesKey("download_quality")
+        val smartDownloads = booleanPreferencesKey("smart_downloads")
         val notifySocial = booleanPreferencesKey("notify_social")
         val notifyParties = booleanPreferencesKey("notify_parties")
         val notifyEpisodes = booleanPreferencesKey("notify_episodes")
@@ -112,6 +119,9 @@ class UserPreferencesRepository @Inject constructor(
                 subtitleBackground = p[K.subtitleBackground] ?: true,
                 preferredSubtitleLanguage = p[K.subtitleLanguage] ?: "en",
                 skipIntroAutomatically = p[K.skipIntro] ?: false,
+                downloadWifiOnly = p[K.downloadWifiOnly] ?: true,
+                downloadQuality = p[K.downloadQuality] ?: 720,
+                smartDownloads = p[K.smartDownloads] ?: false,
                 notifySocial = p[K.notifySocial] ?: true,
                 notifyParties = p[K.notifyParties] ?: true,
                 notifyEpisodes = p[K.notifyEpisodes] ?: true,
@@ -154,6 +164,9 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setSubtitleBackground(v: Boolean) = context.dataStore.edit { it[K.subtitleBackground] = v }
     suspend fun setSubtitleLanguage(v: String?) = context.dataStore.edit { if (v == null) it.remove(K.subtitleLanguage) else it[K.subtitleLanguage] = v }
     suspend fun setSkipIntroAutomatically(v: Boolean) = context.dataStore.edit { it[K.skipIntro] = v }
+    suspend fun setDownloadWifiOnly(v: Boolean) = context.dataStore.edit { it[K.downloadWifiOnly] = v }
+    suspend fun setDownloadQuality(v: Int) = context.dataStore.edit { it[K.downloadQuality] = v }
+    suspend fun setSmartDownloads(v: Boolean) = context.dataStore.edit { it[K.smartDownloads] = v }
     suspend fun setNotifySocial(v: Boolean) = context.dataStore.edit { it[K.notifySocial] = v }
     suspend fun setNotifyParties(v: Boolean) = context.dataStore.edit { it[K.notifyParties] = v }
     suspend fun setNotifyEpisodes(v: Boolean) = context.dataStore.edit { it[K.notifyEpisodes] = v }

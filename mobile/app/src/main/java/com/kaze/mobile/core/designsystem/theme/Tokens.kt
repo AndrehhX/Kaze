@@ -20,10 +20,10 @@ enum class KazeThemeId(
     val tagline: String,
     val isDark: Boolean,
 ) {
-    MIDNIGHT_NEON("Midnight Neon", "Dark futuristic anime metropolis", true),
-    SAKURA_DREAM("Sakura Dream", "Modern Japanese pastel", false),
-    CYBER_PULSE("Cyber Pulse", "High-tech anime cyberpunk", true),
-    ZEN_STUDIO("Zen Studio", "Japanese editorial minimalism", false);
+    MIDNIGHT_NEON("Midnight Neon", "Metrópolis anime futurista y oscura", true),
+    SAKURA_DREAM("Sakura Dream", "Pastel japonés moderno", false),
+    CYBER_PULSE("Cyber Pulse", "Cyberpunk anime de alta tecnología", true),
+    ZEN_STUDIO("Zen Studio", "Minimalismo editorial japonés", false);
 
     val webKey: String get() = name.substringBefore('_').lowercase()
 

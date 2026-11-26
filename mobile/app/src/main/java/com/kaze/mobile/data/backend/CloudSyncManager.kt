@@ -33,6 +33,7 @@ class CloudSyncManager @Inject constructor(
     private val cloud: CloudLibraryRepository,
     private val library: LibraryRepository,
     private val progress: ProgressRepository,
+    private val collections: com.kaze.mobile.data.library.CollectionsRepository,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     private val _lastResult = MutableStateFlow<CloudLibraryRepository.SyncResult?>(null)
@@ -53,7 +54,7 @@ class CloudSyncManager @Inject constructor(
                     syncNow()
                     // Cambios locales: se suben a los pocos segundos.
                     launch {
-                        merge(library.entries.drop(1).map { }, progress.history.drop(1).map { })
+                        merge(library.entries.drop(1).map { }, progress.history.drop(1).map { }, collections.collections.drop(1).map { })
                             .debounce(4_000)
                             .collect { syncNow() }
                     }

@@ -82,7 +82,7 @@ class DetailViewModel @Inject constructor(
 
     fun downloadEpisode(ep: Int) = viewModelScope.launch {
         val a = anime() ?: return@launch
-        downloadRepo.startDownload(animeId = id, episode = ep, animeTitle = a.displayTitle, coverUrl = a.coverUrl, audio = "sub")
+        downloadRepo.startDownload(id, ep, a.displayTitle, a.coverUrl, "sub", a.bannerUrl, a.episodes)
         _events.send(DetailEvent.Message("Descargando el episodio $ep"))
     }
 

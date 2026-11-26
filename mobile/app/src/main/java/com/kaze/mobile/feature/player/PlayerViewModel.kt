@@ -19,6 +19,7 @@ import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
@@ -33,6 +34,7 @@ import com.kaze.mobile.data.library.ProgressRepository
 import com.kaze.mobile.data.playback.DownloadRepository
 import com.kaze.mobile.domain.playback.MediaProvider
 import com.kaze.mobile.domain.playback.PlaybackSource
+import com.kaze.mobile.domain.playback.PlaybackEntitlement
 import com.kaze.mobile.domain.playback.SkipKind
 import com.kaze.mobile.domain.playback.SkipLogic
 import com.kaze.mobile.domain.playback.SkipMarker
@@ -93,6 +95,7 @@ data class PlayerUi(
     val speedBoost: Boolean = false,
     val currentAudioOption: String = "sub",
     val isDubbedAvailable: Boolean = false,
+    val offline: Boolean = false,
 ) {
     val hasNext: Boolean get() = request?.let { r -> r.totalEpisodes == null || r.episode < r.totalEpisodes } ?: false
     val hasPrevious: Boolean get() = (request?.episode ?: 1) > 1
@@ -190,6 +193,27 @@ class PlayerViewModel @Inject constructor(
         _ui.update { PlayerUi(request = request, fitMode = it.fitMode, speed = it.speed, currentAudioOption = audio) }
         viewModelScope.launch {
             val p = prefsRepo.prefs.filterNotNull().first()
+            // Descargado: se reproduce desde el teléfono, sin internet.
+            downloadRepo.offlineItem(request.animeId, request.episode, request.title)?.let { offline ->
+                val offAudio = downloadRepo.offlineAudio(request.animeId, request.episode) ?: audio
+                val item = offline.buildUpon()
+                    .setMediaMetadata(MediaMetadata.Builder().setTitle("${request.title} · EP ${request.episode}").setArtist("Descargado").setArtworkUri(request.coverUrl?.let(Uri::parse)).build())
+                    .build()
+                val src = PlaybackSource(
+                    uri = item.localConfiguration?.uri?.toString().orEmpty(), mimeType = item.localConfiguration?.mimeType ?: "application/x-mpegURL",
+                    mediaTitle = "Descargado", attribution = "Reproducción sin conexión",
+                    entitlement = PlaybackEntitlement.Licensed("offline", Long.MAX_VALUE),
+                    audioLanguage = if (offAudio == "latino") "es-419" else "ja", isDubbedAvailable = false,
+                )
+                val resume = progressRepo.get(request.animeId, request.episode)?.takeIf { !it.completed && it.positionMs > 10_000 }?.positionMs
+                player.setMediaSource(DefaultMediaSourceFactory(downloadRepo.playbackDataSourceFactory).createMediaSource(item), resume ?: 0L)
+                player.setPlaybackSpeed(p.playbackSpeed)
+                player.prepare()
+                player.playWhenReady = true
+                _ui.update { it.copy(source = src, resumedFromMs = resume, speed = p.playbackSpeed, isDubbedAvailable = false, currentAudioOption = offAudio, offline = true) }
+                startTicker()
+                return@launch
+            }
             when (val r = provider.resolve(request.animeId, request.episode, request.title, preferredAudio = audio)) {
                 is Outcome.Failure -> _ui.update { it.copy(error = r.error.userMessage, buffering = false) }
                 is Outcome.Success -> {
@@ -262,13 +286,7 @@ class PlayerViewModel @Inject constructor(
 
     fun downloadCurrentEpisode() {
         val r = _ui.value.request ?: return
-        downloadRepo.startDownload(
-            animeId = r.animeId,
-            episode = r.episode,
-            animeTitle = r.title,
-            coverUrl = r.coverUrl,
-            audio = _ui.value.currentAudioOption,
-        )
+        downloadRepo.startDownload(r.animeId, r.episode, r.title, r.coverUrl, _ui.value.currentAudioOption, r.bannerUrl, r.totalEpisodes)
     }
 
     private fun startTicker() {
@@ -309,6 +327,11 @@ class PlayerViewModel @Inject constructor(
             if (!markedEpisodeWatched && pos >= dur * 0.92) {
                 markedEpisodeWatched = true
                 library.recordEpisodeWatched(r.animeId, r.episode, r.title, r.coverUrl, r.bannerUrl, r.totalEpisodes)
+                // Descarga inteligente: termina uno descargado → baja el siguiente y borra el visto.
+                if (prefs.value?.smartDownloads == true && downloadRepo.isDownloaded(r.animeId, r.episode)) {
+                    if (_ui.value.hasNext) downloadRepo.startDownload(r.animeId, r.episode + 1, r.title, r.coverUrl, _ui.value.currentAudioOption, r.bannerUrl, r.totalEpisodes)
+                    downloadRepo.deleteDownload("${r.animeId}:${r.episode}")
+                }
             }
         }
     }

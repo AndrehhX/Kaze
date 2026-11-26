@@ -1,11 +1,13 @@
 package com.kaze.mobile.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Home
@@ -17,7 +19,8 @@ import kotlinx.serialization.Serializable
 // ---- Top level ----
 @Serializable data object HomeRoute
 @Serializable data object DiscoverRoute
-@Serializable data object LibraryRoute
+/** "Mis listas". [tab]: following | lists | history | downloads (también por enlace kaze://lists?tab=downloads). */
+@Serializable data class LibraryRoute(val tab: String? = null)
 @Serializable data object CommunityRoute
 @Serializable data object ProfileRoute
 
@@ -66,7 +69,7 @@ import kotlinx.serialization.Serializable
 enum class TopLevel(val route: Any, val label: String, val icon: ImageVector, val selectedIcon: ImageVector) {
     HOME(HomeRoute, "Inicio", Icons.Outlined.Home, Icons.Filled.Home),
     DISCOVER(DiscoverRoute, "Explorar", Icons.Outlined.Explore, Icons.Filled.Explore),
-    LIBRARY(LibraryRoute, "Biblioteca", Icons.Outlined.VideoLibrary, Icons.Filled.VideoLibrary),
+    LIBRARY(LibraryRoute(), "Mis listas", Icons.Outlined.BookmarkBorder, Icons.Filled.Bookmark),
     COMMUNITY(CommunityRoute, "Comunidad", Icons.Outlined.Forum, Icons.Filled.Forum),
     PROFILE(ProfileRoute, "Perfil", Icons.Outlined.Person, Icons.Filled.Person),
 }

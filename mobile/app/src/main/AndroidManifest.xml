@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Descargas en segundo plano (Media3 DownloadService) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".KazeApp"
@@ -39,6 +43,7 @@
                 <data android:scheme="kaze" android:host="party" />
                 <data android:scheme="kaze" android:host="user" />
                 <data android:scheme="kaze" android:host="notifications" />
+                <data android:scheme="kaze" android:host="lists" />
             </intent-filter>
             <!-- OAuth and email-link callbacks -->
             <intent-filter>
@@ -58,6 +63,21 @@
             android:resizeableActivity="true"
             android:theme="@style/Theme.Kaze.Player"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|uiMode" />
+
+        <!-- Descargas para ver sin conexión -->
+        <service
+            android:name=".data.playback.KazeDownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync">
+            <intent-filter>
+                <action android:name="androidx.media3.exoplayer.downloadService.action.RESTART" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
+        <service
+            android:name="androidx.media3.exoplayer.scheduler.PlatformScheduler$PlatformSchedulerService"
+            android:exported="true"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <provider
             android:name="androidx.startup.InitializationProvider"

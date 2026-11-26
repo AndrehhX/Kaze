@@ -6,5 +6,7 @@
     <string name="channel_parties">Watch parties</string>
     <string name="channel_parties_desc">Invitaciones a salas de reproducción sincronizada</string>
     <string name="channel_episodes">Nuevos episodios</string>
+    <string name="channel_downloads">Descargas</string>
+    <string name="channel_downloads_desc">Progreso de los episodios que bajas para ver sin conexión</string>
     <string name="channel_episodes_desc">Avisos de emisión de los animes que estás viendo</string>
 </resources>

@@ -68,7 +68,7 @@ fun AppearanceScreen(onBack: () -> Unit, vm: SettingsViewModel = hiltViewModel()
             }
         }
         SectionHeader("Apariencia del sistema")
-        ToggleRow("Seguir modo claro/oscuro del sistema", "Use ${prefs.darkTheme.label} when the system is dark and ${prefs.lightTheme.label} when it's light", prefs.followSystem, vm::setFollowSystem)
+        ToggleRow("Seguir modo claro/oscuro del sistema", "${prefs.darkTheme.label} cuando el teléfono está oscuro y ${prefs.lightTheme.label} cuando está claro", prefs.followSystem, vm::setFollowSystem)
         if (prefs.followSystem) {
             Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Tema oscuro", style = Kaze.type.label, color = c.textMuted)
@@ -82,14 +82,14 @@ fun AppearanceScreen(onBack: () -> Unit, vm: SettingsViewModel = hiltViewModel()
             }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            ToggleRow("Material You accent", "Tint the theme's primary colour from your wallpaper", prefs.wallpaperAccent, vm::setWallpaperAccent)
+            ToggleRow("Color de tu fondo de pantalla", "El color principal del tema toma el de tu fondo (Material You)", prefs.wallpaperAccent, vm::setWallpaperAccent)
         }
-        SectionHeader("Motion & accessibility")
-        ToggleRow("Reduce motion", "Replace transitions with instant changes and stop ambient animation", prefs.reducedMotion, vm::setReducedMotion)
-        ToggleRow("Ambient effects", "Sakura petals, neon pulse, cyber scanlines", prefs.ambientEffects, vm::setAmbientEffects)
-        ToggleRow("High contrast", "Stronger secondary text and outlines", prefs.highContrast, vm::setHighContrast)
+        SectionHeader("Movimiento y accesibilidad")
+        ToggleRow("Reducir movimiento", "Cambios instantáneos y sin animaciones de fondo", prefs.reducedMotion, vm::setReducedMotion)
+        ToggleRow("Efectos de fondo", "Pétalos de sakura, brillo neón, líneas cyber", prefs.ambientEffects, vm::setAmbientEffects)
+        ToggleRow("Alto contraste", "Textos secundarios y bordes más marcados", prefs.highContrast, vm::setHighContrast)
         Text(
-            "Text size follows your system font scale. Reduce motion is also enabled automatically when Android's animations are turned off.",
+            "El tamaño del texto sigue al de tu teléfono. \"Reducir movimiento\" se activa solo si apagas las animaciones de Android.",
             style = Kaze.type.bodySmall, color = c.textMuted, modifier = Modifier.padding(20.dp),
         )
         Spacer(Modifier.height(100.dp))
@@ -126,7 +126,7 @@ fun ThemePreviewCard(id: KazeThemeId, selected: Boolean, modifier: Modifier = Mo
                     Box(Modifier.fillMaxWidth().height(8.dp).clip(Kaze.style.chipShape).background(c.text.copy(alpha = 0.15f)))
                     Box(Modifier.fillMaxWidth(0.6f).height(8.dp).clip(Kaze.style.chipShape).background(c.text.copy(alpha = 0.1f)))
                     Spacer(Modifier.weight(1f))
-                    KazeButton("Watch", {}, minHeight = 32.dp, modifier = Modifier.fillMaxWidth())
+                    KazeButton("Ver", {}, minHeight = 32.dp, modifier = Modifier.fillMaxWidth())
                     Text(id.tagline, style = Kaze.type.bodySmall, color = c.textMuted, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
                 if (selected) Icon(Icons.Filled.CheckCircle, null, tint = c.accent, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(22.dp).clip(CircleShape))

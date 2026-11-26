@@ -134,6 +134,15 @@ interface PlaybackDao {
     )
     fun observeContinueWatching(limit: Int = 20): Flow<List<PlaybackProgressEntity>>
 
+    @Query("DELETE FROM playback_progress WHERE `key` IN (:keys)")
+    suspend fun deleteKeys(keys: List<String>)
+
+    @Query("SELECT `key` FROM playback_progress WHERE animeId = :animeId")
+    suspend fun keysForAnime(animeId: Int): List<String>
+
+    @Query("SELECT `key` FROM playback_progress")
+    suspend fun allKeys(): List<String>
+
     @Query("SELECT * FROM playback_progress WHERE animeId = :animeId")
     fun observeForAnime(animeId: Int): Flow<List<PlaybackProgressEntity>>
 

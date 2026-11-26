@@ -1,35 +1,60 @@
 package com.kaze.mobile.data.playback
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
-import com.kaze.mobile.data.anilist.await
+import androidx.annotation.OptIn
+import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.database.StandaloneDatabaseProvider
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.NoOpCacheEvictor
+import androidx.media3.datasource.cache.SimpleCache
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.offline.Download
+import androidx.media3.exoplayer.offline.DownloadHelper
+import androidx.media3.exoplayer.offline.DownloadManager
+import androidx.media3.exoplayer.offline.DownloadRequest
+import androidx.media3.exoplayer.offline.DownloadService
+import androidx.media3.exoplayer.scheduler.Requirements
+import com.kaze.mobile.core.common.Outcome
+import com.kaze.mobile.core.datastore.UserPreferencesRepository
+import com.kaze.mobile.domain.playback.MediaProvider
+import com.kaze.mobile.domain.playback.SideloadedSubtitle
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import com.kaze.mobile.data.anilist.await
 import java.io.File
-import java.io.FileOutputStream
+import java.io.IOException
+import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
-@Serializable
-enum class DownloadStatus { QUEUED, DOWNLOADING, COMPLETED, FAILED }
+/** PAUSED = la pausaste tú · WAITING = espera Wi-Fi o conexión para seguir. */
+enum class DownloadStatus { QUEUED, DOWNLOADING, PAUSED, WAITING, COMPLETED, FAILED }
 
-@Serializable
 data class DownloadedEpisode(
     val id: String, // "$animeId:$episode"
     val animeId: Int,
@@ -37,220 +62,280 @@ data class DownloadedEpisode(
     val title: String,
     val animeTitle: String,
     val coverUrl: String? = null,
-    val filePath: String,
+    val bannerUrl: String? = null,
+    val totalEpisodes: Int? = null,
     val fileSizeBytes: Long = 0,
     val downloadedAt: Long = System.currentTimeMillis(),
-    val audioOption: String = "sub", // "sub" or "latino"
+    val audioOption: String = "sub", // "sub" o "latino"
+    val quality: Int = 720,
     val status: DownloadStatus = DownloadStatus.COMPLETED,
     val progress: Float = 1f,
     val error: String? = null,
 )
 
+/** Datos propios guardados dentro de la descarga de Media3 (DownloadRequest.data). */
 @Serializable
-private data class DownloadSessionPayload(
-    val seriesId: String,
-    val episodeId: String,
-    val preferredAudio: String = "sub",
-    val codecPreference: String = "h264",
+private data class DownloadMeta(
+    val animeId: Int,
+    val episode: Int,
+    val animeTitle: String,
+    val coverUrl: String? = null,
+    val bannerUrl: String? = null,
+    val totalEpisodes: Int? = null,
+    val audio: String = "sub",
+    val quality: Int = 720,
+    val mimeType: String? = null,
+    val subtitles: List<LocalSubtitle> = emptyList(),
+    val addedAt: Long = System.currentTimeMillis(),
 )
 
 @Serializable
-private data class DownloadAsset(
-    val kind: String = "mp4",
-    val src: String = "",
-)
+private data class LocalSubtitle(val path: String, val language: String, val label: String, val mimeType: String)
 
-@Serializable
-private data class DownloadGrant(
-    val asset: DownloadAsset,
-    val serverName: String? = null,
-    val isDubbedAvailable: Boolean? = null,
-)
-
-@Serializable
-private data class DownloadSessionResponse(
-    val grant: DownloadGrant? = null,
-    val error: String? = null,
-)
-
+/**
+ * Descargas reales para ver sin conexión (motor de descargas de Media3, el mismo del reproductor):
+ * bajan todos los trozos del video HLS a una caché privada, siguen en segundo plano con una
+ * notificación ([KazeDownloadService]), se pueden pausar y respetan "solo con Wi-Fi".
+ */
+@OptIn(UnstableApi::class)
 @Singleton
 class DownloadRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val http: OkHttpClient,
     private val json: Json,
+    private val provider: MediaProvider,
+    private val prefs: UserPreferencesRepository,
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val downloadDir = File(context.filesDir, "downloads").apply { mkdirs() }
-    private val indexFile = File(context.filesDir, "downloads_index.json")
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val baseDir = File(context.getExternalFilesDir(null) ?: context.filesDir, "kaze-offline")
+    private val subtitleDir = File(baseDir, "subtitles").apply { mkdirs() }
+    private val databaseProvider = StandaloneDatabaseProvider(context)
+    val cache = SimpleCache(File(baseDir, "media"), NoOpCacheEvictor(), databaseProvider)
+    private val httpFactory: DataSource.Factory = DefaultHttpDataSource.Factory()
+        .setUserAgent("KAZE-Android")
+        .setAllowCrossProtocolRedirects(true)
+        .setConnectTimeoutMs(15_000)
+        .setReadTimeoutMs(20_000)
 
+    /** Para el reproductor: lee lo descargado y, si falta algo, lo pide a internet. */
+    val playbackDataSourceFactory: DataSource.Factory = CacheDataSource.Factory()
+        .setCache(cache)
+        .setUpstreamDataSourceFactory(DefaultDataSource.Factory(context, httpFactory))
+        .setCacheWriteDataSinkFactory(null)
+
+    val manager: DownloadManager = DownloadManager(context, databaseProvider, cache, httpFactory, Executors.newFixedThreadPool(3)).apply {
+        maxParallelDownloads = 2
+        minRetryCount = 5
+    }
+
+    /** Descargas que se están preparando (pidiendo el enlace al servidor) antes de entrar a Media3. */
+    private val preparing = MutableStateFlow<Map<String, DownloadedEpisode>>(emptyMap())
+    private val failedPrepare = MutableStateFlow<Map<String, DownloadedEpisode>>(emptyMap())
     private val _downloads = MutableStateFlow<List<DownloadedEpisode>>(emptyList())
     val downloads: StateFlow<List<DownloadedEpisode>> = _downloads.asStateFlow()
 
     init {
-        loadIndex()
-    }
-
-    private fun loadIndex() {
-        try {
-            if (indexFile.exists()) {
-                val text = indexFile.readText()
-                val list = json.decodeFromString(ListSerializer(DownloadedEpisode.serializer()), text)
-                // Filter out any entries whose files were deleted externally
-                val valid = list.filter { File(it.filePath).exists() }
-                _downloads.value = valid
+        manager.addListener(object : DownloadManager.Listener {
+            override fun onDownloadChanged(downloadManager: DownloadManager, download: Download, finalException: Exception?) {
+                refresh()
+                notifyFinished(download)
             }
-        } catch (e: Exception) {
-            Log.w("DownloadRepository", "Could not load downloads index: ${e.message}")
-            _downloads.value = emptyList()
+            override fun onDownloadRemoved(downloadManager: DownloadManager, download: Download) = refresh()
+            override fun onRequirementsStateChanged(downloadManager: DownloadManager, requirements: Requirements, notMetRequirements: Int) = refresh()
+            override fun onInitialized(downloadManager: DownloadManager) = refresh()
+        })
+        // Media3 no avisa del avance: mientras haya algo bajando, se actualiza el porcentaje cada segundo.
+        scope.launch {
+            while (isActive) {
+                delay(1_000)
+                if (manager.currentDownloads.any { it.state == Download.STATE_DOWNLOADING }) refresh()
+            }
+        }
+        // "Solo con Wi-Fi" se aplica en cuanto cambias el ajuste.
+        scope.launch {
+            prefs.prefs.map { it.downloadWifiOnly }.distinctUntilChanged().collect { wifiOnly ->
+                val req = Requirements(if (wifiOnly) Requirements.NETWORK_UNMETERED else Requirements.NETWORK)
+                runCatching { DownloadService.sendSetRequirements(context, KazeDownloadService::class.java, req, false) }
+                    .onFailure { manager.requirements = req }
+            }
         }
     }
 
-    private fun saveIndex() {
-        try {
-            val text = json.encodeToString(ListSerializer(DownloadedEpisode.serializer()), _downloads.value)
-            indexFile.writeText(text)
-        } catch (e: Exception) {
-            Log.w("DownloadRepository", "Could not save downloads index: ${e.message}")
+    private val finishedNotifications by lazy { androidx.media3.exoplayer.offline.DownloadNotificationHelper(context, "downloads") }
+
+    /** Aviso cuando un episodio termina de bajar (o falla), aunque la app esté cerrada. */
+    @android.annotation.SuppressLint("MissingPermission") // se comprueba con areNotificationsEnabled()
+    private fun notifyFinished(download: Download) {
+        if (!androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()) return
+        if (download.state != Download.STATE_COMPLETED && download.state != Download.STATE_FAILED) return
+        val meta = runCatching { json.decodeFromString(DownloadMeta.serializer(), String(download.request.data)) }.getOrNull() ?: return
+        val name = "${meta.animeTitle} · EP ${meta.episode}"
+        val open = android.app.PendingIntent.getActivity(
+            context, 0,
+            android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse("kaze://lists?tab=downloads"), context, com.kaze.mobile.MainActivity::class.java)
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val n = if (download.state == Download.STATE_COMPLETED)
+            finishedNotifications.buildDownloadCompletedNotification(context, com.kaze.mobile.R.drawable.ic_stat_kaze, open, "$name · listo para ver sin conexión")
+        else finishedNotifications.buildDownloadFailedNotification(context, com.kaze.mobile.R.drawable.ic_stat_kaze, open, "No se pudo descargar $name")
+        runCatching { androidx.core.app.NotificationManagerCompat.from(context).notify(download.request.id.hashCode(), n) }
+    }
+
+    private fun refresh() {
+        val notMet = manager.notMetRequirements
+        val fromManager = buildList {
+            manager.downloadIndex.getDownloads().use { cursor ->
+                while (cursor.moveToNext()) cursor.download.toEpisode(notMet)?.let(::add)
+            }
         }
+        val ids = fromManager.map { it.id }.toSet()
+        _downloads.value = (fromManager + preparing.value.values.filter { it.id !in ids } + failedPrepare.value.values.filter { it.id !in ids })
+            .sortedWith(compareBy<DownloadedEpisode> { it.animeTitle.lowercase() }.thenBy { it.episode })
     }
 
-    fun get(animeId: Int, episode: Int): DownloadedEpisode? {
-        val key = "$animeId:$episode"
-        return _downloads.value.firstOrNull { it.id == key && it.status == DownloadStatus.COMPLETED && File(it.filePath).exists() }
+    private fun Download.toEpisode(notMet: Int): DownloadedEpisode? {
+        val meta = runCatching { json.decodeFromString(DownloadMeta.serializer(), String(request.data)) }.getOrNull() ?: return null
+        val status = when (state) {
+            Download.STATE_COMPLETED -> DownloadStatus.COMPLETED
+            Download.STATE_DOWNLOADING -> DownloadStatus.DOWNLOADING
+            Download.STATE_STOPPED -> DownloadStatus.PAUSED
+            Download.STATE_FAILED -> DownloadStatus.FAILED
+            Download.STATE_QUEUED -> if (notMet != 0) DownloadStatus.WAITING else DownloadStatus.QUEUED
+            else -> DownloadStatus.QUEUED
+        }
+        return DownloadedEpisode(
+            id = request.id, animeId = meta.animeId, episode = meta.episode, title = "Episodio ${meta.episode}",
+            animeTitle = meta.animeTitle, coverUrl = meta.coverUrl, bannerUrl = meta.bannerUrl, totalEpisodes = meta.totalEpisodes,
+            fileSizeBytes = bytesDownloaded, downloadedAt = meta.addedAt, audioOption = meta.audio, quality = meta.quality,
+            status = status,
+            progress = if (status == DownloadStatus.COMPLETED) 1f else (percentDownloaded.takeIf { it >= 0 } ?: 0f) / 100f,
+            error = if (status == DownloadStatus.FAILED) "No se pudo descargar. Toca para reintentar." else null,
+        )
     }
 
-    fun isDownloaded(animeId: Int, episode: Int): Boolean = get(animeId, episode) != null
+    fun get(animeId: Int, episode: Int): DownloadedEpisode? = _downloads.value.firstOrNull { it.id == "$animeId:$episode" }
 
-    fun isDownloading(animeId: Int, episode: Int): Boolean {
-        val key = "$animeId:$episode"
-        return _downloads.value.any { it.id == key && (it.status == DownloadStatus.DOWNLOADING || it.status == DownloadStatus.QUEUED) }
-    }
+    fun isDownloaded(animeId: Int, episode: Int): Boolean = get(animeId, episode)?.status == DownloadStatus.COMPLETED
 
+    fun isDownloading(animeId: Int, episode: Int): Boolean =
+        get(animeId, episode)?.status.let { it != null && it != DownloadStatus.COMPLETED && it != DownloadStatus.FAILED }
+
+    /**
+     * Pide el enlace del episodio (igual que el reproductor), elige la calidad de tus ajustes
+     * y se lo pasa al servicio de descargas. También guarda los subtítulos externos.
+     */
     fun startDownload(
         animeId: Int,
         episode: Int,
         animeTitle: String,
         coverUrl: String?,
         audio: String = "sub",
+        bannerUrl: String? = null,
+        totalEpisodes: Int? = null,
     ) {
-        val key = "$animeId:$episode"
-        val existing = get(animeId, episode)
-        if (existing != null) return
-
-        val targetFile = File(downloadDir, "kaze_${animeId}_ep_${episode}_${audio}.mp4")
-        val item = DownloadedEpisode(
-            id = key,
-            animeId = animeId,
-            episode = episode,
-            title = "Episodio $episode",
-            animeTitle = animeTitle,
-            coverUrl = coverUrl,
-            filePath = targetFile.absolutePath,
-            audioOption = audio,
-            status = DownloadStatus.QUEUED,
-            progress = 0f,
-        )
-
-        _downloads.update { current -> current.filterNot { it.id == key } + item }
-        saveIndex()
-
+        val id = "$animeId:$episode"
+        get(animeId, episode)?.let { if (it.status != DownloadStatus.FAILED) return }
         scope.launch {
+            val quality = runCatching { prefs.prefs.first().downloadQuality }.getOrDefault(720)
+            val placeholder = DownloadedEpisode(
+                id = id, animeId = animeId, episode = episode, title = "Episodio $episode", animeTitle = animeTitle,
+                coverUrl = coverUrl, bannerUrl = bannerUrl, totalEpisodes = totalEpisodes, audioOption = audio, quality = quality,
+                status = DownloadStatus.QUEUED, progress = 0f,
+            )
+            failedPrepare.value = failedPrepare.value - id
+            preparing.value = preparing.value + (id to placeholder)
+            refresh()
             try {
-                _downloads.update { list ->
-                    list.map { if (it.id == key) it.copy(status = DownloadStatus.DOWNLOADING) else it }
+                val src = when (val r = provider.resolve(animeId, episode, animeTitle, preferredAudio = audio)) {
+                    is Outcome.Success -> r.value
+                    is Outcome.Failure -> throw IOException(r.error.userMessage)
                 }
-
-                // 1. Resolve direct downloadable stream from Orunei
-                val sessionEndpoint = "https://www.orunei.sbs/api/playback/session"
-                val payload = DownloadSessionPayload(
-                    seriesId = animeId.toString(),
-                    episodeId = episode.toString(),
-                    preferredAudio = audio,
-                    codecPreference = "h264",
-                )
-                val body = json.encodeToString(DownloadSessionPayload.serializer(), payload)
-                val sessionReq = Request.Builder()
-                    .url(sessionEndpoint)
-                    .post(body.toRequestBody("application/json; charset=utf-8".toMediaType()))
-                    .header("Accept", "application/json")
+                if (src.demoNotice != null || src.uri.startsWith("file:")) throw IOException("Este episodio no está disponible para descargar.")
+                val subs = withContext(Dispatchers.IO) { saveSubtitles(id, src.subtitles) }
+                val meta = DownloadMeta(animeId, episode, animeTitle, coverUrl, bannerUrl, totalEpisodes, audio, quality, src.mimeType, subs)
+                val item = MediaItem.Builder().setUri(src.uri).setMimeType(src.mimeType).setMediaId(id).build()
+                val params = DownloadHelper.getDefaultTrackSelectorParameters(context).buildUpon()
+                    .setMaxVideoSize(Int.MAX_VALUE, quality)
+                    .setForceHighestSupportedBitrate(true)
                     .build()
-
-                val sessionRes = http.newCall(sessionReq).await()
-                val sessionText = sessionRes.body?.string().orEmpty()
-                val grant = json.decodeFromString(DownloadSessionResponse.serializer(), sessionText).grant
-                val streamUrl = grant?.asset?.src
-
-                if (streamUrl.isNullOrBlank()) {
-                    throw IllegalStateException("No se pudo obtener el stream descargable para el episodio $episode")
+                val helper = DownloadHelper.forMediaItem(item, params, DefaultRenderersFactory(context), httpFactory)
+                val request = try {
+                    helper.prepareAwait()
+                    helper.getDownloadRequest(id, json.encodeToString(DownloadMeta.serializer(), meta).toByteArray())
+                } finally {
+                    helper.release()
                 }
-
-                // 2. Stream video file directly to disk with progress
-                val fileReq = Request.Builder().url(streamUrl).build()
-                val fileRes = http.newCall(fileReq).await()
-                val fileBody = fileRes.body ?: throw IllegalStateException("Cuerpo de descarga vacío")
-
-                val totalLength = fileBody.contentLength()
-                val inputStream = fileBody.byteStream()
-                val outputStream = FileOutputStream(targetFile)
-
-                val buffer = ByteArray(64 * 1024)
-                var bytesRead: Int
-                var totalBytesRead = 0L
-
-                inputStream.use { input ->
-                    outputStream.use { output ->
-                        while (input.read(buffer).also { bytesRead = it } != -1) {
-                            output.write(buffer, 0, bytesRead)
-                            totalBytesRead += bytesRead
-                            if (totalLength > 0) {
-                                val progress = (totalBytesRead.toFloat() / totalLength).coerceIn(0f, 1f)
-                                _downloads.update { list ->
-                                    list.map { if (it.id == key) it.copy(progress = progress) else it }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val finalSize = targetFile.length()
-                _downloads.update { list ->
-                    list.map {
-                        if (it.id == key) it.copy(
-                            status = DownloadStatus.COMPLETED,
-                            progress = 1f,
-                            fileSizeBytes = finalSize,
-                            downloadedAt = System.currentTimeMillis()
-                        ) else it
-                    }
-                }
-                saveIndex()
-                Log.i("DownloadRepository", "Descarga completada con éxito: $key ($finalSize bytes)")
-
+                DownloadService.sendAddDownload(context, KazeDownloadService::class.java, request, false)
             } catch (e: Exception) {
-                Log.e("DownloadRepository", "Error descargando episodio $key: ${e.message}", e)
-                targetFile.delete()
-                _downloads.update { list ->
-                    list.map {
-                        if (it.id == key) it.copy(status = DownloadStatus.FAILED, error = e.message ?: "Error de red") else it
-                    }
-                }
-                saveIndex()
+                Log.w("KazeDownloads", "No se pudo preparar $id: ${e.message}")
+                failedPrepare.value = failedPrepare.value + (id to placeholder.copy(status = DownloadStatus.FAILED, error = e.message ?: "No se pudo descargar."))
+            } finally {
+                preparing.value = preparing.value - id
+                refresh()
             }
         }
     }
 
-    fun deleteDownload(id: String) {
-        val item = _downloads.value.firstOrNull { it.id == id } ?: return
-        try {
-            val file = File(item.filePath)
-            if (file.exists()) file.delete()
-        } catch (e: Exception) {
-            Log.w("DownloadRepository", "Error deleting file: ${e.message}")
-        }
-        _downloads.update { list -> list.filterNot { it.id == id } }
-        saveIndex()
+    private suspend fun DownloadHelper.prepareAwait() = suspendCancellableCoroutine { cont ->
+        prepare(object : DownloadHelper.Callback {
+            override fun onPrepared(helper: DownloadHelper) { if (cont.isActive) cont.resume(Unit) }
+            override fun onPrepareError(helper: DownloadHelper, e: IOException) { if (cont.isActive) cont.resumeWithException(e) }
+        })
     }
 
-    fun totalStorageBytes(): Long =
-        _downloads.value.filter { it.status == DownloadStatus.COMPLETED }.sumOf { it.fileSizeBytes }
+    private suspend fun saveSubtitles(id: String, subs: List<SideloadedSubtitle>): List<LocalSubtitle> = subs.take(6).mapIndexedNotNull { i, s ->
+        runCatching {
+            val res = http.newCall(Request.Builder().url(s.url).build()).await()
+            res.use {
+                if (!it.isSuccessful) return@runCatching null
+                val file = File(subtitleDir, "${id.replace(':', '_')}_$i.sub")
+                file.writeBytes(it.body?.bytes() ?: return@runCatching null)
+                LocalSubtitle(file.absolutePath, s.language, s.label, s.mimeType)
+            }
+        }.getOrNull()
+    }
+
+    /** MediaItem para reproducir sin conexión (con sus subtítulos guardados), o null si no está completa. */
+    fun offlineItem(animeId: Int, episode: Int, title: String): MediaItem? {
+        val d = runCatching { manager.downloadIndex.getDownload("$animeId:$episode") }.getOrNull() ?: return null
+        if (d.state != Download.STATE_COMPLETED) return null
+        val meta = runCatching { json.decodeFromString(DownloadMeta.serializer(), String(d.request.data)) }.getOrNull()
+        return d.request.toMediaItem().buildUpon()
+            .setMimeType(meta?.mimeType ?: d.request.mimeType)
+            .setSubtitleConfigurations(meta?.subtitles.orEmpty().filter { File(it.path).exists() }.map { s ->
+                MediaItem.SubtitleConfiguration.Builder(Uri.fromFile(File(s.path))).setMimeType(s.mimeType).setLanguage(s.language).setLabel(s.label).build()
+            })
+            .build()
+    }
+
+    fun offlineAudio(animeId: Int, episode: Int): String? = get(animeId, episode)?.audioOption
+
+    fun pause(id: String) = DownloadService.sendSetStopReason(context, KazeDownloadService::class.java, id, STOP_REASON_USER, false)
+    fun resume(id: String) = DownloadService.sendSetStopReason(context, KazeDownloadService::class.java, id, Download.STOP_REASON_NONE, false)
+
+    /** Reintenta: vuelve a pedir el enlace (las firmas del servidor caducan a las 6 h). */
+    fun retry(d: DownloadedEpisode) {
+        deleteDownload(d.id)
+        startDownload(d.animeId, d.episode, d.animeTitle, d.coverUrl, d.audioOption, d.bannerUrl, d.totalEpisodes)
+    }
+
+    fun deleteDownload(id: String) {
+        failedPrepare.value = failedPrepare.value - id
+        runCatching { DownloadService.sendRemoveDownload(context, KazeDownloadService::class.java, id, false) }
+        subtitleDir.listFiles { f -> f.name.startsWith(id.replace(':', '_') + "_") }?.forEach { it.delete() }
+        refresh()
+    }
+
+    fun deleteAnime(animeId: Int) = _downloads.value.filter { it.animeId == animeId }.forEach { deleteDownload(it.id) }
+
+    fun totalStorageBytes(): Long = _downloads.value.filter { it.status == DownloadStatus.COMPLETED }.sumOf { it.fileSizeBytes }
+
+    /** Espacio libre en el almacenamiento donde se guardan las descargas. */
+    fun freeBytes(): Long = runCatching { baseDir.usableSpace }.getOrDefault(0L)
+
+    companion object {
+        const val STOP_REASON_USER = 1
+    }
 }
+

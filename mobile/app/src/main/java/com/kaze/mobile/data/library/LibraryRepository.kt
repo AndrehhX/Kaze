@@ -158,6 +158,12 @@ class LibraryRepository @Inject constructor(
         if (!current.isFavorite) log(ActivityTypes.FAVORITED, anime.id, anime.displayTitle, null)
     }
 
+    suspend fun setFavorite(animeId: Int, favorite: Boolean) {
+        val e = dao.get(animeId)?.toDomain() ?: return
+        save(e.copy(isFavorite = favorite))
+        if (favorite) log(ActivityTypes.FAVORITED, animeId, e.title, null)
+    }
+
     suspend fun remove(ids: Collection<Int>) = dao.delete(ids.toList())
 
     suspend fun reorder(orderedIds: List<Int>) = db.withTransaction {
@@ -291,13 +297,20 @@ class CollectionsRepository @Inject constructor(
 
     suspend fun delete(id: Long) = dao.deleteCollectionCascade(id)
 
-    suspend fun add(collectionId: Long, anime: Anime) =
+    suspend fun add(collectionId: Long, anime: Anime) {
         dao.insertItem(CollectionItemEntity(collectionId, anime.id, anime.displayTitle, anime.coverUrl, anime.color, dao.maxItemPosition(collectionId) + 1, clock.nowMillis()))
+        touch(collectionId)
+    }
 
-    suspend fun addEntry(collectionId: Long, entry: LibraryEntry) =
+    suspend fun addEntry(collectionId: Long, entry: LibraryEntry) {
         dao.insertItem(CollectionItemEntity(collectionId, entry.animeId, entry.title, entry.coverUrl, entry.color, dao.maxItemPosition(collectionId) + 1, clock.nowMillis()))
+        touch(collectionId)
+    }
 
-    suspend fun remove(collectionId: Long, animeId: Int) = dao.removeItem(collectionId, animeId)
+    suspend fun remove(collectionId: Long, animeId: Int) {
+        dao.removeItem(collectionId, animeId)
+        touch(collectionId)
+    }
 
     suspend fun reorderCollections(orderedIds: List<Long>) = db.withTransaction {
         val all = dao.allCollections().associateBy { it.id }
@@ -312,14 +325,23 @@ class CollectionsRepository @Inject constructor(
     private fun CollectionEntity.toDomain(items: List<CollectionItemEntity>) = AnimeCollection(
         id, name, description, isPublic, position,
         items.sortedBy { it.position }.map { CollectionItem(it.animeId, it.title, it.coverUrl, it.color, it.position) },
+        updatedAt,
     )
+
+    /** Marca la lista como cambiada (para la fecha y para que la sincronización sepa cuál es más reciente). */
+    private suspend fun touch(id: Long) {
+        dao.allCollections().firstOrNull { it.id == id }?.let { dao.upsertCollection(it.copy(updatedAt = clock.nowMillis())) }
+    }
 }
 
 @Singleton
 class ProgressRepository @Inject constructor(
     private val dao: PlaybackDao,
     private val clock: Clock,
+    @dagger.hilt.android.qualifiers.ApplicationContext context: android.content.Context,
 ) {
+    private val deletedPrefs = context.getSharedPreferences("kaze_history_deleted", android.content.Context.MODE_PRIVATE)
+
     val continueWatching: Flow<List<WatchProgress>> = dao.observeContinueWatching().map { list -> list.map { it.toDomain() } }
     val history: Flow<List<WatchProgress>> = dao.observeHistory().map { list -> list.map { it.toDomain() } }
     val totalWatchMs: Flow<Long> = dao.observeTotalWatchMs()
@@ -352,7 +374,34 @@ class ProgressRepository @Inject constructor(
         }
     }
 
-    suspend fun clear(animeId: Int) = dao.clearAnime(animeId)
+    /** El último episodio de cada anime (para "Continuar: EP 3" en Mis listas). */
+    val latestPerAnime: Flow<Map<Int, WatchProgress>> = dao.observeContinueWatching(1000).map { l -> l.associate { it.animeId to it.toDomain() } }
+
+    suspend fun clear(animeId: Int) {
+        tombstone(dao.keysForAnime(animeId))
+        dao.clearAnime(animeId)
+    }
+
+    /** Borra episodios del historial (también se borrarán de la web en la próxima sincronización). */
+    suspend fun delete(keys: Collection<String>) {
+        if (keys.isEmpty()) return
+        tombstone(keys)
+        dao.deleteKeys(keys.toList())
+    }
+
+    suspend fun clearAll() = delete(dao.allKeys())
+
+    private fun tombstone(keys: Collection<String>) {
+        val cur = deletedPrefs.getStringSet(KEY_DELETED, emptySet()).orEmpty()
+        deletedPrefs.edit().putStringSet(KEY_DELETED, cur + keys).apply()
+    }
+
+    /** Claves "animeId:episodio" borradas aquí que faltan borrar en la web. */
+    fun pendingDeletes(): Set<String> = deletedPrefs.getStringSet(KEY_DELETED, emptySet()).orEmpty()
+    fun clearPendingDeletes(keys: Set<String>) {
+        val cur = pendingDeletes()
+        deletedPrefs.edit().putStringSet(KEY_DELETED, cur - keys).apply()
+    }
 
     // ---------------- Sincronización con la web (`watch_progress`) ----------------
 
@@ -378,6 +427,7 @@ class ProgressRepository @Inject constructor(
 
     private companion object {
         const val MIN_RESUMABLE_MS = 10_000L
+        const val KEY_DELETED = "deleted_keys"
         const val DEFAULT_EPISODE_MS = 24 * 60_000L
     }
 

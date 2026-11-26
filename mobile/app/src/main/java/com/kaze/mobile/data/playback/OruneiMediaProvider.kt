@@ -93,7 +93,6 @@ class OruneiMediaProvider @Inject constructor(
     private val http: OkHttpClient,
     private val json: Json,
     private val demoFallback: DemoMediaProvider,
-    private val downloadRepo: DownloadRepository,
 ) : MediaProvider {
 
     override val id = "orunei-streaming"
@@ -113,29 +112,7 @@ class OruneiMediaProvider @Inject constructor(
         animeTitle: String,
         preferredAudio: String,
     ): Outcome<PlaybackSource> = withContext(Dispatchers.IO) {
-        // 1. Check if the episode is already downloaded locally
-        val downloaded = downloadRepo.get(animeId, episode)
-        if (downloaded != null) {
-            val file = File(downloaded.filePath)
-            if (file.exists() && file.length() > 0) {
-                val label = if (downloaded.audioOption == "latino") "Audio Latino (Descargado)" else "Sub Español (Descargado)"
-                return@withContext Outcome.Success(
-                    PlaybackSource(
-                        uri = Uri.fromFile(file).toString(),
-                        mimeType = MimeTypes.VIDEO_MP4,
-                        mediaTitle = label,
-                        attribution = "Reproducción local offline",
-                        entitlement = PlaybackEntitlement.Licensed("local", Long.MAX_VALUE),
-                        subtitles = emptyList(),
-                        skipMarkers = emptyList(),
-                        demoNotice = null,
-                        audioLanguage = if (downloaded.audioOption == "latino") "es-419" else "ja",
-                        isDubbedAvailable = true,
-                    )
-                )
-            }
-        }
-
+        // Las descargas se reproducen desde PlayerViewModel (DownloadRepository.offlineItem).
         // 2. Request live streaming session from Orunei
         try {
             val payload = SessionPayload(

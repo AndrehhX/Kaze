@@ -65,6 +65,7 @@ class CloudLibraryRepository @Inject constructor(
     private val library: LibraryRepository,
     private val progress: ProgressRepository,
     private val anilist: AniListRepository,
+    private val collections: CloudCollectionsSync,
     private val json: Json,
     @ApplicationContext context: Context,
 ) {
@@ -114,6 +115,8 @@ class CloudLibraryRepository @Inject constructor(
             }
             val lib = syncLibrary(me)
             val (pPull, pPush) = syncProgress(me)
+            // Listas (colecciones): un fallo aquí no debe frenar la biblioteca ni el progreso.
+            runCatching { collections.sync(me) }.onFailure { android.util.Log.w("KazeSync", "Listas: ${it.message}") }
             SyncResult(lib.first, lib.second, lib.third, pPull, pPush)
         }
     }
@@ -180,6 +183,14 @@ class CloudLibraryRepository @Inject constructor(
     }
 
     private suspend fun syncProgress(me: String): Pair<Int, Int> {
+        // Primero, lo que borraste del historial en el teléfono se borra también en la web.
+        val pendingDeletes = progress.pendingDeletes()
+        val done = mutableSetOf<String>()
+        pendingDeletes.forEach { key ->
+            val (sid, eid) = key.split(':').let { (it.getOrNull(0) ?: return@forEach) to (it.getOrNull(1) ?: return@forEach) }
+            runCatching { sb.delete("watch_progress", "user_id=eq.$me&series_id=eq.$sid&episode_id=eq.$eid") }.onSuccess { done += key }
+        }
+        progress.clearPendingDeletes(done)
         // Bajar: lo visto en la web (o en otro teléfono) aparece en "Seguir viendo".
         val rows = sb.select("watch_progress", "user_id=eq.$me&select=$PROGRESS_COLS&order=updated_at.desc&limit=300", ListSerializer(CloudProgress.serializer()))
         val entries = library.snapshot().associateBy { it.animeId }
@@ -187,6 +198,7 @@ class CloudLibraryRepository @Inject constructor(
             val id = r.seriesId.toIntOrNull() ?: return@mapNotNull null
             val ep = r.episodeId.toIntOrNull() ?: return@mapNotNull null
             if (r.durationSeconds <= 0) return@mapNotNull null
+            if ("$id:$ep" in pendingDeletes && "$id:$ep" !in done) return@mapNotNull null // borrado aquí, aún sin confirmar en la web
             Triple(id, ep, r)
         }
         val missing = parsed.map { it.first }.distinct().filter { it !in entries }.take(50)

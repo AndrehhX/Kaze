@@ -57,7 +57,7 @@ class DeepLinkRouter @Inject constructor(
     }
 
     companion object {
-        private val allowedHosts = setOf("anime", "party", "user", "notifications")
+        private val allowedHosts = setOf("anime", "party", "user", "notifications", "lists")
 
         /** Only our scheme, known hosts, and short alphanumeric path segments are accepted. */
         fun isSafeContentLink(uri: Uri): Boolean {

@@ -52,7 +52,37 @@ class LibraryViewModel @Inject constructor(
     private val repo: LibraryRepository,
     private val collectionsRepo: CollectionsRepository,
     val downloadRepo: DownloadRepository,
+    private val progressRepo: ProgressRepository,
+    private val prefsRepo: com.kaze.mobile.core.datastore.UserPreferencesRepository,
 ) : ViewModel() {
+
+    /** Último episodio visto de cada anime → "Continuar: EP 3" / "Ver de nuevo". */
+    val latest: StateFlow<Map<Int, com.kaze.mobile.domain.model.WatchProgress>> =
+        progressRepo.latestPerAnime.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+    val history: StateFlow<List<com.kaze.mobile.domain.model.WatchProgress>?> =
+        progressRepo.history.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    val prefs = prefsRepo.prefs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun setFavorite(e: LibraryEntry, v: Boolean) = viewModelScope.launch { repo.setFavorite(e.animeId, v) }
+    fun setStatusOf(e: LibraryEntry, s: LibraryStatus) = viewModelScope.launch { repo.setStatus(e.animeId, s) }
+    fun removeEntry(e: LibraryEntry) = viewModelScope.launch {
+        repo.remove(listOf(e.animeId))
+        _messages.send("Quitaste ${e.title} de Mis listas")
+    }
+    fun addToCollection(collectionId: Long, e: LibraryEntry) = viewModelScope.launch {
+        collectionsRepo.addEntry(collectionId, e)
+        _messages.send("Añadido a la lista")
+    }
+    fun createCollection(name: String, description: String, public: Boolean) = viewModelScope.launch {
+        runCatching { collectionsRepo.create(name, description, public) }.onFailure { _messages.send(it.message ?: "No se pudo crear la lista") }
+    }
+    fun updateCollection(id: Long, name: String, description: String, public: Boolean) = viewModelScope.launch { collectionsRepo.update(id, name, description, public) }
+    fun deleteCollection(id: Long) = viewModelScope.launch { collectionsRepo.delete(id) }
+    fun deleteHistory(keys: Collection<String>) = viewModelScope.launch { progressRepo.delete(keys) }
+    fun clearHistory() = viewModelScope.launch { progressRepo.clearAll() }
+    fun setWifiOnly(v: Boolean) = viewModelScope.launch { prefsRepo.setDownloadWifiOnly(v) }
+    fun setQuality(v: Int) = viewModelScope.launch { prefsRepo.setDownloadQuality(v) }
+    fun setSmartDownloads(v: Boolean) = viewModelScope.launch { prefsRepo.setSmartDownloads(v) }
 
     private val _filter = MutableStateFlow(LibraryFilter())
     val filter = _filter.asStateFlow()

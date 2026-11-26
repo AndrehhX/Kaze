@@ -4,14 +4,14 @@ import java.io.IOException
 
 /** Domain-level error taxonomy shown to users as clear messages. */
 sealed class KazeError(val userMessage: String) {
-    data object Offline : KazeError("No connection. Showing what's saved on this device.")
-    data class RateLimited(val retryAfterSeconds: Long?) : KazeError("AniList is rate-limiting requests. Trying again shortly.")
-    data class Server(val code: Int?, val detail: String?) : KazeError("The server had a problem${code?.let { " ($it)" } ?: ""}. Please try again.")
-    data object Unauthorized : KazeError("Your session expired. Please sign in again.")
-    data object NotConfigured : KazeError("This feature needs a KAZE backend. See Settings → Connected accounts.")
+    data object Offline : KazeError("Sin conexión. Te mostramos lo que hay guardado en el teléfono.")
+    data class RateLimited(val retryAfterSeconds: Long?) : KazeError("AniList recibió muchas peticiones. Lo intentamos de nuevo en un momento.")
+    data class Server(val code: Int?, val detail: String?) : KazeError("El servidor tuvo un problema${code?.let { " ($it)" } ?: ""}. Inténtalo de nuevo.")
+    data object Unauthorized : KazeError("Tu sesión caducó. Vuelve a iniciar sesión.")
+    data object NotConfigured : KazeError("Esta función necesita tu cuenta de KAZE. Ve a Ajustes → Cuenta.")
     data class Validation(val detail: String) : KazeError(detail)
-    data class NotFound(val what: String) : KazeError("$what could not be found.")
-    data class Unknown(val cause: Throwable?) : KazeError(cause?.message ?: "Unexpected error.")
+    data class NotFound(val what: String) : KazeError("No se encontró: $what.")
+    data class Unknown(val cause: Throwable?) : KazeError(cause?.message ?: "Error inesperado.")
 }
 
 class KazeException(val error: KazeError) : Exception(error.userMessage)

@@ -4,6 +4,13 @@ import android.content.Intent
 import android.view.TextureView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -203,9 +210,9 @@ fun PlayerScreen(vm: PlayerViewModel, chrome: PlayerChrome) {
                 onTextureView = { textureView = it },
             )
             if (!chrome.isInPip) {
-                if (ui.buffering && ui.error == null) KazeSpinner(Modifier.align(Alignment.Center).size(44.dp), color = Color.White)
+                if (ui.buffering && ui.error == null) KazeSpinner(Modifier.align(Alignment.Center).size(44.dp), color = Kaze.colors.primary)
                 doubleTapFlash?.let { side ->
-                    Box(Modifier.align(if (side == TapSide.LEFT) Alignment.CenterStart else Alignment.CenterEnd).padding(32.dp).size(76.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
+                    Box(Modifier.align(if (side == TapSide.LEFT) Alignment.CenterStart else Alignment.CenterEnd).padding(32.dp).size(76.dp).clip(CircleShape).background(Kaze.colors.primary.copy(alpha = 0.3f)), contentAlignment = Alignment.Center) {
                         Text(if (side == TapSide.LEFT) "−10 s" else "+10 s", color = Color.White, style = Kaze.type.titleSmall)
                     }
                 }
@@ -253,12 +260,51 @@ fun PlayerScreen(vm: PlayerViewModel, chrome: PlayerChrome) {
     if (showSettings) PlayerSettingsSheet(ui, vm, showStats, { showStats = it }, onDismiss = { showSettings = false })
 }
 
+/**
+ * Botones centrales con el diseño de KAZE: toman el color del tema (morado, rosa, celeste o beige),
+ * brillan suave y al tocarlos se encogen y sueltan un destello del color del tema.
+ * En Zen Studio (editorial) van planos, sin brillo, como el resto de ese tema.
+ */
+@Composable
+private fun ThemedControl(icon: ImageVector, label: String, onClick: () -> Unit, main: Boolean, size: Dp) {
+    val c = Kaze.colors
+    val flat = Kaze.style.ornament == com.kaze.mobile.core.designsystem.theme.Ornament.EDITORIAL
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed && !Kaze.reducedMotion) 0.88f else 1f, spring(dampingRatio = 0.5f, stiffness = 600f), label = "press")
+    val glow by animateFloatAsState(if (pressed) 1f else 0f, tween(if (pressed) 90 else 420), label = "glow")
+    Box(
+        Modifier.size(size + 16.dp).graphicsLayer { scaleX = scale; scaleY = scale },
+        contentAlignment = Alignment.Center,
+    ) {
+        // Destello al tocar
+        if (!flat) Box(Modifier.size(size + 16.dp * glow).clip(CircleShape).background(c.primary.copy(alpha = 0.35f * glow)))
+        Box(
+            Modifier.size(size)
+                .then(if (main && !flat) Modifier.shadow(16.dp, CircleShape, ambientColor = c.primary, spotColor = c.accent) else Modifier)
+                .clip(CircleShape)
+                .background(
+                    when {
+                        main && flat -> SolidColor(c.primary)
+                        main -> Brush.linearGradient(listOf(c.primary, c.accent))
+                        else -> SolidColor(Color.Black.copy(alpha = 0.35f))
+                    },
+                )
+                .then(if (!main) Modifier.border(1.5.dp, c.primary.copy(alpha = 0.75f), CircleShape) else Modifier)
+                .clickable(interaction, ripple(color = if (main) c.onPrimary else c.primary), role = Role.Button, onClickLabel = label, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, contentDescription = label, tint = if (main) c.onPrimary else Color.White, modifier = Modifier.size(size * 0.56f))
+        }
+    }
+}
+
 /** Icono del reproductor: blanco, sin fondo, con área táctil de 44 dp (como Crunchyroll). */
 @Composable
 private fun PlayerIcon(icon: ImageVector, label: String, onClick: () -> Unit, iconSize: Dp = 24.dp, touch: Dp = 44.dp, enabled: Boolean = true) {
     Box(
         Modifier.size(touch).clip(CircleShape)
-            .clickable(remember { MutableInteractionSource() }, ripple(bounded = false, radius = touch / 2), enabled = enabled, role = Role.Button, onClickLabel = label, onClick = onClick),
+            .clickable(remember { MutableInteractionSource() }, ripple(bounded = false, radius = touch / 2, color = Kaze.colors.primary), enabled = enabled, role = Role.Button, onClickLabel = label, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, contentDescription = label, tint = Color.White.copy(alpha = if (enabled) 1f else 0.35f), modifier = Modifier.size(iconSize))
@@ -289,10 +335,10 @@ private fun Controls(ui: PlayerUi, vm: PlayerViewModel, chrome: PlayerChrome, im
             PlayerIcon(if (chrome.isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen, if (chrome.isFullscreen) "Salir de pantalla completa" else "Pantalla completa", chrome.onToggleFullscreen, iconSize = 26.dp)
         }
         // Centro: solo -10 / reproducir / +10, sin círculos de color.
-        Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (immersive) 64.dp else 40.dp)) {
-            PlayerIcon(Icons.Filled.Replay10, "Retroceder 10 segundos", { vm.seekBy(-10_000) }, iconSize = 34.dp, touch = 56.dp)
-            PlayerIcon(if (ui.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (ui.isPlaying) "Pausar" else "Reproducir", vm::togglePlay, iconSize = 52.dp, touch = 68.dp)
-            PlayerIcon(Icons.Filled.Forward10, "Adelantar 10 segundos", { vm.seekBy(10_000) }, iconSize = 34.dp, touch = 56.dp)
+        Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (immersive) 48.dp else 22.dp)) {
+            ThemedControl(Icons.Filled.Replay10, "Retroceder 10 segundos", { vm.seekBy(-10_000) }, main = false, size = 46.dp)
+            ThemedControl(if (ui.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (ui.isPlaying) "Pausar" else "Reproducir", vm::togglePlay, main = true, size = if (immersive) 66.dp else 58.dp)
+            ThemedControl(Icons.Filled.Forward10, "Adelantar 10 segundos", { vm.seekBy(10_000) }, main = false, size = 46.dp)
         }
         // Abajo: tiempo a los lados y una barra fina.
         Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = if (immersive) 24.dp else 0.dp).padding(bottom = if (immersive) 14.dp else 0.dp)) {
@@ -352,7 +398,7 @@ private fun SkipButton(text: String, onClick: () -> Unit, modifier: Modifier) {
     Text(
         text, color = Color.White, style = Kaze.type.label,
         modifier = modifier.clip(RoundedCornerShape(6.dp)).background(Color.Black.copy(alpha = 0.55f))
-            .border(1.dp, Color.White.copy(alpha = 0.7f), RoundedCornerShape(6.dp))
+            .border(1.dp, Kaze.colors.primary, RoundedCornerShape(6.dp))
             .clickable(role = Role.Button, onClick = onClick).padding(horizontal = 14.dp, vertical = 8.dp),
     )
 }

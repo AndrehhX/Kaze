@@ -135,11 +135,12 @@ fun KazeAppShell(
                                 onDna = { nav.navigate(DnaRoute) },
                             )
                         }
-                        screen<LibraryRoute> {
+                        screen<LibraryRoute>(deepLinks = listOf(navDeepLink<LibraryRoute>(basePath = "kaze://lists"))) { entry ->
                             LibraryScreen(
+                                initialTab = entry.toRoute<LibraryRoute>().tab,
                                 columns = columns, onOpen = openId,
-                                onCollections = { nav.navigate(CollectionsRoute) }, onDna = { nav.navigate(DnaRoute) },
-                                onHistory = { nav.navigate(HistoryRoute) }, onSync = { nav.navigate(ConnectedAccountsRoute) },
+                                onOpenCollection = { nav.navigate(CollectionRoute(it)) }, onDna = { nav.navigate(DnaRoute) },
+                                onSync = { nav.navigate(ConnectedAccountsRoute) },
                                 onBrowse = { goTop(TopLevel.DISCOVER) },
                             )
                         }
