@@ -91,7 +91,7 @@ fun SettingsScreen(
                 KazeButton("Allow notifications", { permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }, kind = KazeButtonKind.Secondary)
             }
         }
-        ToggleRow("New episodes", "For anime you're watching (AniList airing schedule)", prefs.notifyEpisodes, vm::setNotifyEpisodes)
+        ToggleRow("Episodios nuevos", "Te avisa cuando sale un capítulo de lo que estás viendo", prefs.notifyEpisodes, vm::setNotifyEpisodes)
         ToggleRow("Friends & replies", "Requests, accepted requests, replies, reactions", prefs.notifySocial, vm::setNotifySocial)
         ToggleRow("Invitaciones a salas compartidas", null, prefs.notifyParties, vm::setNotifyParties)
 

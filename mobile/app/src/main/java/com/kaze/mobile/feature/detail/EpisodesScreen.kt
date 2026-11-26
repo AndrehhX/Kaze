@@ -1,7 +1,9 @@
 package com.kaze.mobile.feature.detail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,13 +21,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
@@ -73,7 +82,7 @@ class EpisodesViewModel @Inject constructor(
     savedState: SavedStateHandle,
     anilist: AniListRepository,
     private val library: LibraryRepository,
-    progressRepo: ProgressRepository,
+    private val progressRepo: ProgressRepository,
     val downloadRepo: com.kaze.mobile.data.playback.DownloadRepository,
 ) : ViewModel() {
     val id = savedState.toRoute<EpisodesRoute>().id
@@ -93,10 +102,22 @@ class EpisodesViewModel @Inject constructor(
         )
     }
 
-    fun markWatchedThrough(ep: Int) = viewModelScope.launch {
+    /** Como el menú de Crunchyroll: marca este episodio (y el progreso de la serie hasta él). */
+    fun markWatched(ep: Int) = viewModelScope.launch {
         val a = detail.value.data?.anime ?: return@launch
+        progressRepo.setEpisodeWatched(a.id, ep, a.displayTitle, a.coverUrl, a.bannerUrl, watched = true)
+        // "Hasta aquí": los anteriores que desmarcaste a mano también vuelven a contar como vistos.
+        progress.value.filter { it.episode < ep && !it.completed && it.positionMs == 0L }
+            .forEach { progressRepo.setEpisodeWatched(a.id, it.episode, a.displayTitle, a.coverUrl, a.bannerUrl, watched = true) }
         if (entry.value == null) library.addOrUpdate(a, LibraryStatus.WATCHING)
-        library.setProgress(id, ep)
+        if ((entry.value?.progress ?: 0) < ep) library.setProgress(id, ep)
+    }
+
+    fun markUnwatched(ep: Int) = viewModelScope.launch {
+        val a = detail.value.data?.anime ?: return@launch
+        progressRepo.setEpisodeWatched(a.id, ep, a.displayTitle, a.coverUrl, a.bannerUrl, watched = false)
+        // El progreso de la serie solo baja si desmarcas el último visto.
+        if ((entry.value?.progress ?: 0) == ep) library.setProgress(id, ep - 1)
     }
 }
 
@@ -104,6 +125,7 @@ class EpisodesViewModel @Inject constructor(
  * Episode list. Titles/thumbnails come only from AniList's official streaming listings when present.
  * KAZE's in-app player plays an authorized open-movie demo stream and says so on every row.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EpisodesScreen(onBack: () -> Unit, vm: EpisodesViewModel = hiltViewModel()) {
     val state by vm.detail.collectAsStateWithLifecycle()
@@ -155,38 +177,48 @@ fun EpisodesScreen(onBack: () -> Unit, vm: EpisodesViewModel = hiltViewModel()) 
                     val animeDownloads = downloads.filter { it.animeId == a.id }.associateBy { it.episode }
                     items((1..known).toList(), key = { it }) { ep ->
                         val p = byEpisode[ep]
-                        val watched = (entry?.progress ?: 0) >= ep
+                        val watched = if (p != null) p.completed else (entry?.progress ?: 0) >= ep
+                        var menuOpen by remember { mutableStateOf(false) }
                         val off = official[ep]
                         val dl = animeDownloads[ep]
                         val isDownloaded = dl?.status == com.kaze.mobile.data.playback.DownloadStatus.COMPLETED
                         val isDownloading = dl?.status == com.kaze.mobile.data.playback.DownloadStatus.DOWNLOADING
                         Row(
                             Modifier.fillMaxWidth()
-                                .clickable(role = Role.Button, onClickLabel = "Reproducir episodio $ep") {
+                                .combinedClickable(
+                                    role = Role.Button,
+                                    onClickLabel = "Reproducir episodio $ep",
+                                    onLongClickLabel = "Opciones del episodio $ep",
+                                    onLongClick = { menuOpen = true },
+                                ) {
                                     PlayerLauncher.launch(context, PlaybackRequest(a.id, ep, a.displayTitle, a.coverUrl, a.bannerUrl, a.episodes))
                                 }
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Box(Modifier.width(132.dp).aspectRatio(16f / 9f).clip(Kaze.style.cardShape).background(c.surfaceHigh)) {
-                                AnimeImage(off?.thumbnail ?: a.bannerUrl ?: a.coverUrl, null, Modifier.fillMaxSize(), placeholderColor = parseHexColor(a.color))
+                                AnimeImage(off?.thumbnail ?: a.bannerUrl ?: a.coverUrl, null, Modifier.fillMaxSize().alpha(if (watched) 0.55f else 1f), placeholderColor = parseHexColor(a.color))
                                 Pill("EP $ep", Modifier.align(Alignment.TopStart).padding(4.dp), overImage = true)
-                                p?.let { ProgressLine(it.fraction, Modifier.align(Alignment.BottomCenter)) }
+                                if (watched) Pill("Visto", Modifier.align(Alignment.BottomEnd).padding(4.dp), overImage = true)
+                                when {
+                                    watched -> ProgressLine(1f, Modifier.align(Alignment.BottomCenter))
+                                    p != null && p.positionMs > 0 -> ProgressLine(p.fraction, Modifier.align(Alignment.BottomCenter))
+                                }
                             }
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(off?.title ?: "Episodio $ep", style = Kaze.type.titleSmall, color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                 Text(
                                     when {
-                                        p?.completed == true -> "Episodio visto"
-                                        p != null -> "Episodio · ${(p.fraction * 100).toInt()}% visto"
+                                        watched -> "Visto"
+                                        p != null && p.positionMs > 0 -> "Te quedan ${((p.durationMs - p.positionMs).coerceAtLeast(0) / 60_000).coerceAtLeast(1)} min"
                                         else -> "Disponible"
                                     },
-                                    style = Kaze.type.bodySmall, color = c.textMuted,
+                                    style = Kaze.type.bodySmall, color = if (watched) c.success else c.textMuted,
                                 )
                                 if (off != null) Text(
-                                    "Official: ${off.site}", style = Kaze.type.bodySmall, color = c.primary,
-                                    modifier = Modifier.clickable(role = Role.Button, onClickLabel = "Open on ${off.site}") { context.openExternalUrl(off.url) },
+                                    "Oficial en ${off.site}", style = Kaze.type.bodySmall, color = c.primary,
+                                    modifier = Modifier.clickable(role = Role.Button, onClickLabel = "Abrir en ${off.site}") { context.openExternalUrl(off.url) },
                                 )
                             }
                             KazeIconButton(
@@ -207,12 +239,20 @@ fun EpisodesScreen(onBack: () -> Unit, vm: EpisodesViewModel = hiltViewModel()) 
                                     else -> c.textMuted
                                 }
                             )
-                            KazeIconButton(
-                                if (watched) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
-                                if (watched) "Episodio $ep visto. Ajustar progreso al episodio ${ep - 1}" else "Marcar como visto hasta el episodio $ep",
-                                { vm.markWatchedThrough(if (watched) ep - 1 else ep) },
-                                tint = if (watched) c.success else c.textMuted,
-                            )
+                            Box {
+                                KazeIconButton(Icons.Filled.MoreVert, "Opciones del episodio $ep", { menuOpen = true }, tint = c.textMuted)
+                                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                    if (watched) DropdownMenuItem(
+                                        text = { Text("Marcar como no visto") },
+                                        leadingIcon = { Icon(Icons.Filled.RadioButtonUnchecked, null) },
+                                        onClick = { menuOpen = false; vm.markUnwatched(ep) },
+                                    ) else DropdownMenuItem(
+                                        text = { Text(if (ep > 1) "Marcar visto hasta aquí" else "Marcar como visto") },
+                                        leadingIcon = { Icon(Icons.Filled.CheckCircle, null) },
+                                        onClick = { menuOpen = false; vm.markWatched(ep) },
+                                    )
+                                }
+                            }
                         }
                     }
                     val sequel = d.relations.firstOrNull { it.type.equals("SEQUEL", ignoreCase = true) }?.anime

@@ -28,6 +28,16 @@ object PlayerLauncher {
     const val EXTRA_BANNER = "banner"
     const val EXTRA_TOTAL = "total"
 
+    /** Intent del reproductor (también lo usan los avisos de episodios nuevos). */
+    fun intentFor(context: Context, request: PlaybackRequest): Intent = Intent(context, PlayerActivity::class.java).apply {
+        putExtra(EXTRA_ANIME_ID, request.animeId)
+        putExtra(EXTRA_EPISODE, request.episode)
+        putExtra(EXTRA_TITLE, request.title)
+        putExtra(EXTRA_COVER, request.coverUrl)
+        putExtra(EXTRA_BANNER, request.bannerUrl)
+        putExtra(EXTRA_TOTAL, request.totalEpisodes ?: -1)
+    }
+
     fun launch(context: Context, request: PlaybackRequest) {
         val intent = Intent(context, PlayerActivity::class.java).apply {
             putExtra(EXTRA_ANIME_ID, request.animeId)

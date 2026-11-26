@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -28,6 +29,13 @@ import com.kaze.mobile.data.anilist.AniListRepository
 import com.kaze.mobile.data.backend.SocialRepository
 import com.kaze.mobile.data.library.LibraryRepository
 import com.kaze.mobile.domain.model.LibraryStatus
+import com.kaze.mobile.feature.player.PlaybackRequest
+import com.kaze.mobile.feature.player.PlayerLauncher
+import coil3.SingletonImageLoader
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
+import coil3.toBitmap
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -60,15 +68,16 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
 
     /** Posts a deep-linked notification; [deepLink] must be a kaze:// content link. */
     @android.annotation.SuppressLint("MissingPermission") // guarded by canPost(), which checks POST_NOTIFICATIONS
-    fun post(channel: KazeChannel, id: Int, title: String, text: String, deepLink: String) {
+    fun post(channel: KazeChannel, id: Int, title: String, text: String, deepLink: String, target: Intent? = null, largeIcon: Bitmap? = null) {
         if (!canPost()) return
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(deepLink), context, MainActivity::class.java)
+        val intent = (target ?: Intent(Intent.ACTION_VIEW, Uri.parse(deepLink), context, MainActivity::class.java))
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val pi = PendingIntent.getActivity(context, id, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val n = NotificationCompat.Builder(context, channel.id)
             .setSmallIcon(R.drawable.ic_stat_kaze)
             .setContentTitle(title)
             .setContentText(text)
+            .setLargeIcon(largeIcon)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setContentIntent(pi)
             .setAutoCancel(true)
@@ -112,11 +121,24 @@ class KazeRefreshWorker @AssistedInject constructor(
         val lastSec = store.getLong("last_check", nowSec - 3600).coerceAtLeast(nowSec - 2 * 86_400)
 
         if (p.notifyEpisodes) {
+            // Lo que estás viendo (la app lo agrega sola a "Viendo" al terminar un episodio).
             val watching = library.snapshot().filter { it.status == LibraryStatus.WATCHING || it.status == LibraryStatus.REWATCHING }
-            val r = anilist.airingFor(watching.map { it.animeId }, lastSec, nowSec)
-            if (r is Outcome.Success) r.value.forEach { slot ->
-                notifier.post(KazeChannel.EPISODES, (slot.anime.id * 1000 + slot.episode), "${slot.anime.displayTitle} · Episode ${slot.episode}", "A new episode just aired. Watch it on an official service.", "kaze://anime/${slot.anime.id}")
-            }
+            val progressById = watching.associate { it.animeId to it.progress }
+            // Margen para que el episodio ya esté en el servidor cuando llegue el aviso.
+            val r = anilist.airingFor(watching.map { it.animeId }, lastSec - SOURCE_DELAY_SEC, nowSec - SOURCE_DELAY_SEC)
+            if (r is Outcome.Success) r.value
+                // Solo si vas al día (viste el anterior): como Crunchyroll, "ya salió el siguiente".
+                .filter { slot -> (progressById[slot.anime.id] ?: 0) >= slot.episode - 1 }
+                .forEach { slot ->
+                    val a = slot.anime
+                    val target = PlayerLauncher.intentFor(applicationContext, PlaybackRequest(a.id, slot.episode, a.displayTitle, a.coverUrl, a.bannerUrl, a.episodes))
+                    notifier.post(
+                        KazeChannel.EPISODES, a.id * 1000 + slot.episode,
+                        "Nuevo episodio · ${a.displayTitle}",
+                        "El EP ${slot.episode} ya está disponible. ¡Míralo ahora!",
+                        "kaze://anime/${a.id}", target, cover(a.coverUrl),
+                    )
+                }
             else if (r is Outcome.Failure) return Result.retry()
         }
         if (social.isAvailable && (p.notifySocial || p.notifyParties)) {
@@ -125,7 +147,7 @@ class KazeRefreshWorker @AssistedInject constructor(
                 val isParty = n.type == "party_invite"
                 if ((isParty && p.notifyParties) || (!isParty && p.notifySocial)) {
                     val link = if (isParty && n.entityId != null) "kaze://party/${n.entityId}" else "kaze://notifications"
-                    notifier.post(if (isParty) KazeChannel.PARTIES else KazeChannel.SOCIAL, n.id.hashCode(), n.title, n.body.ifBlank { "Open KAZE to see more." }, link)
+                    notifier.post(if (isParty) KazeChannel.PARTIES else KazeChannel.SOCIAL, n.id.hashCode(), n.title, n.body.ifBlank { "Abre KAZE para ver más." }, link)
                 }
             }
         }
@@ -133,7 +155,14 @@ class KazeRefreshWorker @AssistedInject constructor(
         return Result.success()
     }
 
+    private suspend fun cover(url: String?): Bitmap? = if (url == null) null else runCatching {
+        val req = ImageRequest.Builder(applicationContext).data(url).size(256).allowHardware(false).build()
+        (SingletonImageLoader.get(applicationContext).execute(req) as? SuccessResult)?.image?.toBitmap()
+    }.getOrNull()
+
     companion object {
+        private const val SOURCE_DELAY_SEC = 20 * 60L
+
         fun schedule(context: Context) {
             val req = PeriodicWorkRequestBuilder<KazeRefreshWorker>(1, TimeUnit.HOURS)
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).setRequiresBatteryNotLow(true).build())

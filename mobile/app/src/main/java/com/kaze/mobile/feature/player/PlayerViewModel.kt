@@ -308,7 +308,7 @@ class PlayerViewModel @Inject constructor(
             progressRepo.save(r.animeId, r.episode, r.title, r.coverUrl, r.bannerUrl, pos, dur)
             if (!markedEpisodeWatched && pos >= dur * 0.92) {
                 markedEpisodeWatched = true
-                library.entry(r.animeId).first()?.let { e -> if (e.progress < r.episode) library.setProgress(r.animeId, r.episode) }
+                library.recordEpisodeWatched(r.animeId, r.episode, r.title, r.coverUrl, r.bannerUrl, r.totalEpisodes)
             }
         }
     }

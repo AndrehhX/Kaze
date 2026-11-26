@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -42,6 +41,7 @@ import com.kaze.mobile.core.designsystem.components.KazeButton
 import com.kaze.mobile.core.designsystem.components.KazeButtonKind
 import com.kaze.mobile.core.designsystem.components.KazeChip
 import com.kaze.mobile.core.designsystem.components.KazeIconButton
+import com.kaze.mobile.core.designsystem.components.ProgressLine
 import com.kaze.mobile.core.designsystem.theme.Kaze
 import com.kaze.mobile.domain.model.Anime
 import com.kaze.mobile.domain.model.AnimeCollection
@@ -83,16 +83,14 @@ fun LibrarySheet(
             }
             val total = anime.episodes
             Text("Progreso", style = Kaze.type.title, color = c.text)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val p = entry?.progress ?: 0
-                KazeIconButton(Icons.Filled.Remove, "Un episodio menos", { onProgress(p - 1) }, enabled = p > 0, background = c.surfaceHigh)
-                Text(
-                    "Episodio $p" + (total?.let { " de $it" } ?: ""),
-                    style = Kaze.type.title, color = c.text,
-                    modifier = Modifier.weight(1f).padding(horizontal = 12.dp).semantics { stateDescription = "Episodio $p" },
-                )
-                KazeIconButton(Icons.Filled.Add, "Un episodio más", { onProgress(p + 1) }, enabled = total == null || p < total, background = c.primary.copy(alpha = 0.2f))
-            }
+            val p = entry?.progress ?: 0
+            Text(
+                if (p == 0) "Aún no has visto ningún episodio" else "Viste hasta el episodio $p" + (total?.let { " de $it" } ?: ""),
+                style = Kaze.type.body, color = c.text,
+                modifier = Modifier.semantics { stateDescription = "Episodio $p" },
+            )
+            if (total != null && total > 0) ProgressLine(p.toFloat() / total)
+            Text("Se actualiza solo al terminar cada episodio. Para corregirlo, mantén presionado un episodio en la lista.", style = Kaze.type.bodySmall, color = c.textMuted)
             if (total != null && total > 1) KazeButton("Marcar los $total como vistos", { onProgress(total) }, kind = KazeButtonKind.Ghost)
 
             Text("Tu calificación: ${if (score <= 0f) "sin calificar" else "${score.roundToInt()}/100"}", style = Kaze.type.title, color = c.text)

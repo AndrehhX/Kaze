@@ -1,4 +1,4 @@
-import java.util.Properties
+﻿import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -26,8 +26,8 @@ android {
         applicationId = "com.kaze.mobile"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
 
@@ -36,9 +36,9 @@ android {
         buildConfigField("String", "ANILIST_CLIENT_ID", "\"${localValue("ANILIST_CLIENT_ID")}\"")
     }
 
-    // Firma de la versión que se publica. La llave vive fuera del repo; su ruta y claves van en
+    // Firma de la versiÃ³n que se publica. La llave vive fuera del repo; su ruta y claves van en
     // local.properties (KAZE_KEYSTORE, KAZE_KEYSTORE_PASSWORD, KAZE_KEY_ALIAS, KAZE_KEY_PASSWORD).
-    // Debe ser SIEMPRE la misma llave: si cambia, los usuarios tendrían que desinstalar la app.
+    // Debe ser SIEMPRE la misma llave: si cambia, los usuarios tendrÃ­an que desinstalar la app.
     signingConfigs {
         create("release") {
             val path = localValue("KAZE_KEYSTORE")
@@ -100,8 +100,8 @@ ksp {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
-    // Instala los perfiles de arranque de Compose/AndroidX también en APKs instaladas fuera de Play:
-    // la app arranca y hace scroll más rápido desde la primera vez.
+    // Instala los perfiles de arranque de Compose/AndroidX tambiÃ©n en APKs instaladas fuera de Play:
+    // la app arranca y hace scroll mÃ¡s rÃ¡pido desde la primera vez.
     implementation("androidx.profileinstaller:profileinstaller:1.4.1")
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)

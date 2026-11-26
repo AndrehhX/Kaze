@@ -116,8 +116,25 @@ class LibraryRepository @Inject constructor(
             next = applyStatus(next, LibraryStatus.WATCHING, clock.nowMillis())
         }
         save(next)
-        if (!completed && p > e.progress) log(ActivityTypes.PROGRESS, animeId, e.title, "Episode $p")
+        if (!completed && p > e.progress) log(ActivityTypes.PROGRESS, animeId, e.title, "Episodio $p")
         return completed
+    }
+
+    /**
+     * Al terminar un episodio (como Crunchyroll): si el anime no está en la biblioteca se agrega
+     * solo como "Viendo"; el progreso sube hasta ese episodio (nunca baja). Devuelve true si completó la serie.
+     */
+    suspend fun recordEpisodeWatched(animeId: Int, episode: Int, title: String, cover: String?, banner: String?, totalEpisodes: Int?): Boolean {
+        val now = clock.nowMillis()
+        val existing = dao.get(animeId)?.toDomain()
+        if (existing == null) {
+            save(applyStatus(LibraryEntry(animeId = animeId, title = title, coverUrl = cover, bannerUrl = banner, totalEpisodes = totalEpisodes, addedAt = now), LibraryStatus.WATCHING, now))
+            log(ActivityTypes.ADDED, animeId, title, LibraryStatus.WATCHING.label)
+        } else if (existing.status == LibraryStatus.PLANNING || existing.status == LibraryStatus.PAUSED || existing.status == LibraryStatus.DROPPED) {
+            save(applyStatus(existing.copy(totalEpisodes = existing.totalEpisodes ?: totalEpisodes), LibraryStatus.WATCHING, now))
+        }
+        val current = dao.get(animeId)?.toDomain() ?: return false
+        return if (current.progress < episode) setProgress(animeId, episode) else false
     }
 
     suspend fun setScore(animeId: Int, score: Int?) {
@@ -319,6 +336,22 @@ class ProgressRepository @Inject constructor(
         dao.upsert(PlaybackProgressEntity("$animeId:$episode", animeId, episode, title, cover, banner, positionMs, durationMs, completed, clock.nowMillis()))
     }
 
+    /** "Marcar como visto / no visto" desde la lista de episodios (también se sincroniza con la web). */
+    suspend fun setEpisodeWatched(animeId: Int, episode: Int, title: String, cover: String?, banner: String?, watched: Boolean) {
+        val local = dao.get("$animeId:$episode")
+        val now = clock.nowMillis()
+        if (watched) {
+            if (local?.completed == true) return
+            val dur = local?.durationMs?.takeIf { it > 0 } ?: DEFAULT_EPISODE_MS
+            dao.upsert(PlaybackProgressEntity("$animeId:$episode", animeId, episode, local?.animeTitle ?: title, local?.coverUrl ?: cover, local?.bannerUrl ?: banner, dur, dur, true, now))
+        } else if (local != null) {
+            if (local.completed || local.positionMs > 0) dao.upsert(local.copy(positionMs = 0, completed = false, updatedAt = now))
+        } else {
+            // Sin fila: se guarda "no visto" explícito para que no cuente aunque el progreso de la serie sea mayor.
+            dao.upsert(PlaybackProgressEntity("$animeId:$episode", animeId, episode, title, cover, banner, 0, DEFAULT_EPISODE_MS, false, now))
+        }
+    }
+
     suspend fun clear(animeId: Int) = dao.clearAnime(animeId)
 
     // ---------------- Sincronización con la web (`watch_progress`) ----------------
@@ -345,6 +378,7 @@ class ProgressRepository @Inject constructor(
 
     private companion object {
         const val MIN_RESUMABLE_MS = 10_000L
+        const val DEFAULT_EPISODE_MS = 24 * 60_000L
     }
 
     private fun PlaybackProgressEntity.toDomain() = WatchProgress(animeId, episode, animeTitle, coverUrl, bannerUrl, positionMs, durationMs, completed, updatedAt)

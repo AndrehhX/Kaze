@@ -159,7 +159,7 @@ fun DetailScreen(
             }
             val actions = DetailActions(
                 onWatch = onWatch,
-                watchLabel = lastWatched?.let { if (it.completed) "Ver EP ${it.episode + 1}" else "Reanudar EP ${it.episode}" } ?: "Ver EP 1",
+                watchLabel = lastWatched?.let { when { it.completed -> "Ver EP ${it.episode + 1}"; it.positionMs > 0 -> "Continuar EP ${it.episode}"; else -> "Ver EP ${it.episode}" } } ?: "Ver EP 1",
                 onLibrary = { showSheet = true },
                 onEpisodes = { onEpisodes(a.id) },
                 onShare = { share(context, detail) },
@@ -291,28 +291,28 @@ private fun DetailHeader(detail: AnimeDetail, entry: LibraryEntry?, sharedKey: S
             if (a.titleNative != null) Text(a.titleNative, style = Kaze.type.body, color = c.textMuted)
             if (a.titleEnglish != null && a.titleEnglish != a.title) Text(a.title, style = Kaze.type.bodySmall, color = c.textMuted)
             Text(
-                listOfNotNull(a.formatLabel, a.seasonLabel, a.episodes?.let { "$it episodes" }, a.duration?.let { "$it min" }, a.status?.let(::prettyEnum)).joinToString(" · "),
+                listOfNotNull(a.formatLabel, a.seasonLabel, a.episodes?.let { "$it episodios" }, a.duration?.let { "$it min" }, a.status?.let(::prettyEnum)).joinToString(" · "),
                 style = Kaze.type.bodySmall, color = c.text,
             )
             Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 KazeButton(actions.watchLabel, actions.onWatch, icon = Icons.Filled.PlayArrow, modifier = Modifier.weight(1f))
                 KazeButton(
-                    entry?.status?.label ?: "Add",
+                    entry?.status?.label ?: "Mi lista",
                     actions.onLibrary,
                     icon = if (entry != null) Icons.Filled.Check else Icons.AutoMirrored.Filled.PlaylistAdd,
                     kind = KazeButtonKind.Secondary,
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                KazeIconButton(if (entry?.isFavorite == true) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder, if (entry?.isFavorite == true) "Remove from favourites" else "Add to favourites", actions.onFavorite, tint = if (entry?.isFavorite == true) c.accent else c.text)
-                KazeIconButton(Icons.Filled.FormatListNumbered, "Episodes", actions.onEpisodes)
+                KazeIconButton(if (entry?.isFavorite == true) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder, if (entry?.isFavorite == true) "Quitar de favoritos" else "Añadir a favoritos", actions.onFavorite, tint = if (entry?.isFavorite == true) c.accent else c.text)
+                KazeIconButton(Icons.Filled.FormatListNumbered, "Episodios", actions.onEpisodes)
                 KazeIconButton(Icons.Filled.Groups, "Ver juntos en sala compartida", actions.onWatchTogether)
                 actions.onTrailer?.let { KazeIconButton(Icons.Filled.Theaters, "Ver tráiler", it) }
                 KazeIconButton(Icons.Filled.Share, "Compartir", actions.onShare)
             }
             if (entry != null && (a.episodes ?: 0) > 0) {
-                Text("Your progress: ${entry.progress} / ${a.episodes}", style = Kaze.type.bodySmall, color = c.textMuted)
+                Text("Viste ${entry.progress} de ${a.episodes} episodios", style = Kaze.type.bodySmall, color = c.textMuted)
                 ProgressLine(entry.progressFraction)
             }
         }
@@ -391,7 +391,7 @@ private fun LazyListScope.detailSections(
         }
     }
     item(key = "explore") {
-        KazeCard(Modifier.fillMaxWidth().padding(20.dp), onClick = onSimilarity, onClickLabel = "Open similarity explorer") {
+        KazeCard(Modifier.fillMaxWidth().padding(20.dp), onClick = onSimilarity, onClickLabel = "Abrir mapa de relaciones") {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 androidx.compose.material3.Icon(Icons.Filled.AccountTree, null, tint = Kaze.colors.primary)
                 Spacer(Modifier.width(12.dp))
