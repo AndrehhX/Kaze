@@ -24,7 +24,8 @@ const TZ = process.env.KAZE_TZ || "America/Mexico_City";
 const CH_ESTRENOS = process.env.CHANNEL_ESTRENOS_ID || "1573415250626089011"; // #Anime-Chat
 const CH_UPDATES = process.env.CHANNEL_UPDATES_ID || "1573415038587240468"; // #Orunei-Updates
 const CH_PARTY = process.env.CHANNEL_WATCHPARTY_ID || "1573415254350762026"; // #Watch-Party
-const ESTRENOS_HOUR = Number(process.env.ESTRENOS_HOUR ?? 9); // hora local (KAZE_TZ) del resumen diario
+const APP_VERSION_FILE = process.env.APP_VERSION_FILE || "/opt/orunei-web/shared/downloads/app-version.json";
+const ESTRENOS_HOUR =Number(process.env.ESTRENOS_HOUR ?? 9); // hora local (KAZE_TZ) del resumen diario
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const COLOR = 0xa855f7; // morado de KAZE
@@ -369,9 +370,16 @@ async function dailyEstrenos(client) {
 }
 
 async function watchApk(client) {
-  const res = await fetch(`${SITE}/app-version.json`, { signal: AbortSignal.timeout(10_000), headers: { "cache-control": "no-cache" } });
-  if (!res.ok) return;
-  const v = await res.json();
+  // Se lee el archivo directo en la VPS: Cloudflare guarda copias de /app-version.json durante horas
+  // y PanBot veía la versión vieja. Si no está (otra máquina), se pide a la web saltándose la caché.
+  let v;
+  try {
+    v = JSON.parse(fs.readFileSync(APP_VERSION_FILE, "utf8"));
+  } catch {
+    const res = await fetch(`${SITE}/app-version.json?t=${Date.now()}`, { signal: AbortSignal.timeout(10_000), headers: { "cache-control": "no-cache" } });
+    if (!res.ok) return;
+    v = await res.json();
+  }
   if (!Number.isFinite(v.versionCode)) return;
   if (state.apkVersionCode == null) {
     state.apkVersionCode = v.versionCode; // primera vez: solo recordar, no anunciar
