@@ -64,3 +64,7 @@ $code = $LASTEXITCODE
 Remove-Item $tgz -ErrorAction SilentlyContinue
 if ($code -ne 0) { throw "La activacion fallo (se restauro el release anterior si existia)." }
 Write-Host "== Deploy completado: $release"
+
+# Cloudflare guarda el HTML hasta 4 h: se purga para que se vea el release nuevo al momento.
+# Sin CLOUDFLARE_API_TOKEN solo avisa (ver deploy\cf-purge.ps1).
+& (Join-Path $PSScriptRoot "cf-purge.ps1")
