@@ -46,7 +46,7 @@ Si cambias `package.json`: `ssh vps "cd /opt/panbot && npm ci --omit=dev && pm2 
 - Antes del 24/11/2026 el token estaba escrito en el código. Hay copias de esa versión en `/opt/panbot/backup-*` (solo root). Si alguna vez se filtra, regenera el token en el portal de desarrolladores de Discord y cámbialo en `.env`.
 - **Rangos de nivel**: el rol de PanBot tiene que estar por encima de los roles "Nivel N+" (y de los de notificaciones) en Ajustes del servidor → Roles; si no, el bot no puede darlos. Revisa los rangos cada hora.
 - **Paneles**: `node panels.mjs publish roles levels` solo borra los paneles anteriores (mensajes con la cabecera `panel.gif`), nunca los avisos de nivel. El de niveles queda fijado.
-- **Chats generales**: 💬・chat-general es el público (aquí entran los nuevos, mensajes del sistema y celebraciones); 🧈・chat-og es solo para los OG.
+- **Chats generales**: 💬・chat-general es el público (aquí entran los nuevos, mensajes del sistema y celebraciones); 🧈・chat-general (antes chat-og) es el de siempre, solo para los OG, y es el único canal donde PanBot habla como "Pana".
 - **Onboarding** (al entrar por invitación, antes de ver el server): "¿Qué te trae por aquí?" (obligatoria: anime, manga, juegos, ver anime en grupo) y "¿De qué quieres que te avisemos?" (novedades, juegos gratis, anuncios, beta de la app). Cada opción da su rol.
 - **MCP de Discord**: en la VPS hay un servidor MCP (`/opt/panbot-mcp/run.sh`, `discord-mcp`) que usa el token de PanBot para que un agente de IA pueda administrar el server; sin acceso a los comandos slash para no pisar los de PanBot.
 - **Staff** (25/11/2026): 👑 Co-Owner → CriXX (dueño del server) y Andreh; 🛡️ Moderador → Denyer. Ven #Staff, #Logs y los tickets.
