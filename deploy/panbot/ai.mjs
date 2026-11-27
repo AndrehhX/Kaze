@@ -58,6 +58,8 @@ const PANA_SCHEMA = {
 let spontCount = 0;
 let spontNext = SPONT_MIN + Math.floor(Math.random() * (SPONT_MAX - SPONT_MIN + 1));
 let spontLast = 0;
+const GIF_CHANCE = 0.4, GIF_GAP_MS = 5 * 60_000;
+let lastGifAt = 0;
 
 const lastUse = new Map();
 let windowStart = Date.now(), windowCount = 0;
@@ -298,7 +300,10 @@ async function panaChat(message, direct) {
   const reply = String(out.reply || "").replace(/@(everyone|here)/g, "@​$1").trim().slice(0, 1500);
   const emoji = typeof out.react === "string" ? out.react.trim() : "";
   if (emoji && [...emoji].length <= 3) await message.react(emoji).catch(() => {});
-  const gif = await findGif(String(out.gif || "").trim());
+  // El modelo tiende a querer GIF siempre: aquí se raciona (40 % de las veces y como mucho uno cada 5 min).
+  const wantsGif = String(out.gif || "").trim() && Date.now() - lastGifAt > GIF_GAP_MS && Math.random() < GIF_CHANCE;
+  const gif = wantsGif ? await findGif(String(out.gif).trim()) : null;
+  if (gif) lastGifAt = Date.now();
   if (reply) {
     const opts = { content: reply, allowedMentions: { parse: [], repliedUser: false } };
     await (direct ? message.reply(opts) : message.channel.send(opts)).catch((e) => log("pana enviar:", e.message));
