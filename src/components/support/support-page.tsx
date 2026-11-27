@@ -81,7 +81,7 @@ export function SupportPage() {
           ))}
         </ul>
         <p className="mt-3 text-xs text-muted">
-          {pct >= 100 ? "¡Este mes ya está cubierto! Lo que sobre se guarda para los meses flojos y para mejorar el servidor." : `${s?.activeCount ?? 0} ${s?.activeCount === 1 ? "persona apoya" : "personas apoyan"} ahora mismo. Gracias de verdad.`}
+          {pct >= 100 ? "¡Este mes ya está cubierto! Lo que sobre se guarda para los meses flojos y para mejorar el servidor." : !s?.activeCount ? "Todavía nadie apoya este mes. Si te animas, tu nombre puede ser el primero del muro." : `${s.activeCount} ${s.activeCount === 1 ? "persona apoya" : "personas apoyan"} ahora mismo. Gracias de verdad.`}
         </p>
       </section>
 
