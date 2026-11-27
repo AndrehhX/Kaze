@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/stores/auth";
 import { Avatar } from "@/components/shell/user-menu";
 import { cn } from "@/lib/utils";
+import { useNow } from "@/lib/hooks";
 import { CURRENT_POLL, FOUNDER_LIMIT, KOFI_MEMBERSHIP_URL, KOFI_URL, MONTHLY_COSTS, MONTHLY_GOAL, TIERS, TIER_LEVELS, type TierLevel } from "@/lib/support/tiers";
 
 type Stats = {
@@ -44,7 +45,8 @@ export function SupportPage() {
   const goal = s?.goal ?? MONTHLY_GOAL;
   const raised = s?.raised ?? 0;
   const pct = Math.min(100, Math.round((raised / goal) * 100));
-  const month = MESES[new Date().getMonth()];
+  const now = useNow();
+  const month = now ? MESES[new Date(now).getMonth()] : "este mes";
   const tier = me.data?.activeTier ?? 0;
 
   return (

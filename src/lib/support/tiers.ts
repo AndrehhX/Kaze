@@ -166,15 +166,16 @@ export function validateEquip(next: Equipped, tier: TierLevel): string | null {
 export type SupporterPublic = { tier: number; expires_at: string | null; founder: boolean; equipped?: unknown; since?: string };
 
 /** Nivel activo ahora (0 si no apoya o ya venció). La insignia de Fundador va aparte. */
-export function activeTier(s: SupporterPublic | null | undefined, now = Date.now()): 0 | TierLevel {
+export function activeTier(s: SupporterPublic | null | undefined, now?: number): 0 | TierLevel {
   if (!s || !s.expires_at) return 0;
-  if (new Date(s.expires_at).getTime() <= now) return 0;
+  // La hora se pide solo si hay algo que comprobar (Next no deja leerla al prerenderizar).
+  if (new Date(s.expires_at).getTime() <= (now ?? Date.now())) return 0;
   const t = Math.round(s.tier);
   return t >= 3 ? 3 : t === 2 ? 2 : t === 1 ? 1 : 0;
 }
 
 /** Cosméticos que de verdad se muestran: solo los que el nivel activo permite. */
-export function visibleCosmetics(s: SupporterPublic | null | undefined, now = Date.now()): Equipped {
+export function visibleCosmetics(s: SupporterPublic | null | undefined, now?: number): Equipped {
   const tier = activeTier(s, now);
   if (!tier || !s) return {};
   const eq = parseEquipped(s.equipped);
