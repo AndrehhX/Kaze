@@ -6,6 +6,8 @@
 //   /orunei viendo <sí|no>       (opcional) avisar en #watch-party cuando empiezas a ver algo, con botón para unirse
 //   /wrapped [mes]               tu tarjeta del mes: anime en Orunei + actividad en el server
 // Además: roles automáticos por episodios vistos (cada hora) y el Wrapped del mes anterior por DM el día 1.
+// Apoya KAZE: rol por nivel (Brisa / Viento / Tormenta) y ★ Fundador, y un agradecimiento en #apoyos
+// cuando alguien empieza a apoyar (si eligió salir en el muro de /apoyar).
 // Solo lee de Supabase (con la clave de servicio del .env); nunca escribe en la base de datos.
 // Datos en orunei-links.json (junto a este archivo).
 import fs from "fs";
@@ -15,6 +17,7 @@ import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedB
 import { animeById, titleOf, SITE } from "./kaze-features.mjs";
 import { monthKey, monthStats } from "./levels.mjs";
 import { wrappedCard } from "./cards.mjs";
+import { card } from "./ui.mjs";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const FILE = path.join(DIR, "orunei-links.json");
@@ -31,6 +34,13 @@ const TIERS = [
   { min: 100, name: "🍿 Otaku · 100+ eps" },
   { min: 10, name: "📺 Espectador · 10+ eps" },
 ];
+const CH_APOYOS = process.env.CHANNEL_APOYOS_ID || "1575787292218368050";
+const SUPPORT = {
+  1: { role: "🍃 Apoyo · Brisa", name: "Brisa", emoji: "🍃", color: 0x34d399 },
+  2: { role: "🌀 Apoyo · Viento", name: "Viento", emoji: "🌀", color: 0x38bdf8 },
+  3: { role: "⚡ Apoyo · Tormenta", name: "Tormenta", emoji: "⚡", color: 0xfbbf24 },
+};
+const ROLE_FOUNDER = "★ Fundador KAZE";
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const EPH = MessageFlags.Ephemeral;
 const log = (...a) => console.log("[orunei]", ...a);
@@ -63,6 +73,15 @@ async function profileByUsername(u) {
   return (await sb(`profiles?select=${PROFILE_COLS}&username=ilike.${enc(safe)}&limit=1`))[0] ?? null;
 }
 const profileById = async (id) => (await sb(`profiles?select=${PROFILE_COLS}&id=eq.${id}&limit=1`))[0] ?? null;
+/** Estado de apoyo (tabla supporters). undefined si Supabase falla: así no se quitan roles por error. */
+const supporterOf = async (pid) => {
+  try {
+    return (await sb(`supporters?select=tier,expires_at,founder&user_id=eq.${pid}&limit=1`))[0] ?? null;
+  } catch {
+    return undefined;
+  }
+};
+const supportTier = (s) => (s && s.expires_at && Date.parse(s.expires_at) > Date.now() ? Math.min(3, Math.max(1, Math.round(s.tier))) : 0);
 const episodesSeen = (pid) => sb(`watch_progress?select=series_id&user_id=eq.${pid}&completed=eq.true`, { count: true });
 
 // ── Fechas del mes en la zona horaria del server ─────────────────────
@@ -137,6 +156,16 @@ async function syncRoles(member, link) {
     if (r) want.add(r.id);
   }
   const managed = [linked, ...TIERS.map((t) => roleByName(guild, t.name))].filter(Boolean);
+  // Apoya KAZE: solo se tocan estos roles si se pudo leer el estado de apoyo.
+  const sup = link ? await supporterOf(link.profileId) : null;
+  if (sup !== undefined) {
+    const st = supportTier(sup);
+    const sr = st && roleByName(guild, SUPPORT[st].role);
+    if (sr) want.add(sr.id);
+    const fr = sup?.founder && roleByName(guild, ROLE_FOUNDER);
+    if (fr) want.add(fr.id);
+    managed.push(...[1, 2, 3].map((t) => roleByName(guild, SUPPORT[t].role)), roleByName(guild, ROLE_FOUNDER));
+  }
   for (const r of managed) {
     const has = member.roles.cache.has(r.id);
     if (want.has(r.id) && !has) await member.roles.add(r, "Cuenta de Orunei").catch((e) => log("rol:", e.message));
@@ -341,6 +370,52 @@ async function monthlyWrapped(client, guildId) {
   log(`wrapped ${mo} enviado a ${sent}`);
 }
 
+// ── Apoya KAZE: agradecimiento en #apoyos ───────────────────────────
+async function announceSupporters(client, guildId) {
+  const rows = await sb(`supporters?select=user_id,tier,expires_at,founder,since,show_on_wall,profile:profiles!supporters_user_id_fkey(username,display_name,avatar_url)&order=since.desc&limit=50`);
+  // La primera vez solo se apuntan los que ya había, para no anunciar a todos de golpe.
+  if (!Array.isArray(data.supportersSeen)) {
+    data.supportersSeen = rows.map((r) => r.user_id);
+    save();
+    return;
+  }
+  const seen = new Set(data.supportersSeen);
+  const guild = client.guilds.cache.get(guildId);
+  const ch = guild?.channels.cache.get(CH_APOYOS);
+  for (const r of rows.reverse()) {
+    if (seen.has(r.user_id)) continue;
+    seen.add(r.user_id);
+    data.supportersSeen.push(r.user_id);
+    // Si tiene Discord vinculado, se le ponen los roles ya (sin esperar a la ronda de cada hora).
+    const did = Object.entries(data.links).find(([, l]) => l.profileId === r.user_id)?.[0];
+    const member = did ? guild?.members.cache.get(did) : null;
+    if (member) await syncRoles(member, data.links[did]).catch((e) => log("rol apoyo:", e.message));
+    const tier = supportTier(r);
+    if (!ch || !tier || !r.show_on_wall) continue;
+    const p = Array.isArray(r.profile) ? r.profile[0] : r.profile;
+    const name = p?.display_name || p?.username || "Alguien";
+    const t = SUPPORT[tier];
+    const avatar = typeof p?.avatar_url === "string" && p.avatar_url.startsWith("https://") ? p.avatar_url : null;
+    await ch
+      .send(
+        card({
+          accent: t.color,
+          kicker: "Apoya KAZE · 風",
+          title: `¡Gracias, ${name}!`,
+          body: `${member ? `<@${member.id}> ahora` : "Ahora"} apoya con ${t.emoji} **${t.name}**${r.founder ? " y se lleva la insignia ★ **Fundador** para siempre" : ""}.
+Gracias a gente así, KAZE sigue siendo gratis para todos 💜`,
+          thumbnail: avatar,
+          footer: "El anime en Orunei es y seguirá siendo gratis.",
+          buttons: [p?.username ? { label: "Ver su perfil", url: `${SITE}/profile/${p.username}` } : null, { label: "Apoyar KAZE", url: `${SITE}/apoyar`, emoji: "💜" }].filter(Boolean),
+          mentions: member ? { users: [member.id] } : { parse: [] },
+        }),
+      )
+      .catch((e) => log("apoyos:", e.message));
+  }
+  if (data.supportersSeen.length > 5000) data.supportersSeen = data.supportersSeen.slice(-5000);
+  save();
+}
+
 export function registerOrunei(client, { guildId }) {
   client.on(Events.InteractionCreate, (i) => onInteraction(i).catch((e) => log(e.message)));
   client.once(Events.ClientReady, () => {
@@ -351,6 +426,7 @@ export function registerOrunei(client, { guildId }) {
     };
     every(3 * 60_000, "viendo", () => watchingNow(client, guildId));
     every(10 * 60_000, "wrapped", () => monthlyWrapped(client, guildId));
+    every(5 * 60_000, "apoyos", () => announceSupporters(client, guildId), 90_000);
     every(3600_000, "roles", async () => {
       const guild = client.guilds.cache.get(guildId);
       for (const [did, link] of Object.entries(data.links)) {
