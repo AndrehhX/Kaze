@@ -44,7 +44,7 @@ const NAMES = {
   // Comunidad
   "1425279598454640650": cat("💬", "comunidad", "交流"),
   "1573861292119298209": ch("💬", "chat-general"),
-  "1425279598454640651": ch("🧈", "chat-og"),
+  "1425279598454640651": ch("🧈", "chat-general"), // el de siempre de los OG (antes chat-og); aquí habla Pana
   "1549615817484796035": ch("🌀", "ryunix"),
   "1556526261013057576": ch("🎁", "juegos-gratis"),
   "1556526366864707604": ch("🤖", "comandos"),
