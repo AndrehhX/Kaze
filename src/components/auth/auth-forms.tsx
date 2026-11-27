@@ -505,6 +505,17 @@ export function RegisterForm() {
         </Link>
       </p>
       <p className="text-center text-xs text-muted">Tu cuenta de Orunei es independiente de AniList. Puedes vincularla después en Ajustes.</p>
+      <p className="text-center text-xs text-muted">
+        Al crear tu cuenta aceptas las{" "}
+        <Link href="/terminos" className="underline hover:text-fg">
+          Condiciones de uso
+        </Link>{" "}
+        y la{" "}
+        <Link href="/privacidad" className="underline hover:text-fg">
+          Política de privacidad
+        </Link>
+        .
+      </p>
     </form>
   );
 }

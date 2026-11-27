@@ -55,7 +55,9 @@ export function SiteFooter() {
             <li><Link className="hover:text-primary-ink" href="/library">Biblioteca</Link></li>
             <li><Link className="hover:text-primary-ink" href="/watch-parties">Salas de visionado</Link></li>
             <li><Link className="hover:text-primary-ink" href="/settings/appearance">Themes</Link></li>
-            <li><Link className="hover:text-primary-ink" href="/settings/privacy">Privacidad</Link></li>
+            <li><Link className="hover:text-primary-ink" href="/settings/privacy">Ajustes de privacidad</Link></li>
+            <li><Link className="hover:text-primary-ink" href="/privacidad">Política de privacidad</Link></li>
+            <li><Link className="hover:text-primary-ink" href="/terminos">Condiciones de uso</Link></li>
           </ul>
         </nav>
         <div className="text-xs leading-relaxed text-muted">

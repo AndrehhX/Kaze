@@ -44,6 +44,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/discover/roulette`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
     { url: `${siteUrl}/community`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
     { url: `${siteUrl}/library`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
+    { url: `${siteUrl}/privacidad`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
+    { url: `${siteUrl}/terminos`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
   ];
 
   const ids = await getPopularAnimeIds();
