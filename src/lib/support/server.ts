@@ -85,10 +85,11 @@ async function userIdByEmail(email: string) {
 export async function recomputeSupporter(userId: string) {
   const db = admin();
   const [{ data: pays }, { data: row }] = await Promise.all([
-    db.from("supporter_payments").select("tier, amount, is_subscription, received_at").eq("user_id", userId).order("received_at", { ascending: false }).limit(500),
+    db.from("supporter_payments").select("tier, amount, is_subscription, is_public, received_at").eq("user_id", userId).order("received_at", { ascending: false }).limit(500),
     db.from("supporters").select("user_id, founder, manual_tier, manual_until, last_payment_at").eq("user_id", userId).maybeSingle(),
   ]);
-  const payments = ((pays ?? []) as { tier: number | null; amount: number | string; is_subscription: boolean; received_at: string }[]).map<PaymentLite>((p) => ({ ...p, amount: Number(p.amount) || 0 }));
+  const rows = (pays ?? []) as { tier: number | null; amount: number | string; is_subscription: boolean; is_public: boolean; received_at: string }[];
+  const payments = rows.map<PaymentLite>((p) => ({ tier: p.tier, amount: Number(p.amount) || 0, is_subscription: p.is_subscription, received_at: p.received_at }));
   const status = computeStatus(payments, row ? { tier: row.manual_tier, until: row.manual_until } : null);
   if (!status) return null;
 
@@ -97,7 +98,7 @@ export async function recomputeSupporter(userId: string) {
     const { count } = await db.from("supporters").select("user_id", { count: "exact", head: true }).eq("founder", true);
     founder = (count ?? 0) < FOUNDER_LIMIT;
   }
-  const patch = {
+  const patch: Record<string, unknown> = {
     user_id: userId,
     tier: status.tier,
     expires_at: status.expires_at,
@@ -105,6 +106,8 @@ export async function recomputeSupporter(userId: string) {
     last_payment_at: payments[0]?.received_at ?? row?.last_payment_at ?? null,
     updated_at: new Date().toISOString(),
   };
+  // La primera vez: sale en el muro solo si en Ko-fi marcó su apoyo como público (luego lo cambia en Ajustes → Apoyo).
+  if (!row) patch.show_on_wall = rows[0]?.is_public ?? false;
   const { error } = await db.from("supporters").upsert(patch, { onConflict: "user_id" });
   if (error) throw new Error(error.message);
   return patch;
@@ -115,6 +118,8 @@ export async function handleKofiPayment(p: KofiPayload) {
   const db = admin();
   const txId = (p.kofi_transaction_id ?? "").trim();
   if (!txId) return { ok: false as const, reason: "sin transacción" };
+  // Los botones "Send test" de Ko-fi usan este código: se confirma que llegó, pero no se guarda ni se suma.
+  if (/^0{8}-1{4}-2{4}-3{4}-4{12}$/.test(txId) || (p.email ?? "").toLowerCase() === "jo.example@example.com") return { ok: true as const, test: true };
 
   const { data: existing } = await db.from("supporter_payments").select("id, user_id").eq("kofi_transaction_id", txId).maybeSingle();
   if (existing) return { ok: true as const, duplicate: true, linked: Boolean(existing.user_id) };
