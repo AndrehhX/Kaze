@@ -11,6 +11,7 @@ import { useAuth } from "@/stores/auth";
 import { cn, relativeTime } from "@/lib/utils";
 import { useNow } from "@/lib/hooks";
 import { PushToggle } from "@/components/shell/push-toggle";
+import { DigestToggle } from "@/components/shell/digest-toggle";
 
 export type Notification = {
   id: string;
@@ -138,6 +139,7 @@ function NotificationBellContent({ userId }: { userId: string }) {
             </button>
           </div>
           <PushToggle />
+          <DigestToggle />
           <div className="max-h-[60dvh] overflow-y-auto">
             {items.length === 0 && <p className="px-3 py-8 text-center text-sm text-muted">Estás al día. Las solicitudes, respuestas e invitaciones aparecerán aquí.</p>}
             {items.map((n) => {

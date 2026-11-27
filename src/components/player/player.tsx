@@ -2,6 +2,7 @@
 
 /* eslint-disable react-hooks/immutability, react-hooks/set-state-in-effect -- the player drives imperative browser media APIs (HTMLVideoElement, hls.js, TextTrack) from effects and handlers by design. */
 
+import { EndCard } from "@/components/player/end-card";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Activity,
@@ -121,6 +122,9 @@ export function Player({
   const [cues, setCues] = useState<Cue[]>([]);
   const [showEpisodes, setShowEpisodes] = useState(false);
   const [nextCountdown, setNextCountdown] = useState<number | null>(null);
+  // Último episodio disponible terminado: tarjeta discreta (cuándo sale el siguiente o recomendaciones).
+  const [showEndCard, setShowEndCard] = useState(false);
+  useEffect(() => setShowEndCard(false), [grant.episode.id]);
   const [flash, setFlash] = useState<{ key: number; icon: ReactNode; label: string } | null>(null);
   const [stats, setStats] = useState<Record<string, string>>({});
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -336,6 +340,7 @@ export function Player({
         return;
       }
       if ((grant.next || grant.nextSeason) && prefs.autoNext && !locked) setNextCountdown(8);
+      if (!grant.next && !grant.nextSeason) setShowEndCard(true);
     };
     const onError = () => {
       if ((video.error?.code === 3 || video.error?.code === 4) && onAdaptCodec && !isAdaptedCodec) {
@@ -846,6 +851,8 @@ export function Player({
             </div>
           </div>
         )}
+
+        {showEndCard && !grant.next && !grant.nextSeason && <EndCard key={grant.series.id} seriesId={String(grant.series.anilistId ?? grant.series.id)} seriesTitle={grant.series.title} />}
 
         {/* Modal de cuenta requerida al terminar el episodio */}
         {showAuthGate && (

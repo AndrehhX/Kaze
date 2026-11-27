@@ -63,6 +63,11 @@ cat > /etc/cron.d/orunei-episodes <<'CRON'
 */30 * * * * root set -a; . /opt/orunei-web/shared/.env; set +a; [ -L /opt/orunei-web/current ] && curl -fsS -m 120 -X POST -H "x-cron-secret: $CRON_SECRET" http://127.0.0.1:3000/api/cron/episodes >/dev/null 2>&1 || logger -t orunei-web "cron episodios fallo"
 CRON
 chmod 644 /etc/cron.d/orunei-episodes
+cat > /etc/cron.d/orunei-weekly-digest <<'CRON'
+# Resumen semanal por correo (domingo 16:00 UTC = 10:00 en México/Centroamérica). Necesita BREVO_API_KEY y DIGEST_FROM_EMAIL.
+0 16 * * 0 root set -a; . /opt/orunei-web/shared/.env; set +a; [ -L /opt/orunei-web/current ] && curl -fsS -m 600 -X POST -H "x-cron-secret: $CRON_SECRET" http://127.0.0.1:3000/api/cron/weekly-digest >/dev/null 2>&1 || logger -t orunei-web "cron resumen semanal fallo"
+CRON
+chmod 644 /etc/cron.d/orunei-weekly-digest
 
 echo "== 5. Swap (si no hay)"
 if [ "$(swapon --show --noheadings | wc -l)" = "0" ]; then
