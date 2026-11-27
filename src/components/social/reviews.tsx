@@ -20,6 +20,7 @@ import { BackendMissing } from "./gate";
 import { cn, relativeTime } from "@/lib/utils";
 import { useNow } from "@/lib/hooks";
 import { isSupabaseConfigured } from "@/lib/env";
+import { SupporterBadges, SupporterName, supporterFrame } from "@/components/support/supporter-name";
 
 export const reviewSchema = z.object({
   rating: z.number().int().min(1, "Elige una nota").max(10),
@@ -193,14 +194,15 @@ export function ReviewCard({ r, liked, showMedia }: { r: Review; liked: boolean;
           )}
           <h3 className="font-display mt-0.5 text-lg leading-tight">{r.title}</h3>
           <p className="mt-1 flex items-center gap-2 text-xs text-muted">
-            <Avatar src={r.author?.avatar_url} name={name} size={20} />
+            <Avatar src={r.author?.avatar_url} name={name} size={20} frame={supporterFrame(r.author?.supporter)} />
             {r.author ? (
               <Link href={`/profile/${r.author.username}`} className="font-semibold text-fg hover:text-primary-ink">
-                {name}
+                <SupporterName supporter={r.author.supporter}>{name}</SupporterName>
               </Link>
             ) : (
               name
             )}
+            <SupporterBadges supporter={r.author?.supporter} />
             <span>· {now ? relativeTime(new Date(r.created_at).getTime(), now) : ""}</span>
           </p>
         </div>

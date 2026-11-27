@@ -13,6 +13,8 @@ export type PublicProfile = {
   bio?: string;
   last_seen_at?: string | null;
   show_online_status?: boolean;
+  /** Estado de apoyo (solo en autores de reseñas, debates y comentarios). */
+  supporter?: unknown;
 };
 
 export type ActivityEvent = {
@@ -290,9 +292,11 @@ export async function relationship(db: SupabaseClient, me: string, other: string
   }
 }
 
-export const REVIEW_SELECT = `id, user_id, media_id, media_snapshot, rating, title, body, has_spoilers, like_count, comment_count, created_at, updated_at, author:profiles!reviews_user_id_fkey(${PROFILE_COLS})`;
-export const DISCUSSION_SELECT = `id, user_id, media_id, media_snapshot, title, body, has_spoilers, status, comment_count, last_activity_at, created_at, author:profiles!discussions_user_id_fkey(${PROFILE_COLS})`;
-export const COMMENT_SELECT = `id, user_id, target_type, target_id, parent_id, body, has_spoilers, created_at, author:profiles!comments_user_id_fkey(${PROFILE_COLS})`;
+/** Autor + su estado de apoyo (insignia y cosméticos; tabla supporters, lectura pública). */
+const AUTHOR_COLS = `${PROFILE_COLS}, supporter:supporters(tier, expires_at, founder, equipped)`;
+export const REVIEW_SELECT = `id, user_id, media_id, media_snapshot, rating, title, body, has_spoilers, like_count, comment_count, created_at, updated_at, author:profiles!reviews_user_id_fkey(${AUTHOR_COLS})`;
+export const DISCUSSION_SELECT = `id, user_id, media_id, media_snapshot, title, body, has_spoilers, status, comment_count, last_activity_at, created_at, author:profiles!discussions_user_id_fkey(${AUTHOR_COLS})`;
+export const COMMENT_SELECT = `id, user_id, target_type, target_id, parent_id, body, has_spoilers, created_at, author:profiles!comments_user_id_fkey(${AUTHOR_COLS})`;
 
 export function describeActivity(e: ActivityEvent): string {
   const t = e.media_snapshot?.title ?? "un anime";

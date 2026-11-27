@@ -36,6 +36,10 @@ export default function PrivacidadPage() {
             <strong>Cuentas conectadas:</strong> si conectas AniList, guardamos el permiso de acceso cifrado para sincronizar tu lista.
           </li>
           <li>
+            <strong>Si apoyas en Ko-fi:</strong> recibimos de Ko-fi el aviso del pago (importe, nivel, tu nombre en Ko-fi, el mensaje y el correo que usaste) para activar tus cosméticos. Nunca vemos tus
+            datos de tarjeta ni de PayPal.
+          </li>
+          <li>
             <strong>Estadísticas anónimas:</strong> contamos visitas y uso general (páginas vistas, país, tipo de dispositivo) sin cookies de seguimiento y sin identificarte. En la app puedes apagarlas en
             Ajustes.
           </li>
@@ -71,6 +75,9 @@ export default function PrivacidadPage() {
           </li>
           <li>
             <strong>AniList</strong>: solo si conectas tu cuenta de AniList.
+          </li>
+          <li>
+            <strong>Ko-fi</strong>: solo si eliges apoyar; ellos procesan el pago.
           </li>
         </ul>
         <p>Lo que publicas a propósito (reseñas, comentarios, tu perfil público) lo pueden ver otras personas según tu configuración de privacidad.</p>

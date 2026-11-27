@@ -17,6 +17,7 @@ import { EmptyState, ErrorPanel, SafeImage, Skeleton } from "@/components/ui/pri
 import { Spoiler } from "./spoiler";
 import { ReportButton } from "./report";
 import { CommentThread } from "./comments";
+import { SupporterBadges, SupporterName, supporterFrame } from "@/components/support/supporter-name";
 import { BackendMissing } from "./gate";
 import { relativeTime } from "@/lib/utils";
 import { useNow } from "@/lib/hooks";
@@ -199,14 +200,15 @@ export function DiscussionThread({ id }: { id: string }) {
         )}
         <h1 className="font-display text-title mt-2">{data.title}</h1>
         <p className="mt-3 flex items-center gap-2 text-sm text-muted">
-          <Avatar src={data.author?.avatar_url} name={name} size={24} />
+          <Avatar src={data.author?.avatar_url} name={name} size={24} frame={supporterFrame(data.author?.supporter)} />
           {data.author ? (
             <Link href={`/profile/${data.author.username}`} className="font-semibold text-fg">
-              {name}
+              <SupporterName supporter={data.author.supporter}>{name}</SupporterName>
             </Link>
           ) : (
             name
           )}
+          <SupporterBadges supporter={data.author?.supporter} />
           · {now ? relativeTime(new Date(data.created_at).getTime(), now) : ""}
         </p>
         <Spoiler active={data.has_spoilers} className="mt-5">

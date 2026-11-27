@@ -106,26 +106,20 @@ export function SiteHeader() {
           >
             <Smartphone className="size-[18px] text-primary" aria-hidden />
           </a>
-          <a
-            href="https://ko-fi.com/andrehwallet/goal?g=0"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link href="/apoyar"
             className="k-btn k-btn-ghost k-btn-sm hidden items-center gap-1.5 !px-2.5 text-xs text-muted hover:text-fg 2xl:inline-flex border border-line/50 hover:border-line"
-            title="Apoyar el proyecto en Ko-fi"
+            title="Apoya KAZE"
           >
             <Coffee className="size-3.5 text-[#FF5E5B]" aria-hidden />
             <span>Apoyar</span>
-          </a>
-          <a
-            href="https://ko-fi.com/andrehwallet/goal?g=0"
-            target="_blank"
-            rel="noopener noreferrer"
+          </Link>
+          <Link href="/apoyar"
             className="k-btn k-btn-ghost k-btn-icon k-btn-sm 2xl:hidden"
-            aria-label="Apoyar en Ko-fi"
-            title="Apoyar en Ko-fi"
+            aria-label="Apoya KAZE"
+            title="Apoya KAZE"
           >
             <Coffee className="size-[18px] text-[#FF5E5B]" aria-hidden />
-          </a>
+          </Link>
           <a
             href={DISCORD_INVITE_URL}
             target="_blank"

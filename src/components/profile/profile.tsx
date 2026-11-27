@@ -46,6 +46,10 @@ import { useAchievements } from "./achievements";
 import type { LibraryEntry } from "@/lib/library/types";
 import { THEME_IDS, THEMES, isThemeId, type ThemeId } from "@/lib/themes";
 import { Avatar } from "@/components/shell/user-menu";
+import { SupporterBadges, SupporterName, supporterFrame } from "@/components/support/supporter-name";
+import { ProfileEffect } from "@/components/support/profile-effect";
+import { useSupporter } from "@/components/support/use-supporter";
+import { visibleCosmetics } from "@/lib/support/tiers";
 import { EmptyState, Skeleton } from "@/components/ui/primitives";
 import { LevelCard, ShowcaseList } from "@/components/profile/showcases";
 import { parseProfileCustom } from "@/lib/profile-custom";
@@ -229,6 +233,7 @@ export function ProfileShell({
   const kanjiY = useTransform(scrollY, [0, 400], [0, reduced ? 0 : -60]);
   const [edit, setEdit] = useState(false);
   const siteTheme = useSettings((s) => s.theme);
+  const supporter = useSupporter(d.guest ? null : d.profile?.id).data ?? null;
 
   if (d.loading) return <Skeleton className="container-k mt-8 h-80" />;
 
@@ -307,6 +312,7 @@ export function ProfileShell({
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/50 to-transparent" />
         </motion.div>
+        <ProfileEffect effect={visibleCosmetics(supporter).profileEffect} />
 
         {/* Botón flotante para cambiar portada en hover */}
         {d.isMe && (
@@ -342,7 +348,7 @@ export function ProfileShell({
               transition={{ type: "spring", stiffness: 220, damping: 18, delay: 0.25 }}
               className="group relative rounded-full p-1 shadow-[var(--k-shadow-pop)] [background:linear-gradient(135deg,var(--k-primary),var(--k-accent))]"
             >
-              <Avatar src={p.avatar_url} name={name} size={104} frame={p.avatar_frame} />
+              <Avatar src={p.avatar_url} name={name} size={104} frame={supporterFrame(supporter) ?? p.avatar_frame} />
               {d.isMe && (
                 <button
                   type="button"
@@ -361,7 +367,12 @@ export function ProfileShell({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.45, duration: 0.6 }}
             >
-              <h1 className="font-display text-title truncate">{name}</h1>
+              <h1 className="font-display text-title flex min-w-0 items-center gap-3">
+                <SupporterName supporter={supporter} className="truncate">
+                  {name}
+                </SupporterName>
+                <SupporterBadges supporter={supporter} size="md" />
+              </h1>
               <p className="mt-1 text-sm text-muted">
                 @{p.username}
                 {!d.guest && ` · universo desde ${new Date(p.created_at).getFullYear()}`} · {THEMES[pTheme].name}

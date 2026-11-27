@@ -34,6 +34,8 @@ export function Avatar({
       ? "p-[3px] bg-gradient-to-tr from-yellow-300 via-amber-400 to-yellow-600 shadow-[0_0_12px_rgba(255,215,0,0.7)]"
       : frame === "abyssal-vortex"
       ? "p-[3px] bg-gradient-to-tr from-purple-600 via-indigo-500 to-cyan-400 shadow-[0_0_12px_rgba(138,43,226,0.6)]"
+      : frame && /^kz-[a-z]+$/.test(frame)
+      ? `k-frame-${frame}` // marcos de Apoya KAZE (globals.css)
       : "";
 
   return (

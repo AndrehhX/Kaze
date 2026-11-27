@@ -26,15 +26,10 @@ export function SiteFooter() {
               </a>
             </li>
             <li>
-              <a
-                className="hover:text-primary-ink flex items-center gap-1.5"
-                href="https://ko-fi.com/andrehwallet/goal?g=0"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <Link className="hover:text-primary-ink flex items-center gap-1.5" href="/apoyar">
                 <Coffee className="size-3.5 text-[#FF5E5B]" aria-hidden />
-                <span>Apoyar en Ko-fi</span>
-              </a>
+                <span>Apoya KAZE</span>
+              </Link>
             </li>
             <li>
               <a

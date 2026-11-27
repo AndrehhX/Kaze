@@ -11,9 +11,10 @@ import { useAuth } from "@/stores/auth";
 import { Avatar } from "@/components/shell/user-menu";
 import { Spoiler } from "./spoiler";
 import { ReportButton } from "./report";
-import { relativeTime } from "@/lib/utils";
+import { cn, relativeTime } from "@/lib/utils";
 import { useNow } from "@/lib/hooks";
 import { Skeleton } from "@/components/ui/primitives";
+import { SupporterBadges, SupporterName, commentFrameClass, supporterFrame } from "@/components/support/supporter-name";
 
 export function useComments(targetType: "review" | "discussion", targetId: string, enabled = true) {
   return useQuery({
@@ -101,16 +102,17 @@ export function CommentThread({ targetType, targetId }: { targetType: "review" |
     return (
       <li className={depth ? "ml-6 border-l border-line pl-4" : ""}>
         <div className="flex gap-3 py-3">
-          <Avatar src={c.author?.avatar_url} name={name} size={28} />
-          <div className="min-w-0 flex-1">
+          <Avatar src={c.author?.avatar_url} name={name} size={28} frame={supporterFrame(c.author?.supporter)} />
+          <div className={cn("min-w-0 flex-1", commentFrameClass(c.author?.supporter))}>
             <p className="text-xs">
               {c.author ? (
                 <Link href={`/profile/${c.author.username}`} className="font-semibold hover:text-primary-ink">
-                  {name}
+                  <SupporterName supporter={c.author.supporter}>{name}</SupporterName>
                 </Link>
               ) : (
                 name
               )}{" "}
+              <SupporterBadges supporter={c.author?.supporter} />{" "}
               <span className="text-muted">{now ? relativeTime(new Date(c.created_at).getTime(), now) : ""}</span>
             </p>
             <Spoiler active={c.has_spoilers}>

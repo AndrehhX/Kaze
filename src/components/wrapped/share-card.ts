@@ -51,7 +51,7 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) 
 }
 
 /** Dibuja la tarjeta del Wrapped con los colores del tema activo. */
-export async function drawWrappedCard({ w, top, name }: { w: Wrapped; top: WrappedTop[]; name: string }) {
+export async function drawWrappedCard({ w, top, name, edition }: { w: Wrapped; top: WrappedTop[]; name: string; edition?: "tormenta" | null }) {
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
@@ -80,6 +80,24 @@ export async function drawWrappedCard({ w, top, name }: { w: Wrapped; top: Wrapp
   g2.addColorStop(1, "transparent");
   ctx.fillStyle = g2;
   ctx.fillRect(0, 0, W, H);
+
+  // Edición Tormenta (Apoya KAZE): marco dorado y sello arriba a la derecha.
+  if (edition === "tormenta") {
+    const gold = ctx.createLinearGradient(0, 0, W, H);
+    gold.addColorStop(0, "#fbbf24");
+    gold.addColorStop(0.5, "#a855f7");
+    gold.addColorStop(1, "#fbbf24");
+    ctx.strokeStyle = gold;
+    ctx.lineWidth = 18;
+    ctx.strokeRect(24, 24, W - 48, H - 48);
+    ctx.font = `800 30px ${font}`;
+    const label = "⚡ EDICIÓN TORMENTA";
+    const lw = ctx.measureText(label).width;
+    ctx.fillStyle = "rgba(251,191,36,0.16)";
+    ctx.fillRect(W - 90 - lw - 32, 112, lw + 32, 52);
+    ctx.fillStyle = "#fbbf24";
+    ctx.fillText(label, W - 90 - lw - 16, 149);
+  }
 
   // Cabecera
   ctx.fillStyle = text;

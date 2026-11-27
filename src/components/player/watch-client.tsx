@@ -372,16 +372,13 @@ export function WatchClient({ seriesId, episodeId }: { seriesId: string; episode
                   <button className="k-btn k-btn-ghost k-btn-sm" onClick={() => setHelp(true)}>
                     <Keyboard className="size-4" aria-hidden /> Atajos
                   </button>
-                  <a
-                    href="https://ko-fi.com/andrehwallet/goal?g=0"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link href="/apoyar"
                     className="k-btn k-btn-ghost k-btn-sm border border-line/60 hover:bg-elevated text-xs gap-1.5"
-                    title="Apoyar el proyecto en Ko-fi para mejorar servidores"
+                    title="Apoya KAZE: ayuda a pagar el servidor"
                   >
                     <Coffee className="size-3.5 text-[#FF5E5B]" aria-hidden />
                     <span>Apoyar servidor</span>
-                  </a>
+                  </Link>
                 </div>
                 <p className="mt-5 text-xs text-muted">
                   {grant.series.license.attribution}{" "}

@@ -90,6 +90,7 @@ function renderEmail(items: Item[], unsubscribe: string) {
         <a href="${siteUrl}/library" style="display:inline-block;background:linear-gradient(90deg,#a855f7,#ec4899);color:#fff;font:700 15px Arial,sans-serif;padding:12px 22px;border-radius:999px;text-decoration:none">Abrir mi lista</a>
       </td></tr>
       <tr><td style="font:12px/1.5 Arial,sans-serif;color:#7d7699;padding-top:24px">
+        KAZE es gratis y lo mantiene una sola persona. Si te gusta, puedes <a href="${siteUrl}/apoyar" style="color:#b7a8e8">apoyar el servidor</a>.<br>
         Te llega porque sigues estos animes en Orunei. ¿No quieres más resúmenes? <a href="${unsubscribe}" style="color:#b7a8e8">Darte de baja</a>.
       </td></tr>
     </table>

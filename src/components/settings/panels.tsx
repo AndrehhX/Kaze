@@ -68,6 +68,7 @@ export function SettingsOverview() {
     { href: "/settings/account", title: "Cuenta", body: status === "signed-in" ? `Conectado como @${profile?.username ?? "…"}` : "Perfil local en este dispositivo" },
     { href: "/settings/privacy", title: "Privacidad", body: profile ? `Perfil: ${profile.visibility}` : "Visibilidad del perfil y actividad" },
     { href: "/settings/integrations", title: "Integraciones", body: "Conecta AniList, importa y sincroniza tu lista" },
+    { href: "/settings/apoyo", title: "Apoyo", body: "Tus cosméticos de Apoya KAZE: insignia, nombre, marcos y efectos" },
   ];
   return (
     <ul className="grid gap-4 sm:grid-cols-2">

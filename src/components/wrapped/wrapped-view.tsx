@@ -15,6 +15,8 @@ import { genreLabel } from "@/lib/anilist/browse-params";
 import { useKazeMotion } from "@/lib/motion";
 import { computeWrapped, type Wrapped, type WrappedProgress, type WrappedTop } from "@/lib/wrapped";
 import { drawWrappedCard } from "./share-card";
+import { useSupporter } from "@/components/support/use-supporter";
+import { activeTier } from "@/lib/support/tiers";
 
 const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const WEEKDAYS = ["domingos", "lunes", "martes", "miércoles", "jueves", "viernes", "sábados"];
@@ -127,6 +129,7 @@ export function WrappedView({ year }: { year: number }) {
   const { reduced } = useKazeMotion();
   const [i, setI] = useState(0);
   const name = profile?.display_name || profile?.username || "Tú";
+  const tormenta = activeTier(useSupporter(profile?.id).data) >= 3;
 
   const empty = w.episodes === 0 && w.completedTitles === 0;
   const hours = Math.floor(w.minutes / 60);
@@ -139,7 +142,7 @@ export function WrappedView({ year }: { year: number }) {
           node: (
             <>
               <p className="k-jp text-6xl text-primary-ink" lang="ja">風</p>
-              <Label>KAZE Wrapped</Label>
+              <Label>KAZE Wrapped{tormenta ? " · ⚡ Edición Tormenta" : ""}</Label>
               <h1 className="font-display mt-3 text-5xl leading-tight">Tu {year} en anime</h1>
               <p className="mt-4 text-muted">{name}, esto es lo que viviste este año. Toca para avanzar.</p>
             </>
@@ -267,7 +270,7 @@ export function WrappedView({ year }: { year: number }) {
         },
         {
           key: "share",
-          node: <ShareSlide w={w} top={top} name={name} />,
+          node: <ShareSlide w={w} top={top} name={name} tormenta={tormenta} />,
         },
       ];
 
@@ -347,10 +350,10 @@ export function WrappedView({ year }: { year: number }) {
   );
 }
 
-function ShareSlide({ w, top, name }: { w: Wrapped; top: WrappedTop[]; name: string }) {
+function ShareSlide({ w, top, name, tormenta = false }: { w: Wrapped; top: WrappedTop[]; name: string; tormenta?: boolean }) {
   const [busy, setBusy] = useState(false);
   const makeBlob = async () => {
-    const canvas = await drawWrappedCard({ w, top, name });
+    const canvas = await drawWrappedCard({ w, top, name, edition: tormenta ? "tormenta" : null });
     return new Promise<Blob | null>((res) => canvas.toBlob((b) => res(b), "image/png"));
   };
   const download = async () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { KeyRound, Link2, Palette, Settings, Shield, UserRound } from "lucide-react";
+import { Heart, KeyRound, Link2, Palette, Settings, Shield, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCurrentPath } from "@/stores/route";
 
@@ -12,6 +12,7 @@ const ITEMS = [
   { href: "/settings/account", label: "Cuenta", icon: KeyRound },
   { href: "/settings/privacy", label: "Privacidad", icon: Shield },
   { href: "/settings/integrations", label: "Integraciones", icon: Link2 },
+  { href: "/settings/apoyo", label: "Apoyo", icon: Heart },
 ];
 
 export function SettingsNav() {
