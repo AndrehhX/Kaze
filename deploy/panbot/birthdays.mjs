@@ -2,7 +2,8 @@
 //   /cumple poner <dia> <mes>   guarda tu cumpleaños (sin año)
 //   /cumple quitar
 //   /cumple proximos            los próximos cumpleaños del server
-// Cada día a las BIRTHDAY_HOUR (hora de KAZE_TZ) PanBot felicita en #Chat-General a quien cumple.
+// Cada día a las BIRTHDAY_HOUR (hora de KAZE_TZ) PanBot felicita a quien cumple en el chat general que puede ver
+// (el público, o el 🧈 de los OG para quienes no ven el público).
 // Datos en birthdays.json (junto a este archivo).
 import fs from "fs";
 import path from "path";
@@ -87,22 +88,34 @@ async function daily(client, cfg) {
   const guild = client.guilds.cache.get(cfg.guildId);
   const today = Object.entries(data.users).filter(([id, b]) => b.d === dd && b.m === mm && guild?.members.cache.has(id)).map(([id]) => id);
   if (!today.length) return;
-  const ch = await client.channels.fetch(cfg.channelId).catch(() => null);
-  if (!ch?.isTextBased()) return;
-  const who = today.map((id) => `<@${id}>`).join(", ");
-  const first = guild.members.cache.get(today[0]);
-  const many = today.length > 1;
-  await ch.send(
-    card({
-      accent: COLORS.pink,
-      kicker: "🎂 Cumpleaños en el server",
-      title: many ? "¡Hoy hay doble pastel!" : `¡Feliz cumple, ${first?.displayName ?? "panita"}!`,
-      thumbnail: first?.displayAvatarURL({ extension: "png", size: 256 }) ?? null,
-      body: `Hoy cumple${many ? "n" : ""} ${who}. ¡Que lo pasen bonito, panita${many ? "s" : ""}! 🧈🎉\nDéjenles un mensaje aquí abajo 👇`,
-      footer: "¿Quieres que te feliciten? /cumple poner",
-      mentions: { users: today },
-    }),
-  );
+  const main = await client.channels.fetch(cfg.channelId).catch(() => null);
+  const alt = cfg.altChannelId ? await client.channels.fetch(cfg.altChannelId).catch(() => null) : null;
+  // Cada quien se felicita en el chat general que puede ver (los OG no ven el público: va al suyo).
+  const groups = new Map();
+  for (const id of today) {
+    const m = guild.members.cache.get(id);
+    const ch = main?.permissionsFor(m)?.has("ViewChannel") ? main : alt?.permissionsFor(m)?.has("ViewChannel") ? alt : null;
+    if (!ch?.isTextBased()) continue;
+    groups.set(ch, [...(groups.get(ch) ?? []), id]);
+  }
+  for (const [ch, ids] of groups) {
+    const who = ids.map((id) => `<@${id}>`).join(", ");
+    const first = guild.members.cache.get(ids[0]);
+    const many = ids.length > 1;
+    await ch
+      .send(
+        card({
+          accent: COLORS.pink,
+          kicker: "🎂 Cumpleaños en el server",
+          title: many ? "¡Hoy hay doble pastel!" : `¡Feliz cumple, ${first?.displayName ?? "panita"}!`,
+          thumbnail: first?.displayAvatarURL({ extension: "png", size: 256 }) ?? null,
+          body: `Hoy cumple${many ? "n" : ""} ${who}. ¡Que lo pasen bonito, panita${many ? "s" : ""}! 🧈🎉\nDéjenles un mensaje aquí abajo 👇`,
+          footer: "¿Quieres que te feliciten? /cumple poner",
+          mentions: { users: ids },
+        }),
+      )
+      .catch((e) => log("felicitar:", e.message));
+  }
   log("felicitados", today.length);
 }
 

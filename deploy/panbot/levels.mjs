@@ -2,16 +2,19 @@
 //   XP por escribir: 15–25 por mensaje, como mucho 1 vez por minuto (el spam no sube de nivel).
 //   XP por llamada: 8 por minuto si hay al menos 2 personas con el micro abierto (sin mutear ni ensordecer),
 //     fuera del canal AFK y con un tope diario (VOICE_DAILY_CAP) para que dejar la llamada abierta no regale niveles.
-//   Avisos: cada subida se anuncia en #Niveles; solo los rangos nuevos (Bronce, Plata…) salen también en #Chat-General.
+//   Avisos de subida: cada quien elige con /avisos-nivel:
+//     privado (por defecto) → te llega por mensaje privado, como mucho uno cada 30 min (los rangos nuevos siempre);
+//     público → se anuncia en #Niveles y los rangos nuevos también en el chat general que esa persona ve;
+//     apagado → sin avisos (los roles de rango se siguen dando).
 //   Roles de rango automáticos: los roles del servidor cuyo nombre contiene "Nivel N+" (Bronce 5, Plata 15, Oro 30, Diamante 50).
 //   /nivel [usuario]  tarjeta con nivel, puesto y progreso
 //   /top              ranking del servidor
-//   Resumen semanal   los lunes (WEEKLY_HOUR) se publica en #Chat-General el top de la semana anterior.
+//   Resumen semanal   los lunes (WEEKLY_HOUR) se publica en #Niveles el top de la semana anterior.
 // Datos en levels.json (junto a este archivo). Se guardan cada 30 s y al apagar.
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { AttachmentBuilder, EmbedBuilder, Events, SlashCommandBuilder } from "discord.js";
+import { AttachmentBuilder, EmbedBuilder, Events, MessageFlags, SlashCommandBuilder } from "discord.js";
 import { rankCard } from "./cards.mjs";
 import { levelUpGif } from "./pixel.mjs";
 import { card, COLORS } from "./ui.mjs";
@@ -24,6 +27,8 @@ const VOICE_DAILY_CAP = Number(process.env.VOICE_DAILY_CAP ?? 360); // XP de lla
 const TZ = process.env.KAZE_TZ || "America/Mexico_City";
 const WEEKLY_HOUR = Number(process.env.WEEKLY_HOUR ?? 10);
 const BUTTER = 0xfde047;
+const NOTIFY_MODES = ["privado", "publico", "apagado"];
+const PRIVATE_GAP_MS = 30 * 60_000; // aviso privado como mucho cada 30 min (en llamada se sube rápido)
 const log = (...a) => console.log("[niveles]", ...a);
 
 // ── Fechas locales (día y semana ISO en KAZE_TZ) ────────────────────
@@ -200,7 +205,31 @@ async function addXp(member, amount, cfg, { voice = false } = {}) {
       return [];
     }
   };
-  // 1) Siempre en #Niveles. La mención no notifica: solo se ve el nombre.
+  const mode = NOTIFY_MODES.includes(u.notify) ? u.notify : "privado";
+  if (mode === "apagado") return;
+  // Privado: por DM, sin repetir cada pocos minutos (salvo rango nuevo). Si tiene los DM cerrados, no pasa nada.
+  if (mode === "privado") {
+    if (!gained && Date.now() - (u.lastNotify || 0) < PRIVATE_GAP_MS) return;
+    u.lastNotify = Date.now();
+    dirty = true;
+    const files = await gif();
+    await member
+      .send(
+        card({
+          accent: gained ? gained.color || COLORS.pink : COLORS.pink,
+          kicker: gained ? "🏆 Rango nuevo en Pan con mantequilla" : "🎉 Subiste de nivel en Pan con mantequilla",
+          title: gained ? `Ahora eres ${gained.name}` : `Nivel ${after}`,
+          body: gained ? `Llegaste a **nivel ${after}**. ¡Qué nivel, panita! 🧈` : `Vas en **nivel ${after}** (${lv.into}/${lv.need} XP para el siguiente). ¡Sigue así! 🧈`,
+          image: files.length ? "attachment://nivel.gif" : null,
+          imageAlt: `Nivel ${after}`,
+          footer: "¿Quieres que se anuncie en el server o no recibir avisos? Usa /avisos-nivel",
+          files,
+        }),
+      )
+      .catch(() => {});
+    return;
+  }
+  // Público: en #Niveles. La mención no notifica: solo se ve el nombre.
   if (levelsCh?.isTextBased()) {
     const files = await gif();
     const msg = card({
@@ -214,10 +243,11 @@ async function addXp(member, amount, cfg, { voice = false } = {}) {
     });
     await levelsCh.send(msg).catch((err) => log("aviso de nivel:", err.message));
   }
-  // 2) Solo los rangos nuevos se celebran en el chat general (con aviso a la persona).
+  // Y los rangos nuevos también en el chat general que esa persona ve (los OG no ven el público: va al suyo).
   if (gained && cfg.rankUpChannelId) {
-    const ch = await fetchCh(cfg.rankUpChannelId);
-    if (ch?.isTextBased()) {
+    let ch = await fetchCh(cfg.rankUpChannelId);
+    if (ch && !ch.permissionsFor(member)?.has("ViewChannel")) ch = await fetchCh(cfg.altRankUpChannelId);
+    if (ch?.isTextBased() && ch.permissionsFor(member)?.has("ViewChannel")) {
       const files = await gif();
       const msg = card({
         accent: gained.color || COLORS.pink,
@@ -295,7 +325,8 @@ async function weeklySummary(client, cfg) {
   const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
   const h = (min) => (min >= 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min} min`);
   const podium = byXp.slice(0, 5).map((r, i) => `${medals[i]} <@${r.id}> · **+${r.xp.toLocaleString("es-MX")} XP**`).join("\n");
-  const ch = await client.channels.fetch(cfg.rankUpChannelId).catch(() => null);
+  // En #Niveles: lo ven todos (el chat general público no lo ven los OG).
+  const ch = await client.channels.fetch(cfg.weeklyChannelId || cfg.levelUpChannelId).catch(() => null);
   const guild = client.guilds.cache.get(cfg.guildId);
   const winner = guild?.members.cache.get(byXp[0].id);
   if (ch?.isTextBased())
@@ -320,11 +351,33 @@ export const LEVEL_COMMANDS = [
     .setDescription("Tu nivel en el servidor (o el de otra persona)")
     .addUserOption((o) => o.setName("usuario").setDescription("De quién (por defecto, tú)").setRequired(false)),
   new SlashCommandBuilder().setName("top").setDescription("Ranking de niveles del servidor"),
+  new SlashCommandBuilder()
+    .setName("avisos-nivel")
+    .setDescription("Cómo quieres enterarte cuando subes de nivel")
+    .addStringOption((o) =>
+      o
+        .setName("modo")
+        .setDescription("Dónde avisarte")
+        .setRequired(true)
+        .addChoices({ name: "Privado (por mensaje directo)", value: "privado" }, { name: "Público (en #niveles)", value: "publico" }, { name: "Apagado", value: "apagado" }),
+    ),
 ].map((c) => c.toJSON());
 
 async function onInteraction(interaction) {
   if (!interaction.isChatInputCommand()) return;
   try {
+    if (interaction.commandName === "avisos-nivel") {
+      const mode = interaction.options.getString("modo", true);
+      if (!NOTIFY_MODES.includes(mode)) return interaction.reply({ content: "Opción no válida.", flags: MessageFlags.Ephemeral });
+      userOf(interaction.user.id).notify = mode;
+      dirty = true;
+      const text = {
+        privado: "Listo: tus subidas de nivel te llegarán por mensaje privado (como mucho una cada 30 min; los rangos nuevos siempre). 🧈",
+        publico: "Listo: tus subidas se anunciarán en #niveles y los rangos nuevos también en el chat general. 🎉",
+        apagado: "Listo: no te avisaré cuando subas de nivel. Los roles de rango te los sigo dando. 🤐",
+      }[mode];
+      return interaction.reply({ content: text, flags: MessageFlags.Ephemeral });
+    }
     if (interaction.commandName === "nivel") {
       await interaction.deferReply();
       const user = interaction.options.getUser("usuario") ?? interaction.user;
@@ -367,7 +420,7 @@ async function onInteraction(interaction) {
 }
 
 // ── Registro ────────────────────────────────────────────────────────
-/** @param {import("discord.js").Client} client @param {{ guildId: string, levelUpChannelId: string, rankUpChannelId?: string, afkChannelId?: string }} cfg */
+/** @param {import("discord.js").Client} client @param {{ guildId: string, levelUpChannelId: string, rankUpChannelId?: string, altRankUpChannelId?: string, weeklyChannelId?: string, afkChannelId?: string }} cfg */
 export function registerLevels(client, cfg) {
   client.on(Events.MessageCreate, onMessage(cfg));
   client.on(Events.InteractionCreate, onInteraction);

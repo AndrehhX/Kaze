@@ -51,7 +51,8 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
 const chanBienvenidaId = "1556525936256753674";
 const chanDespedidaId = "1573415016181403759";
-const chanNewGeneralId = "1573861292119298209";
+const chanNewGeneralId = "1573861292119298209"; // 💬 chat-general público (los OG no lo ven)
+const chanOgGeneralId = "1425279598454640651"; // 🧈 chat-general de los OG (antes chat-og)
 const chanAfkVoiceId = "1573415508223598733";
 const chanUpdatesId = "1573415038587240468"; // Canal exclusivo para updates y novedades de Orunei
 const chanNivelesId = "1573415019801223350";
@@ -528,6 +529,18 @@ async function sendLeave(member) {
 // ANCLAJE PERMANENTE EN CANAL AFK (MODO SILENCIOSO / ENSORDECIDA)
 // ------------------------------------------
 let afkConnection = null;
+const afkListened = new WeakSet();
+let afkReconnectTimer = null;
+/** Una sola reconexión pendiente aunque la pidan varios eventos a la vez. */
+function scheduleAfkReconnect(ms) {
+  if (afkReconnectTimer) return;
+  console.log(`Reconectando PanBot al canal AFK en ${Math.round(ms / 1000)}s...`);
+  afkReconnectTimer = setTimeout(() => {
+    afkReconnectTimer = null;
+    const g = client.guilds.cache.get(GUILD_ID);
+    if (g) connectToAfkChannel(g);
+  }, ms);
+}
 
 function connectToAfkChannel(guild) {
   try {
@@ -546,16 +559,15 @@ function connectToAfkChannel(guild) {
       selfMute: true
     });
 
-    afkConnection.on('stateChange', (oldState, newState) => {
-      console.log(`[AFK CONN] Estado: ${oldState.status} -> ${newState.status}`);
-      if (newState.status === VoiceConnectionStatus.Disconnected || newState.status === VoiceConnectionStatus.Destroyed) {
-        console.log("Reconectando PanBot al canal AFK en 5s...");
-        setTimeout(() => {
-          const g = client.guilds.cache.get(GUILD_ID);
-          if (g) connectToAfkChannel(g);
-        }, 5000);
-      }
-    });
+    // joinVoiceChannel devuelve la misma conexión si ya existe: el oyente se pone una sola vez por conexión
+    // (antes se acumulaba uno en cada reconexión y cada caída disparaba varias reconexiones a la vez).
+    if (!afkListened.has(afkConnection)) {
+      afkListened.add(afkConnection);
+      afkConnection.on('stateChange', (oldState, newState) => {
+        if (oldState.status !== newState.status) console.log(`[AFK CONN] Estado: ${oldState.status} -> ${newState.status}`);
+        if (newState.status === VoiceConnectionStatus.Disconnected || newState.status === VoiceConnectionStatus.Destroyed) scheduleAfkReconnect(5000);
+      });
+    }
 
   } catch (err) {
     console.error("Error conectando a canal AFK:", err.message);
@@ -581,13 +593,7 @@ client.once(Events.ClientReady, async () => {
 client.on('voiceStateUpdate', async (oldState, newState) => {
   // Asegurar que PanBot permanezca en el canal de AFK ensordecida
   if (newState.member?.id === client.user.id) {
-    if (!newState.channelId || newState.channelId !== chanAfkVoiceId) {
-      console.log("PanBot no está en el canal AFK, retornándola al canal AFK en 3s...");
-      const guild = client.guilds.cache.get(GUILD_ID);
-      if (guild) {
-        setTimeout(() => connectToAfkChannel(guild), 3000);
-      }
-    }
+    if (!newState.channelId || newState.channelId !== chanAfkVoiceId) scheduleAfkReconnect(3000);
   }
 });
 
@@ -723,11 +729,13 @@ registerLogs(client, { guildId: GUILD_ID, channelId: process.env.CHANNEL_LOGS_ID
 registerLevels(client, {
   guildId: GUILD_ID,
   levelUpChannelId: process.env.CHANNEL_LEVELUP_ID || chanNivelesId, // todas las subidas
-  rankUpChannelId: process.env.CHANNEL_RANKUP_ID || chanNewGeneralId, // solo rangos nuevos y resumen semanal
+  rankUpChannelId: process.env.CHANNEL_RANKUP_ID || chanNewGeneralId, // rangos nuevos de quien eligió avisos públicos
+  altRankUpChannelId: chanOgGeneralId, // los OG no ven el chat público: su rango sale en el suyo
+  weeklyChannelId: chanNivelesId, // resumen semanal (lo ven todos)
   afkChannelId: chanAfkVoiceId,
 });
 registerFollows(client);
-registerBirthdays(client, { guildId: GUILD_ID, channelId: chanNewGeneralId });
+registerBirthdays(client, { guildId: GUILD_ID, channelId: chanNewGeneralId, altChannelId: chanOgGeneralId });
 registerStatus(client);
 registerTempVoice(client, { guildId: GUILD_ID });
 registerStarboard(client);
