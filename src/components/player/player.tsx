@@ -10,6 +10,7 @@ import {
   Check,
   ChevronRight,
   Gauge,
+  ImageIcon,
   ListVideo,
   Loader2,
   Maximize,
@@ -40,6 +41,8 @@ import { clamp, cn, formatDuration } from "@/lib/utils";
 import { useKazeMotion } from "@/lib/motion";
 import { useHls } from "./use-hls";
 import { activeCues, CAPTION_COLORS, CAPTION_SIZES, cueText, type Cue } from "./captions";
+import { useEnhance, webgpuAvailable } from "./enhance";
+import { DEFAULT_PICTURE, PICTURE_PRESETS, pictureFilter, pictureValues, type EnhanceMode, type PicturePrefs } from "@/lib/player/picture";
 
 export type PlayerSync = {
   /** Guests cannot play/pause/seek; the host's state drives them. */
@@ -63,7 +66,7 @@ type Props = {
   onComplete?: () => void;
 };
 
-type Menu = null | "root" | "quality" | "speed" | "subs" | "audio" | "caption-style";
+type Menu = null | "root" | "quality" | "speed" | "subs" | "audio" | "caption-style" | "picture";
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
 export function Player({
@@ -114,6 +117,19 @@ export function Player({
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [menu, setMenu] = useState<Menu>(null);
+  // "Mejorar imagen" (Anime4K): canvas encima del video, solo mientras está activado.
+  const [enhCanvas, setEnhCanvas] = useState<HTMLCanvasElement | null>(null);
+  const [enhActive, setEnhActive] = useState(false);
+  const enhanceMode: EnhanceMode = prefs.enhance ?? "off";
+  const picture: PicturePrefs = prefs.picture ?? DEFAULT_PICTURE;
+  const videoFilter = pictureFilter(picture);
+  useEnhance(video, enhanceMode === "off" ? null : enhCanvas, enhanceMode, (st) => {
+    setEnhActive(st.active);
+    if (!st.active && st.reason) {
+      toast(st.reason);
+      setPrefs({ enhance: "off" });
+    } else if (st.reason) toast(st.reason);
+  });
   const [fullscreen, setFullscreen] = useState(false);
   const [pip, setPip] = useState(false);
   const [hoverX, setHoverX] = useState<number | null>(null);
@@ -717,11 +733,20 @@ export function Player({
         )}
         data-controls={showUi ? "on" : "off"}
       >
-        <video ref={refVideo} className="absolute inset-0 size-full" playsInline crossOrigin="anonymous" preload="metadata" onClick={() => (menu ? setMenu(null) : togglePlay())} onDoubleClick={toggleFullscreen}>
+        <video ref={refVideo} className="absolute inset-0 size-full" style={videoFilter ? { filter: videoFilter } : undefined} playsInline crossOrigin="anonymous" preload="metadata" onClick={() => (menu ? setMenu(null) : togglePlay())} onDoubleClick={toggleFullscreen}>
           {asset.subtitles.map((s, i) => (
             <track key={s.src} ref={(el) => void (subTrackEls.current[`side-${i}`] = el)} kind="subtitles" src={s.src} srcLang={s.lang} label={s.label} />
           ))}
         </video>
+        {/* Mejorar imagen (Anime4K): tapa el video con la versión reescalada; los clics siguen yendo al video. */}
+        {enhanceMode !== "off" && (
+          <canvas
+            ref={setEnhCanvas}
+            aria-hidden
+            className={cn("pointer-events-none absolute inset-0 size-full object-contain transition-opacity duration-300", enhActive ? "opacity-100" : "opacity-0")}
+            style={videoFilter ? { filter: videoFilter } : undefined}
+          />
+        )}
 
         {/* Captions */}
         {visibleCues.length > 0 && (
@@ -1066,12 +1091,68 @@ export function Player({
                   />
                   <MenuRow icon={<Volume2 className="size-4" />} label="Pista de audio" value={hs.audioTracks.find((a) => a.index === hs.audioTrack)?.label ?? "Predeterminado"} onClick={() => setMenu("audio")} disabled={hs.audioTracks.length < 2} />
                   <MenuRow icon={<Captions className="size-4" />} label="Estilo de subtítulos" value="" onClick={() => setMenu("caption-style")} />
+                  <MenuRow
+                    icon={<ImageIcon className="size-4" />}
+                    label="Imagen"
+                    value={[enhanceMode !== "off" ? "Mejorada" : null, picture.preset === "custom" ? "Personal" : picture.preset !== "normal" ? PICTURE_PRESETS[picture.preset].label : null].filter(Boolean).join(" · ") || "Normal"}
+                    onClick={() => setMenu("picture")}
+                  />
                   <ToggleRow label="Reproducir siguiente episodio" on={prefs.autoNext} onChange={(v) => setPrefs({ autoNext: v })} />
                   <ToggleRow label="Omitir intros automáticamente" on={prefs.autoSkipIntro} onChange={(v) => setPrefs({ autoSkipIntro: v })} />
                   <ToggleRow label="Omitir créditos automáticamente" on={prefs.autoSkipOutro} onChange={(v) => setPrefs({ autoSkipOutro: v })} />
                   <ToggleRow label="Modo ambiental" icon={<Sparkles className="size-4" />} on={prefs.ambient} onChange={(v) => setPrefs({ ambient: v })} />
                   <ToggleRow label="Estadísticas de reproducción" icon={<Activity className="size-4" />} on={prefs.showStats} onChange={(v) => setPrefs({ showStats: v })} />
                 </>
+              )}
+              {menu === "picture" && (
+                <SubMenu title="Imagen" back={() => setMenu("root")}>
+                  <p className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-white/50">Mejorar imagen</p>
+                  {webgpuAvailable() ? (
+                    <>
+                      <Choice label="Apagado" on={enhanceMode === "off"} onClick={() => setPrefs({ enhance: "off" })} />
+                      <Choice label="Máxima" hint="Líneas nítidas" on={enhanceMode === "max"} onClick={() => setPrefs({ enhance: "max" })} />
+                      <Choice label="Ligera" hint="Equipos modestos" on={enhanceMode === "light"} onClick={() => setPrefs({ enhance: "light" })} />
+                      <p className="px-3 pb-2 text-[11px] leading-snug text-white/50">Reescala el video con tu tarjeta gráfica (Anime4K). Se nota sobre todo en 720p y en pantallas grandes. Gasta más batería.</p>
+                    </>
+                  ) : (
+                    <p className="px-3 pb-2 text-xs leading-snug text-white/60">Tu navegador no tiene WebGPU. Prueba con Chrome o Edge actualizados en una computadora.</p>
+                  )}
+                  <p className="border-t border-white/10 px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-white/50">Color</p>
+                  {(Object.keys(PICTURE_PRESETS) as (keyof typeof PICTURE_PRESETS)[]).map((k) => (
+                    <Choice key={k} label={PICTURE_PRESETS[k].label} hint={PICTURE_PRESETS[k].hint} on={picture.preset === k} onClick={() => setPrefs({ picture: { ...PICTURE_PRESETS[k], preset: k } })} />
+                  ))}
+                  <Choice label="Personalizado" on={picture.preset === "custom"} onClick={() => setPrefs({ picture: { ...pictureValues(picture), preset: "custom" } })} />
+                  {picture.preset === "custom" && (
+                    <div className="space-y-2 px-3 pb-2 pt-1">
+                      {(
+                        [
+                          ["brightness", "Brillo", 60, 150],
+                          ["contrast", "Contraste", 60, 150],
+                          ["saturation", "Saturación", 0, 200],
+                        ] as const
+                      ).map(([key, label, min, max]) => (
+                        <label key={key} className="block text-xs">
+                          <span className="flex justify-between text-white/70">
+                            {label} <span>{picture[key]} %</span>
+                          </span>
+                          <input
+                            type="range"
+                            min={min}
+                            max={max}
+                            step={1}
+                            value={picture[key]}
+                            onChange={(e) => setPrefs({ picture: { ...picture, preset: "custom", [key]: Number(e.target.value) } })}
+                            className="mt-1 w-full accent-[var(--k-primary)]"
+                            aria-label={label}
+                          />
+                        </label>
+                      ))}
+                      <button className="w-full rounded bg-white/10 py-1.5 text-xs hover:bg-white/20" onClick={() => setPrefs({ picture: DEFAULT_PICTURE })}>
+                        Restablecer
+                      </button>
+                    </div>
+                  )}
+                </SubMenu>
               )}
               {menu === "speed" && (
                 <SubMenu title="Velocidad" back={() => setMenu("root")}>

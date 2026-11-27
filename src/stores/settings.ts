@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { DEFAULT_THEME, THEME_STORAGE_KEY, THEMES, type ThemeId } from "@/lib/themes";
+import { DEFAULT_PICTURE, type EnhanceMode, type PicturePrefs } from "@/lib/player/picture";
 import { DEFAULT_READER_PREFS, sanitizeReaderPrefs, type ReaderPrefs } from "@/lib/manga/reader/engine";
 
 export type SubtitleStyle = {
@@ -23,6 +24,10 @@ export type PlayerPrefs = {
   ambient: boolean;
   theater: boolean;
   showStats: boolean;
+  /** "Mejorar imagen" con Anime4K en la gráfica de quien mira (apagado por defecto). */
+  enhance: EnhanceMode;
+  /** Brillo, contraste y saturación del video. */
+  picture: PicturePrefs;
 };
 
 export type MotionPref = "system" | "reduce" | "full";
@@ -60,6 +65,8 @@ export const DEFAULT_PLAYER: PlayerPrefs = {
   ambient: true,
   theater: false,
   showStats: false,
+  enhance: "off",
+  picture: DEFAULT_PICTURE,
 };
 
 function applyThemeToDocument(theme: ThemeId) {
