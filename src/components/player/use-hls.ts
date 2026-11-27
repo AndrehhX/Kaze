@@ -87,6 +87,12 @@ export function useHls(video: HTMLVideoElement | null, asset: MediaAsset, retryK
         capLevelToPlayerSize: true,
         startLevel: -1,
         backBufferLength: 60,
+        // Consumo: hls.js por defecto puede bajar hasta 10 min por adelantado (maxMaxBufferLength 600).
+        // Si alguien cierra antes, eso se pidió al Worker y a la VPS para nada. 30–60 s bastan para
+        // que no se corte y la calidad es la misma.
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        maxBufferSize: 40 * 1000 * 1000,
         // Text tracks are rendered by our own caption layer (styling + delay).
         renderTextTracksNatively: true,
       });
