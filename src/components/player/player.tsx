@@ -41,7 +41,7 @@ import { clamp, cn, formatDuration } from "@/lib/utils";
 import { useKazeMotion } from "@/lib/motion";
 import { useHls } from "./use-hls";
 import { activeCues, CAPTION_COLORS, CAPTION_SIZES, cueText, type Cue } from "./captions";
-import { useEnhance, webgpuAvailable } from "./enhance";
+import { enhanceSupported, useEnhance, webgpuAvailable } from "./enhance";
 import { DEFAULT_PICTURE, PICTURE_PRESETS, pictureFilter, pictureValues, type EnhanceMode, type PicturePrefs } from "@/lib/player/picture";
 
 export type PlayerSync = {
@@ -125,6 +125,9 @@ export function Player({
   const videoFilter = pictureFilter(picture);
   useEnhance(video, enhanceMode === "off" ? null : enhCanvas, enhanceMode, (st) => {
     setEnhActive(st.active);
+    // Estadísticas (beta): qué red le tocó a cada equipo y por qué se baja o se apaga.
+    if (st.active && st.net && !st.code) window.umami?.track("mejora_imagen_activa", { modo: enhanceMode, red: st.net });
+    if (st.code) window.umami?.track(st.active ? "mejora_imagen_baja" : "mejora_imagen_apagada", { modo: enhanceMode, motivo: st.code, red: st.net ?? null });
     if (!st.active && st.reason) {
       toast(st.reason);
       setPrefs({ enhance: "off" });
@@ -1106,16 +1109,20 @@ export function Player({
               )}
               {menu === "picture" && (
                 <SubMenu title="Imagen" back={() => setMenu("root")}>
-                  <p className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-white/50">Mejorar imagen</p>
-                  {webgpuAvailable() ? (
+                  <p className="flex items-center gap-1.5 px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-white/50">
+                    Mejorar imagen <span className="rounded bg-[var(--k-primary)] px-1 py-px text-[9px] text-white">Beta</span>
+                  </p>
+                  {enhanceSupported() ? (
                     <>
                       <Choice label="Apagado" on={enhanceMode === "off"} onClick={() => setPrefs({ enhance: "off" })} />
                       <Choice label="Máxima" hint="Líneas nítidas" on={enhanceMode === "max"} onClick={() => setPrefs({ enhance: "max" })} />
                       <Choice label="Ligera" hint="Equipos modestos" on={enhanceMode === "light"} onClick={() => setPrefs({ enhance: "light" })} />
-                      <p className="px-3 pb-2 text-[11px] leading-snug text-white/50">Reescala el video con tu tarjeta gráfica (Anime4K). Se nota sobre todo en 720p y en pantallas grandes. Gasta más batería.</p>
+                      <p className="px-3 pb-2 text-[11px] leading-snug text-white/50">Reescala y define las líneas con tu tarjeta gráfica (Anime4K). Se nota sobre todo en 720p y en pantallas grandes. Si tu equipo no da, se ajusta o se apaga solo. Gasta más batería.</p>
                     </>
                   ) : (
-                    <p className="px-3 pb-2 text-xs leading-snug text-white/60">Tu navegador no tiene WebGPU. Prueba con Chrome o Edge actualizados en una computadora.</p>
+                    <p className="px-3 pb-2 text-xs leading-snug text-white/60">
+                      {webgpuAvailable() ? "Disponible en computadoras: en el celular casi no se nota y gasta batería." : "Tu navegador no tiene WebGPU. Prueba con Chrome o Edge actualizados en una computadora."}
+                    </p>
                   )}
                   <p className="border-t border-white/10 px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-white/50">Color</p>
                   {(Object.keys(PICTURE_PRESETS) as (keyof typeof PICTURE_PRESETS)[]).map((k) => (

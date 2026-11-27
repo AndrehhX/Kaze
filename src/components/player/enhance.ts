@@ -31,7 +31,19 @@ struct VO { @builtin(position) pos: vec4f, @location(0) uv: vec2f };
 }
 @fragment fn fs(v: VO) -> @location(0) vec4f { return vec4f(textureSample(tex, smp, v.uv).rgb, 1); }`;
 
-type Status = { active: boolean; mode: EnhanceMode; reason?: string };
+/** code: motivo corto para las estadísticas (Umami); net: la red de Anime4K que se está usando. */
+export type EnhanceStatus = { active: boolean; mode: EnhanceMode; reason?: string; code?: string; net?: string };
+type Status = EnhanceStatus;
+
+/** Solo en computadoras: en celulares casi no se nota y gasta batería. */
+export function enhanceSupported() {
+  if (!webgpuAvailable() || typeof window === "undefined") return false;
+  const nav = navigator as Navigator & { userAgentData?: { mobile?: boolean } };
+  if (nav.userAgentData?.mobile) return false;
+  const coarse = window.matchMedia?.("(pointer: coarse)").matches;
+  const fine = window.matchMedia?.("(pointer: fine)").matches;
+  return !coarse || Boolean(fine);
+}
 
 /**
  * Engancha Anime4K al video mientras `mode` no sea "off".
@@ -46,7 +58,7 @@ export function useEnhance(video: HTMLVideoElement | null, canvas: HTMLCanvasEle
   useEffect(() => {
     if (mode === "off" || !video || !canvas) return;
     if (!webgpuAvailable()) {
-      statusRef.current({ active: false, mode: "off", reason: "Tu navegador no tiene WebGPU (prueba con Chrome o Edge actualizados)." });
+      statusRef.current({ active: false, mode: "off", code: "sin_webgpu", reason: "Tu navegador no tiene WebGPU (prueba con Chrome o Edge actualizados)." });
       return;
     }
     let cancelled = false;
@@ -59,13 +71,13 @@ export function useEnhance(video: HTMLVideoElement | null, canvas: HTMLCanvasEle
       const A4K = await import("anime4k-webgpu");
       const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
       if (!adapter || cancelled) {
-        if (!cancelled) statusRef.current({ active: false, mode: "off", reason: "No se encontró una tarjeta gráfica compatible." });
+        if (!cancelled) statusRef.current({ active: false, mode: "off", code: "sin_gpu", reason: "No se encontró una tarjeta gráfica compatible." });
         return;
       }
       device = await adapter.requestDevice();
       if (cancelled) return device.destroy();
       const ctx = canvas.getContext("webgpu");
-      if (!ctx) return statusRef.current({ active: false, mode: "off", reason: "No se pudo usar la tarjeta gráfica." });
+      if (!ctx) return statusRef.current({ active: false, mode: "off", code: "sin_canvas", reason: "No se pudo usar la tarjeta gráfica." });
       const format = navigator.gpu.getPreferredCanvasFormat();
       ctx.configure({ device, format, alphaMode: "opaque" });
       const shader = device.createShaderModule({ code: BLIT });
@@ -75,7 +87,7 @@ export function useEnhance(video: HTMLVideoElement | null, canvas: HTMLCanvasEle
         fragment: { module: shader, entryPoint: "fs", targets: [{ format }] },
       });
       const sampler = device.createSampler({ magFilter: "linear", minFilter: "linear" });
-      device.lost.then(() => !cancelled && statusRef.current({ active: false, mode: "off", reason: "Se reinició la tarjeta gráfica." }));
+      device.lost.then(() => !cancelled && statusRef.current({ active: false, mode: "off", code: "gpu_perdida", reason: "Se reinició la tarjeta gráfica." }));
 
       // Escalera de redes, de mejor a más ligera. Si el video ya ocupa (casi) lo mismo que la pantalla,
       // reescalar no aporta y cuesta 4 veces más: se usa la restauración (define las líneas sin reescalar).
@@ -90,10 +102,11 @@ export function useEnhance(video: HTMLVideoElement | null, canvas: HTMLCanvasEle
               (i) => [new A4K.CNNx2M({ device: d, inputTexture: i })],
             ]
           : [(i) => [new A4K.CNNM({ device: d, inputTexture: i })], (i) => [new A4K.DoG({ device: d, inputTexture: i })]];
+      const ladderNames = (upscale: boolean) => (upscale ? ["ModeA", "CNNx2VL", "CNNx2M"] : ["CNNM", "DoG"]);
       // Presupuesto por fotograma: el anime va a 24 fps (41 ms), pero la gráfica también decodifica y dibuja la página.
       const BUDGET_MS = 18;
 
-      let built: { key: string; input: GPUTexture; pipes: Pipe[]; bind: GPUBindGroup; level: number; levels: number } | null = null;
+      let built: { key: string; input: GPUTexture; pipes: Pipe[]; bind: GPUBindGroup; level: number; levels: number; net: string } | null = null;
       let building: Promise<void> | null = null;
       let floor = current === "light" ? 99 : 0; // nivel mínimo permitido (sube si el video se traba)
 
@@ -114,7 +127,8 @@ export function useEnhance(video: HTMLVideoElement | null, canvas: HTMLCanvasEle
 
       /** Elige la mejor red que cabe en el presupuesto (empezando por `floor`). */
       const build = async (vw: number, vh: number, tw: number, th: number) => {
-        const steps = ladder(tw / vw >= 1.25);
+        const upscale = tw / vw >= 1.25;
+        const steps = ladder(upscale);
         const start = Math.min(floor, steps.length - 1);
         const key = `${vw}x${vh}>${tw}x${th}:${start}`;
         if (built?.key === key) return;
@@ -134,7 +148,7 @@ export function useEnhance(video: HTMLVideoElement | null, canvas: HTMLCanvasEle
             if (last && ms > BUDGET_MS * 1.6) {
               input.destroy();
               cancelled = true;
-              statusRef.current({ active: false, mode: "off", reason: "Tu tarjeta gráfica no da para mejorar este video en tiempo real. La dejé apagada para que no se trabe." });
+              statusRef.current({ active: false, mode: "off", code: "lenta_al_medir", reason: "Tu tarjeta gráfica no da para mejorar este video en tiempo real. La dejé apagada para que no se trabe." });
               return;
             }
             const bind = d.createBindGroup({
@@ -144,7 +158,7 @@ export function useEnhance(video: HTMLVideoElement | null, canvas: HTMLCanvasEle
                 { binding: 1, resource: sampler },
               ],
             });
-            built = { key, input, pipes, bind, level, levels: steps.length };
+            built = { key, input, pipes, bind, level, levels: steps.length, net: ladderNames(upscale)[level] };
             floor = Math.min(floor, level);
             return;
           }
@@ -202,10 +216,10 @@ export function useEnhance(video: HTMLVideoElement | null, canvas: HTMLCanvasEle
         if (built.level < built.levels - 1) {
           floor = built.level + 1;
           built = { ...built, key: "" }; // se rehace con la red siguiente en el próximo fotograma
-          statusRef.current({ active: true, mode: "light", reason: "El video iba justo: bajé la mejora a una más ligera." });
+          statusRef.current({ active: true, mode: "light", code: "bajo_nivel", net: built.net, reason: "El video iba justo: bajé la mejora a una más ligera." });
         } else {
           cancelled = true;
-          statusRef.current({ active: false, mode: "off", reason: "Tu equipo no da para mejorar la imagen en tiempo real. La apagué para que el video no se trabe." });
+          statusRef.current({ active: false, mode: "off", code: "lenta_al_ver", net: built.net, reason: "Tu equipo no da para mejorar la imagen en tiempo real. La apagué para que el video no se trabe." });
         }
       }, 4000);
       cleanups.push(() => clearInterval(watchdog));
@@ -238,9 +252,9 @@ export function useEnhance(video: HTMLVideoElement | null, canvas: HTMLCanvasEle
       cleanups.push(() => ro.disconnect());
       cleanups.push(() => built?.input.destroy());
       await draw();
-      if (!cancelled) statusRef.current({ active: true, mode: current });
+      if (!cancelled) statusRef.current({ active: true, mode: current, net: (built as { net: string } | null)?.net });
     })().catch((e: unknown) => {
-      if (!cancelled) statusRef.current({ active: false, mode: "off", reason: `No se pudo mejorar la imagen (${e instanceof Error ? e.message.slice(0, 80) : "error"}).` });
+      if (!cancelled) statusRef.current({ active: false, mode: "off", code: "error", reason: `No se pudo mejorar la imagen (${e instanceof Error ? e.message.slice(0, 80) : "error"}).` });
     });
 
     return () => {
