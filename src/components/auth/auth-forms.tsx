@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, Loader2, MailCheck } from "lucide-react";
-import { useState } from "react";
+import { CircleCheck, Eye, EyeOff, Loader2, MailCheck, MailWarning } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
@@ -93,8 +93,80 @@ export function LoginForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<"login" | "forgot" | "sent">("login");
+  // Vuelta desde un correo de Supabase (verificar cuenta, enlace mágico…). Supabase puede devolver
+  // aquí en vez de /auth/callback, con ?code=… o #access_token=… si salió bien, o #error_code=… si no.
+  const [linkIssue, setLinkIssue] = useState<null | "expired" | "other-device">(null);
+  const [confirming, setConfirming] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    const client = getSupabaseBrowser()!;
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const qs = new URLSearchParams(window.location.search);
+    const clean = () => window.history.replaceState(null, "", window.location.pathname);
+    const welcome = () => {
+      toast.success("¡Cuenta confirmada! Bienvenido a Orunei");
+      router.replace(next);
+      router.refresh();
+    };
+    const expired = Boolean(hash.get("error_code") || hash.get("error") || qs.get("error_code") || qs.get("error") === "link");
+    const code = qs.get("code");
+    const cameFromEmail = Boolean(code || hash.get("access_token"));
+    void (async () => {
+      await Promise.resolve();
+      if (expired) {
+        setLinkIssue("expired");
+        clean();
+        return;
+      }
+      if (cameFromEmail) setConfirming(true);
+      // getSession espera a que el cliente procese la URL (el enlace ya inicia sesión si es de este navegador).
+      const { data } = await client.auth.getSession();
+      if (data.session) {
+        setConfirming(false);
+        if (cameFromEmail) { clean(); welcome(); } else router.replace(next);
+        return;
+      }
+      if (code) {
+        const { error } = await client.auth.exchangeCodeForSession(code);
+        setConfirming(false);
+        clean();
+        if (!error) return welcome();
+        // Abierto en otro dispositivo o navegador: el correo SÍ quedó confirmado, solo falta entrar.
+        setLinkIssue("other-device");
+        return;
+      }
+      setConfirming(false);
+    })();
+    // Solo al abrir la página.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!isSupabaseConfigured) return <BackendMissing feature="Inicio de sesión" />;
   const db = getSupabaseBrowser()!;
+
+  const resend = async () => {
+    if (!email) return setError("Escribe tu correo para enviarte un enlace nuevo.");
+    setError("");
+    setResending(true);
+    const { error } = await db.auth.resend({ type: "signup", email, options: { emailRedirectTo: `${location.origin}/auth/callback?next=/` } });
+    setResending(false);
+    if (error && /rate limit|too many|security purposes/i.test(error.message)) return setError("Espera un minuto antes de pedir otro enlace.");
+    if (error && /already confirmed|confirmed/i.test(error.message)) {
+      setLinkIssue("other-device");
+      return;
+    }
+    toast.success("Te enviamos un enlace nuevo. Ábrelo desde este mismo navegador.");
+  };
+
+  if (confirming)
+    return (
+      <div className="py-10 text-center">
+        <Loader2 className="mx-auto size-8 animate-spin text-primary" aria-hidden />
+        <p className="mt-4 text-sm text-muted">Confirmando tu cuenta…</p>
+      </div>
+    );
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,13 +193,36 @@ export function LoginForm() {
       <div className="text-center">
         <MailCheck className="mx-auto size-10 text-primary-ink" aria-hidden />
         <h2 className="font-display mt-4 text-xl">Revisa tu correo</h2>
-        <p className="mt-2 text-sm text-muted">If an account exists for {email}, a reset link is on its way.</p>
+        <p className="mt-2 text-sm text-muted">Si existe una cuenta con {email}, te llegará un enlace para cambiar tu contraseña.</p>
         <button className="k-btn k-btn-ghost k-btn-sm mt-6" onClick={() => setMode("login")}>Volver a iniciar sesión</button>
       </div>
     );
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
+      {linkIssue === "expired" && (
+        <div className="rounded-xl border border-primary/40 bg-primary/10 p-4 text-sm" role="status">
+          <p className="flex items-center gap-2 font-semibold text-fg">
+            <MailWarning className="size-4 shrink-0 text-primary-ink" aria-hidden /> Ese enlace ya caducó o ya se usó
+          </p>
+          <p className="mt-1 text-muted">
+            Pasa cuando el correo tarda en abrirse o cuando tu bandeja revisa el enlace antes que tú. Escribe tu correo y te mandamos uno nuevo.
+          </p>
+          <button type="button" className="k-btn k-btn-primary k-btn-sm mt-3" onClick={resend} disabled={resending}>
+            {resending && <Loader2 className="size-4 animate-spin" aria-hidden />}
+            Enviar un enlace nuevo
+          </button>
+          <p className="mt-2 text-xs text-muted">¿Era para cambiar tu contraseña? Usa «¿Olvidaste tu contraseña?» abajo.</p>
+        </div>
+      )}
+      {linkIssue === "other-device" && (
+        <div className="rounded-xl border border-success/40 bg-success/10 p-4 text-sm" role="status">
+          <p className="flex items-center gap-2 font-semibold text-fg">
+            <CircleCheck className="size-4 shrink-0 text-success" aria-hidden /> Tu correo ya está confirmado
+          </p>
+          <p className="mt-1 text-muted">Abriste el enlace en otro navegador o dispositivo. Entra aquí con tu correo y contraseña.</p>
+        </div>
+      )}
       <Field id="email" label="Correo electrónico">
         <input id="email" type="email" className="k-input" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       </Field>
@@ -263,7 +358,7 @@ export function RegisterForm() {
           <p className="font-semibold text-fg">Pasos para activar tu cuenta:</p>
           <p>1. Revisa tu bandeja de entrada (o carpeta de <strong>Spam / Correo no deseado</strong>).</p>
           <p>2. Haz clic en el enlace de verificación recibido.</p>
-          <p>3. Una vez confirmado, tu cuenta quedará activa para iniciar sesión de inmediato.</p>
+          <p>3. Al tocarlo entrarás directo a Orunei, sin volver a iniciar sesión (ábrelo en este mismo navegador).</p>
         </div>
         <div className="mt-6 flex flex-col gap-2">
           <Link href="/login" className="k-btn k-btn-primary w-full !min-h-11 font-semibold">
