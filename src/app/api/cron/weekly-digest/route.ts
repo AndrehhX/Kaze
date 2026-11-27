@@ -20,7 +20,12 @@ export async function POST(req: NextRequest) {
   await connection();
   if (!authorized(req)) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const dryRun = req.nextUrl.searchParams.get("dryRun") === "1";
-  const onlyUserId = req.nextUrl.searchParams.get("user") ?? undefined;
+  const userParam = req.nextUrl.searchParams.get("user");
+  // Si viene ?user= tiene que ser un UUID válido: vacío o mal escrito NO debe caer en "enviar a todos".
+  if (userParam !== null && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userParam)) {
+    return NextResponse.json({ error: "Parámetro user no válido" }, { status: 400 });
+  }
+  const onlyUserId = userParam ?? undefined;
   const result = await runWeeklyDigest({ dryRun, onlyUserId });
   return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
 }
